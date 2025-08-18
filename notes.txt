@@ -1,0 +1,29 @@
+P:\Programowanie\Projekty\AlIna\server\build\libs git:[master]
+java -jar server-0.0.1-SNAPSHOT.jar
+
+gradle build
+docker build -t alina-app ./server
+
+docker save -o alina-app.tar alina-app
+ potem kopiuj wklej  alina-app.tar na SYnology
+
+ I w synology
+ docker load -i alina-app.tar
+i juz
+
+Wyłącz działające kontenery:
+
+docker-compose down
+Ponownie zbuduj obraz i uruchom kontenery:
+
+docker-compose up --build -d
+sudo docker-compose up --build -d
+
+Beda pewnie bledy ze nie ma plikow konfiguracyjnych, trzeba je bedzie recznei rpzekopiowac (kieyd to musze naprawic aby sie tworzyly jak ich nie ma)
+
+
+docker build -t alina-app .
+
+All in n asynology
+cd /volume2/Applications/Alina/ && sudo docker load -i alina-app.tar && cd /volume2/docker/compose/alina/ && sudo docker-compose up --build -d
+

@@ -1,0 +1,135 @@
+.body {
+  -fx-opacity: 0.95;
+}
+
+.body-window {
+    -fx-background-radius: 0px;
+}
+
+.body-maximized {
+  -fx-background-radius: 0px;
+}
+
+.header-bar-button-box {
+    -fx-padding: 10px 10px 10px 10px;
+}
+
+/*.text-area {*/
+/*  -fx-background-radius: 15px;*/
+/*}*/
+
+.chat-text-area-user  {
+  -fx-padding: 0 0 0 40px;
+  -fx-border-insets: 0 0 0 40px;
+  -fx-background-insets: 0 0 0 40px;
+}
+
+.chat-text-area-assistant  {
+  -fx-padding: 0 40px 0 0;
+  -fx-border-insets: 0 40px 0 0;
+  -fx-background-insets: 0 40px 0 0;
+}
+
+ChatWindow {
+}
+
+
+
+/*.text-field {*/
+/*  -fx-background-color: -fx-control-inner-background;*/
+/*  -fx-background-insets: 0;*/
+/*}*/
+
+.plugin-button {
+  -fx-background-radius: 15px;
+}
+
+.toggle-button {
+  -fx-background-insets: 0;
+}
+
+.toggle-button:selected {
+  -fx-background-color: -color-fg-default;
+  -fx-text-fill: -color-bg-default;
+}
+
+.toggle-button:selected .ikonli-font-icon {
+  -fx-icon-color: -color-bg-default
+}
+
+.titled-pane > .title > .arrow-button > .arrow {
+
+}
+
+.titled-pane {
+    -fx-border-width: 0;
+    -fx-effect: none;
+}
+
+.titled-pane .title {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.titled-pane .content {
+    -fx-border-color: transparent;
+}
+
+.modal-pane {
+    -fx-background-color: -color-bg-default;
+    -color-modal-pane-overlay: transparent;
+    -fx-background-radius: 25px;
+}
+
+.pane-button-bar {
+    -fx-spacing: 10px;
+    -fx-padding: 10px 10px 0 10px;
+}
+
+.button, .toggle-button {
+    -fx-cursor: hand;
+}
+
+/*.tool-bar > .container > .button,*/
+/*.tool-bar > .container > .menu-button {*/
+/*    -fx-background-color: transparent;*/
+/*}*/
+
+/*.tool-bar > .container > .button,*/
+/*.tool-bar > .container > .menu-button:hover {*/
+/*    -fx-background-color: -color-button-fg;*/
+/*}*/
+
+.menu-button {
+    -fx-padding: -5px ;
+}
+
+.menu-button.flat,
+.split-menu-button.flat {
+    -color-button-bg: transparent;
+    -color-button-fg: -color-fg-default;
+    -color-button-border: transparent;
+    -color-button-bg-hover: -color-bg-subtle;
+    -color-button-fg-hover: -color-button-fg;
+    -color-button-border-hover: -color-bg-subtle;
+    -color-button-bg-focused: -color-button-bg;
+    -color-button-fg-focused: -color-button-fg;
+    -color-button-border-focused: -color-button-bg;
+    -color-button-bg-pressed: -color-button-bg;
+    -color-button-fg-pressed: -color-button-fg;
+    -color-button-border-pressed: transparent;
+    -fx-effect: none;
+}
+
+ChatThreadHistoryCard {
+    -fx-cursor: hand;
+}
+
+
+.card-holder {
+    -fx-padding: 15px 5px 5px 5px;
+}
+
+.logs-text-area {
+    -fx-font-family: "monospace";
+}

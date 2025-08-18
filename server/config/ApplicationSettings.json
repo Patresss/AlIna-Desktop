@@ -1,0 +1,10 @@
+{
+  "assistantSettings" : {
+    "chatModel" : null,
+    "context" : null
+  },
+  "uiSettings" : {
+    "theme" : "Primer Dark",
+    "language" : "en"
+  }
+}

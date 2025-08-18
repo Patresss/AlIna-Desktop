@@ -1,0 +1,177 @@
+<html style="--color-accent-7:  #0d419d; --color-warning-6:  #845306; --color-fg-default:  #c9d1d9; --color-accent-6:  #1158c7; --color-warning-7:  #693e00; --color-accent-5:  #1f6feb; --color-warning-4:  #bb8009; --color-accent-4:  #388bfd; --color-warning-5:  #9e6a03; --color-warning-2:  #e3b341; --color-warning-3:  #d29922; --color-accent-9:  #051d4d; --color-warning-0:  #f8e3a1; --color-accent-muted:  rgba(56, 139, 253, 0.4); --color-warning-muted:  rgba(187, 128, 9, 0.4); --color-accent-8:  #0c2d6b; --color-warning-1:  #f2cc60; --color-accent-3:  #58a6ff; --color-accent-2:  #79c0ff; --color-accent-1:  #a5d6ff; --color-accent-0:  #cae8ff; --color-danger-9:  #490202; --color-danger-8:  #67060c; --color-danger-7:  #8e1519; --color-danger-6:  #b62324; --color-danger-5:  #da3633; --color-warning-8:  #4b2900; --color-danger-4:  #f85149; --color-warning-9:  #341a00; --color-danger-3:  #ff7b72; --color-danger-2:  #ffa198; --color-danger-1:  #ffc1ba; --color-border-default:  #30363d; --color-danger-0:  #ffdcd7; --color-success-9:  #04260f; --color-danger-muted:  rgba(248, 81, 73, 0.4); --color-success-4:  #2ea043; --color-bg-subtle:  #161b22; --color-success-emphasis:  #238636; --color-success-3:  #3fb950; --color-success-2:  #56d364; --color-success-1:  #7ee787; --color-success-8:  #033a16; --color-success-7:  #0f5323; --color-success-6:  #196c2e; --color-fg-muted:  #8b949e; --color-warning-fg:  #d29922; --color-success-5:  #238636; --color-accent-fg:  #58a6ff; --color-success-0:  #aff5b4; --color-bg-inset:  #010409; --color-border-subtle:  rgb(36, 40, 46); --color-success-muted:  rgba(46, 160, 67, 0.4); --color-accent-emphasis:  #1f6feb; --color-danger-fg:  #f85149; --color-border-muted:  #21262d; --color-bg-overlay:  #0d1117; --color-accent-subtle:  rgba(56, 139, 253, 0.15); --color-success-subtle:  rgba(46, 160, 67, 0.15); --color-fg-subtle:  #6e7681; --color-fg-emphasis:  #ffffff; --color-danger-emphasis:  #da3633; --color-warning-emphasis:  #9e6a03; --color-warning-subtle:  rgba(187, 128, 9, 0.15); --color-bg-default:  #0d1117; --color-danger-subtle:  rgba(248, 81, 73, 0.15); --color-success-fg:  #3fb950;"><head>
+    <style>
+        body {
+            background-color: var(--color-bg-default);
+            color: var(--color-fg-default);
+            font-family: S�hne, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            font-size: 14px;
+        }
+        a:link,
+        a:hover,
+        a:visited,
+        a:active {
+            color: var(--color-accent-fg);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border-default);
+        }
+        .chat-message {
+            background-color: var(--color-bg-subtle);
+            color: var(--color-fg-default);
+            box-shadow: 0 2px 4px var(--color-neutral-muted);
+            border-radius: 15px;
+            padding: 2px 15px;
+            margin: 10px 5px;
+            max-width: 85%;
+            word-wrap: break-word;
+            align-items: center;
+        }
+        .chat-message.accent {
+            box-shadow: 0 0 10px var(--color-accent-fg);
+        }
+        .chat-message.warning {
+            box-shadow: 0 0 10px var(--color-warning-fg);
+        }
+        .chat-message.success {
+            box-shadow: 0 0 10px var(--color-success-fg);
+        }
+        .chat-message.danger {
+            box-shadow: 0 0 10px var(--color-danger-fg);
+        }
+        .chat-message.user {
+            margin-left: auto;
+        }
+        .chat-message.assistant {
+        }
+        .loader {
+            display: none;
+            justify-content: space-around;
+            width: 50px;
+            height: 40px;
+        }
+        .loader.active {
+            display: flex;
+        }
+
+        .loader div {
+            width: 8px;
+            height: 8px;
+            background-color: var(--color-accent-fg);
+            border-radius: 50%;
+            animation: pulse 0.6s infinite alternate;
+        }
+
+        .loader div:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loader div:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes pulse {
+            from {
+                transform: scale(1);
+            }
+            to {
+                transform: scale(0.5);
+            }
+        }
+
+    </style>
+    <script>
+        function addHtmlContent(htmlContent, messageType, notificationStyle) {
+            var div = document.createElement('div');
+            div.innerHTML = htmlContent;
+            div.className = 'chat-message ' + messageType + ' ' + notificationStyle;
+
+            var chatContainer = document.getElementById('chat-container');
+            chatContainer.appendChild(div);
+        }
+    </script>
+</head>
+<body>
+<div id="chat-container"><div class="chat-message user "><p>napis zhello world w java ale tkai dlugi</p></div><div class="chat-message assistant "><p>Oto bardzo rozwlek?y przyk?ad programu "Hello World" w j?zyku Java:</p>
+    <pre><code class="language-java">public class HelloWorld {
+
+    public static void main(String[] args) {
+        // Deklaracja zmiennej typu String przechowuj?cej wiadomo??
+        String message = "H";
+        message += "e";
+        message += "l";
+        message += "l";
+        message += "o";
+        message += " ";
+        message += "W";
+        message += "o";
+        message += "r";
+        message += "l";
+        message += "d";
+        message += "!";
+
+        // Dodanie wielu r�?nych sposob�w na wy?wietlenie tej samej wiadomo?ci
+        System.out.print("H");
+        System.out.print("e");
+        System.out.print("l");
+        System.out.print("l");
+        System.out.print("o");
+        System.out.print(" ");
+        System.out.print("W");
+        System.out.print("o");
+        System.out.print("r");
+        System.out.print("l");
+        System.out.print("d");
+        System.out.print("!");
+        System.out.println();
+
+        String part1 = "Hello";
+        String part2 = " World";
+        System.out.println(part1 + part2 + "!");
+
+        // Wy?wietlenie wiadomo?ci przy u?yciu wcze?niej zadeklarowanej zmiennej
+        System.out.println(message);
+
+        // P?tla do wydrukowania znaku po znaku
+        for(int i = 0; i &lt; message.length(); i++) {
+            System.out.print(message.charAt(i));
+        }
+        System.out.println();
+
+        // Funkcja do drukowania wiadomo?ci
+        printMessage(message);
+    }
+
+    // Funkcja, kt�ra drukuje wiadomo??
+    public static void printMessage(String msg) {
+        System.out.println(msg);
+    }
+}
+</code></pre>
+    <p>Ten kod jest celowo rozwlek?y, aby pokaza? r�?ne sposoby na wy?wietlenie napisu "Hello World" w j?zyku Java.</p></div><div class="chat-message user "><p>a teraz napis ziwersz</p></div><div class="chat-message assistant "><p>Oczywi?cie, oto przyk?ad bardzo prostego wiersza w j?zyku Java:</p>
+    <pre><code class="language-java">public class SimplePoem {
+
+    public static void main(String[] args) {
+        // Wiersz "R�?a czerwona jest"
+        System.out.println("R�?a czerwona jest,");
+        System.out.println("Fio?ki s? niebieskie,");
+        System.out.println("Cukier jest s?odki,");
+        System.out.println("I tak samo Ty.");
+    }
+}
+</code></pre>
+    <p>Ten program wy?wietli kr�tki wiersz, gdy zostanie uruchomiony.</p></div></div>
+<div id="loader" class="chat-message assistant loader active">
+    <div></div>
+    <div></div>
+    <div></div>
+</div>
+
+
+</body></html>

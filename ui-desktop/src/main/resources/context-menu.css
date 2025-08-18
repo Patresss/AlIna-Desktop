@@ -1,0 +1,11 @@
+.context-menu {
+    -fx-pref-width: 250px;
+}
+
+.context-menu > VBox {
+    -fx-spacing: 0;
+}
+
+.context-menu > VBox > MenuButton {
+    -fx-pref-width: 250px;
+}+

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.text.Text?>
+
+<fx:root alignment="CENTER" spacing="15.0" type="HBox" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <Separator maxWidth="1.7976931348623157E308" prefWidth="1000.0" />
+      <Text fx:id="text" strokeType="OUTSIDE" strokeWidth="0.0" text="t Text " />
+      <Separator maxWidth="1.7976931348623157E308" prefWidth="1000.0" />
+   </children>
+</fx:root>
