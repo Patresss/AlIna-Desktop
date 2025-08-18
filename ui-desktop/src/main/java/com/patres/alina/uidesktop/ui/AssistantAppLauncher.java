@@ -7,13 +7,11 @@ import com.patres.alina.uidesktop.shortcuts.ShortcutKeyListener;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.SceneAntialiasing;
-import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 

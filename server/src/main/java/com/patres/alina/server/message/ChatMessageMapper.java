@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
-import com.theokanning.openai.completion.chat.ChatFunctionCall;
-import com.theokanning.openai.completion.chat.ChatMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.*;
+import org.springframework.ai.chat.model.ChatResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,10 +20,11 @@ public final class ChatMessageMapper {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
 
-    public static ChatMessageResponseModel toChatMessageResponseModel(final ChatMessage chatMessage, final ChatMessageSendModel chatMessageSendModel) {
+    public static ChatMessageResponseModel toChatMessageResponseModel(final ChatResponse chatMessage, final ChatMessageSendModel chatMessageSendModel) {
+        MessageType messageType = chatMessage.getResult().getOutput().getMessageType();
         return new ChatMessageResponseModel(
-                chatMessage.getContent(),
-                ChatMessageRole.findChatMessageRoleByValue(chatMessage.getRole()),
+                chatMessage.getResult().getOutput().getText(),
+                ChatMessageRole.findChatMessageRoleByValue(messageType.getValue()), // TODO replace it with MessageType
                 LocalDateTime.now(),
                 chatMessageSendModel.styleType(),
                 chatMessageSendModel.chatThreadId()
@@ -33,7 +34,7 @@ public final class ChatMessageMapper {
     public static ChatMessageResponseModel toChatMessageResponseModel(final ChatMessageEntry chatMessageEntry, final String chatThreadId) {
         return new ChatMessageResponseModel(
                 chatMessageEntry.content(),
-                chatMessageEntry.role(),
+                ChatMessageRole.findChatMessageRoleByValue(chatMessageEntry.role().getValue()),
                 chatMessageEntry.createdAt(),
                 chatMessageEntry.styleType(),
                 chatThreadId
@@ -46,17 +47,15 @@ public final class ChatMessageMapper {
                 .toList();
     }
 
-    public static ChatMessage toChatMessage(final ChatMessageEntry entity) {
-        final ChatMessage chatMessage = new ChatMessage(entity.role().getChatMessageRole(), entity.contentWithContext(), entity.name());
-        if (entity.functionArguments() != null && entity.functionName() != null) {
-            try {
-                final JsonNode jsonNode = MAPPER.readTree(entity.functionArguments());
-                chatMessage.setFunctionCall(new ChatFunctionCall(entity.functionName(), jsonNode));
-            } catch (JsonProcessingException e) {
-                logger.error("Cannot map ChatMessageEntry to ChatMessage", e);
-            }
-        }
-        return chatMessage;
+    public static AbstractMessage toAbstractMessage(final ChatMessageEntry entity) {
+        return switch (entity.role()) {
+            case USER -> new UserMessage(entity.contentWithContext());
+            case ASSISTANT -> new AssistantMessage(entity.contentWithContext());
+            case SYSTEM -> new SystemMessage(entity.contentWithContext());
+//            case TOOL: TODO implement ToolMessage
+//                return new ToolResponseMessage(entity.contentWithContext());
+            default -> throw new IllegalArgumentException("Unsupported message role: " + entity.role());
+        };
     }
 
 }

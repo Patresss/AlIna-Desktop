@@ -1,14 +1,14 @@
 package com.patres.alina.server.message;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.server.thread.ChatThreadFacade;
-import com.theokanning.openai.completion.chat.ChatFunctionCall;
-import com.theokanning.openai.completion.chat.ChatMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AbstractMessage;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -30,33 +30,36 @@ public class StoreMessageManager {
     }
 
 
-    void storeMessage(final ChatMessage chatMessage,
+    void storeMessage(final ChatResponse chatMessage,
                       final ChatMessageSendModel chatMessageSendMode) {
-        storeMessage(chatMessage, chatMessageSendMode, chatMessage.getContent());
+        String text = chatMessage.getResult().getOutput().getText();
+        MessageType messageType = chatMessage.getResult().getOutput().getMessageType();
+        storeMessage(text, messageType, chatMessageSendMode, text);
     }
 
-    void storeMessage(final ChatMessage chatMessage,
+    void storeMessage(final String contentWithContext,
+                      final MessageType messageType,
                       final ChatMessageSendModel chatMessageSendModel,
                       final String contentToDisplay) {
-        final ChatMessageRole role = ChatMessageRole.findChatMessageRoleByValue(chatMessage.getRole());
-        final ChatFunctionCall functionCall = chatMessage.getFunctionCall();
-
-
         final ChatMessageEntry chatMessageResponse = new ChatMessageEntry(
                 UUID.randomUUID().toString(),
                 chatMessageSendModel.chatThreadId(),
                 contentToDisplay,
-                role,
+                messageType,
                 ChatMessageStyleType.NONE,
                 LocalDateTime.now(),
-                chatMessage.getContent(),
+                contentWithContext,
                 chatMessageSendModel.pluginId(),
-                chatMessage.getName(),
-                Optional.ofNullable(functionCall).map(ChatFunctionCall::getName).orElse(null),
-                Optional.ofNullable(functionCall).map(ChatFunctionCall::getArguments).map(JsonNode::toString).orElse(null)
+                "chatMessage.getName()" // TODO
         );
         chatMessageRepository.save(chatMessageResponse);
         chatThreadFacade.setModifiedAt(chatMessageSendModel.chatThreadId());
+    }
+
+    void storeMessage(final AbstractMessage chatMessage,
+                      final ChatMessageSendModel chatMessageSendModel,
+                      final String contentToDisplay) {
+        storeMessage(chatMessage.getText(), chatMessage.getMessageType(), chatMessageSendModel, contentToDisplay);
     }
 
 }

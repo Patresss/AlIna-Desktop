@@ -33,7 +33,7 @@ configurations {
 
 dependencies {
     implementation(project(":common"))
-    implementation("com.theokanning.openai-gpt3-java:service:0.18.2")
+    implementation("org.springframework.ai:spring-ai-starter-model-openai:1.0.1")
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb:3.2.2")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")

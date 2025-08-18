@@ -2,6 +2,7 @@ package com.patres.alina.server.message;
 
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageStyleType;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -15,14 +16,12 @@ public record ChatMessageEntry(
         @Indexed
         String chatThreadId,
         String content,
-        ChatMessageRole role,
+        MessageType role,
         ChatMessageStyleType styleType,
         @Indexed
         LocalDateTime createdAt,
         String contentWithContext,
         String pluginId,
-        String name,
-        String functionName,
-        String functionArguments
+        String name
 ) {
 }

@@ -76,12 +76,15 @@ public interface AlinaRestClient {
     void updatePluginState(UpdateStateRequest updateStateRequest);
 
 
-    @RequestLine("GET /integrations/available")
-    List<IntegrationToAdd> getAvailableIntegrationToAdd();
+    // @RequestLine("GET /integrations/available")
+    default List<IntegrationToAdd> getAvailableIntegrationToAdd() {
+        return List.of();
+    }
 
-    @RequestLine("GET /integrations")
-    List<CardListItem> getIntegrationListItem();
-
+    // @RequestLine("GET /integrations")
+    default List<CardListItem> getIntegrationListItem(){
+        return List.of();
+    }
     @RequestLine("GET /integrations/{id}")
     IntegrationDetails getIntegrationById(@Param("id") final String id);
 

@@ -4,7 +4,7 @@ import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
 import com.patres.alina.server.event.AssistantSettingsUpdatedEvent;
-import com.patres.alina.server.openai.OpenAiApi;
+import com.patres.alina.server.openai.OpenAiApiFacade;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,10 +13,10 @@ import java.util.List;
 public class SettingsService {
 
     private final FileManager<AssistantSettings> assistantSettingsManager;
-    private final OpenAiApi openAiApi;
+    private final OpenAiApiFacade openAiApi;
 
 
-    public SettingsService(FileManager<AssistantSettings> assistantSettingsManager, OpenAiApi openAiApi) {
+    public SettingsService(FileManager<AssistantSettings> assistantSettingsManager, OpenAiApiFacade openAiApi) {
         this.assistantSettingsManager = assistantSettingsManager;
         this.openAiApi = openAiApi;
     }

@@ -4,12 +4,15 @@ import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.plugin.PluginDetail;
 import com.patres.alina.common.thread.ChatThreadResponse;
-import com.patres.alina.server.openai.OpenAiApi;
+import com.patres.alina.server.openai.OpenAiApiFacade;
 import com.patres.alina.server.plugin.PluginService;
 import com.patres.alina.server.thread.ChatThreadFacade;
-import com.theokanning.openai.completion.chat.ChatMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AbstractMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -30,13 +33,13 @@ public class ChatMessageService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final PluginService pluginService;
-    private final OpenAiApi openAiApi;
+    private final OpenAiApiFacade openAiApi;
     private final StoreMessageManager storeMessageManager;
     private final ChatThreadFacade chatThreadFacade;
 
     public ChatMessageService(final ChatMessageRepository chatMessageRepository,
                               final PluginService pluginService,
-                              final OpenAiApi openAiApi,
+                              final OpenAiApiFacade openAiApi,
                               final StoreMessageManager storeMessageManager,
                               final ChatThreadFacade chatThreadFacade) {
         this.chatMessageRepository = chatMessageRepository;
@@ -64,56 +67,44 @@ public class ChatMessageService {
         final String chatThreadId = chatMessageSendModel.chatThreadId();
         logger.info("Sending '{}' content, threadId={} ...", chatMessageSendModel.content(), chatThreadId);
 
-        final List<ChatMessage> contextMessages = loadMessages(chatMessageSendModel.chatThreadId());
+        final List<AbstractMessage> contextMessages = loadMessages(chatMessageSendModel.chatThreadId());
 
 
         final String chatContent = calculateContentWithPluginPrompt(chatMessageSendModel.content(), chatMessageSendModel.pluginId());
-        final ChatMessage userChatMessage = new ChatMessage(USER.getChatMessageRole(), chatContent);
+        final AbstractMessage userChatMessage =  new UserMessage(chatContent);
 
         logger.info("Processing first request '{}' content, threadId={} ...", chatMessageSendModel.content(), chatThreadId);
-        final ChatMessage response = sendUserMessage(contextMessages, userChatMessage, chatMessageSendModel, chatMessageSendModel.content());
+        final ChatResponse response = sendUserMessage(contextMessages, userChatMessage, chatMessageSendModel, chatMessageSendModel.content());
 
-        final ChatMessage functionableResponse = getFunctionableResponse(contextMessages, response, chatMessageSendModel);
-        logger.info("Received content for threadId {}: '{}'", chatThreadId, functionableResponse.getContent());
-        return toChatMessageResponseModel(functionableResponse, chatMessageSendModel);
+//        final ChatResponse functionableResponse = getFunctionableResponse(contextMessages, response, chatMessageSendModel);
+//        logger.info("Received content for threadId {}: '{}'", chatThreadId, functionableResponse.getContent());
+        return toChatMessageResponseModel(response, chatMessageSendModel);
     }
+//
+//    private ChatResponse sendFunctionMessage(final List<ChatMessage> contextMessages,
+//                                            final ChatMessage message,
+//                                            final ChatMessageSendModel chatMessageSendModel) {
+//        contextMessages.add(message);
+//        final ChatMessage response = openAiApi.sendFunctionMessage(message);
+//        storeMessageManager.storeMessage(response, chatMessageSendModel);
+//        return response;
+//    }
 
-    private ChatMessage sendFunctionMessage(final List<ChatMessage> contextMessages,
-                                            final ChatMessage message,
-                                            final ChatMessageSendModel chatMessageSendModel) {
-        contextMessages.add(message);
-        final ChatMessage response = openAiApi.sendFunctionMessage(message);
-        storeMessageManager.storeMessage(response, chatMessageSendModel);
-        return response;
-    }
-
-    private ChatMessage sendMessage(final List<ChatMessage> contextMessages,
-                                    final ChatMessage message,
+    private ChatResponse sendMessage(final List<AbstractMessage> contextMessages,
+                                    final AbstractMessage message,
                                     final ChatMessageSendModel chatMessageSendModel) {
         contextMessages.add(message);
-        final ChatMessage response = openAiApi.sendMessage(contextMessages);
+        final ChatResponse response = openAiApi.sendMessage(contextMessages);
         storeMessageManager.storeMessage(response, chatMessageSendModel);
         return response;
     }
 
-    private ChatMessage sendUserMessage(final List<ChatMessage> contextMessages,
-                                        final ChatMessage message,
+    private ChatResponse sendUserMessage(final List<AbstractMessage> contextMessages,
+                                        final AbstractMessage message,
                                         final ChatMessageSendModel chatMessageSendModel,
                                         final String contentToDisplay) {
         storeMessageManager.storeMessage(message, chatMessageSendModel, contentToDisplay);
         return sendMessage(contextMessages, message, chatMessageSendModel);
-    }
-
-    private ChatMessage getFunctionableResponse(final List<ChatMessage> chatMessages,
-                                                final ChatMessage response,
-                                                final ChatMessageSendModel chatMessageSendModel) {
-
-        if (openAiApi.isFunctionMessage(response)) {
-            final ChatMessage functionResponse = sendFunctionMessage(chatMessages, response, chatMessageSendModel);
-            final ChatMessage paraphrasedFunctionMessage = sendMessage(chatMessages, functionResponse, chatMessageSendModel);
-            return getFunctionableResponse(chatMessages, paraphrasedFunctionMessage, chatMessageSendModel); // to support multiple functions
-        }
-        return response;
     }
 
     public List<ChatMessageResponseModel> getMessagesByThreadId(final String chatThreadId) {
@@ -144,10 +135,10 @@ public class ChatMessageService {
         }
     }
 
-    private List<ChatMessage> loadMessages(final String chatThreadId) {
+    private List<AbstractMessage> loadMessages(final String chatThreadId) {
         final List<ChatMessageEntry> messages = chatMessageRepository.findChatMessagesForContext(chatThreadId, CONTEXT_PAGEABLE).reversed();
         return messages.stream()
-                .map(ChatMessageMapper::toChatMessage)
+                .map(ChatMessageMapper::toAbstractMessage)
                 .collect(Collectors.toList());
     }
 

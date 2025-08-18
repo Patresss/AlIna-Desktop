@@ -2,7 +2,7 @@ package com.patres.alina.server.speech;
 
 import com.patres.alina.common.message.SpeechToTextResponse;
 import com.patres.alina.server.message.exception.CannotConvertSpeechToTextException;
-import com.patres.alina.server.openai.OpenAiApi;
+import com.patres.alina.server.openai.OpenAiApiFacade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -16,9 +16,9 @@ public class SpeechService {
 
     private static final Logger logger = LoggerFactory.getLogger(SpeechService.class);
 
-    private final OpenAiApi openAiApi;
+    private final OpenAiApiFacade openAiApi;
 
-    public SpeechService(final OpenAiApi openAiApi) {
+    public SpeechService(final OpenAiApiFacade openAiApi) {
         this.openAiApi = openAiApi;
     }
 

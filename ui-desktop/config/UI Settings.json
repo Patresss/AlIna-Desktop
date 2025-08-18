@@ -1,0 +1,16 @@
+{
+  "theme" : "Primer Dark",
+  "language" : "en",
+  "shortcutKeysSettings" : {
+    "speechShortcutKeys" : {
+      "modeKeys" : [ null, null, null ],
+      "executeKey" : null,
+      "allKeys" : [ ]
+    },
+    "focusShortcutKeys" : {
+      "modeKeys" : [ null, null, null ],
+      "executeKey" : null,
+      "allKeys" : [ ]
+    }
+  }
+}
