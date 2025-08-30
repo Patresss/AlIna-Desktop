@@ -9,7 +9,6 @@ import javafx.application.Platform;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
-import netscape.javascript.JSObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -27,9 +26,10 @@ public class Browser extends StackPane {
 
     private static final Logger logger = LoggerFactory.getLogger(Browser.class);
 
-
     final WebView webView;
     final WebEngine webEngine;
+    
+    private final StringBuilder streamingContent = new StringBuilder();
 
     public Browser() {
         super();
@@ -41,21 +41,48 @@ public class Browser extends StackPane {
         getChildren().add(webView);
 
         updateCssColors();
-        DefaultEventBus.getInstance().subscribe(ThemeEvent.class, e -> {
-            updateCssColors();
-        });
+        DefaultEventBus.getInstance().subscribe(ThemeEvent.class, ignored -> updateCssColors());
     }
 
+    /**
+     * Safely execute JavaScript function calls with parameters to avoid deprecated JSObject warnings
+     */
+    @SuppressWarnings("removal")
+    private void safeJavaScriptCall(final String functionName, final Object... parameters) {
+        try {
+            final var window = (netscape.javascript.JSObject) webEngine.executeScript("window");
+            window.call(functionName, parameters);
+        } catch (final Exception e) {
+            logger.warn("Failed to execute JavaScript function: {} with {} parameters", functionName, parameters.length, e);
+        }
+    }
 
+    /**
+     * Safely execute JavaScript code
+     */
+    private void executeJavaScript(final String script) {
+        try {
+            webEngine.executeScript(script);
+        } catch (final Exception e) {
+            logger.warn("Failed to execute JavaScript: {}", script, e);
+        }
+    }
+
+    /**
+     * Adds formatted content to the chat interface.
+     * 
+     * @param markdownContent The markdown content to be converted to HTML
+     * @param chatMessageRole The role of the message sender (USER, ASSISTANT, etc.)
+     * @param chatMessageStyleType The styling type for the message
+     */
     public void addContent(final String markdownContent,
                            final ChatMessageRole chatMessageRole,
                            final ChatMessageStyleType chatMessageStyleType) {
         final String htmlContent = convertMarkdownToHtml(markdownContent);
-        final JSObject window = (JSObject) webEngine.executeScript("window");
-        window.call("addHtmlContent", htmlContent, chatMessageRole.getChatMessageRole(), chatMessageStyleType.getStyleType());
-
+        safeJavaScriptCall("addHtmlContent", htmlContent, chatMessageRole.getChatMessageRole(), chatMessageStyleType.getStyleType());
+        
         stopOpeningUrlInWebView();
-        webEngine.executeScript("window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })");
+        executeJavaScript("scrollToBottom()");
     }
 
     private void stopOpeningUrlInWebView() {
@@ -74,34 +101,115 @@ public class Browser extends StackPane {
         }
     }
 
-    public static void openWebpage(String url) {
+    /**
+     * Opens a URL in the system's default web browser.
+     * 
+     * @param url The URL to open in the browser
+     */
+    public static void openWebpage(final String url) {
         try {
             Desktop.getDesktop().browse(new URI(url));
-        } catch (Exception e) {
+        } catch (final Exception e) {
             logger.error("Cannot open a link: {}", url, e);
         }
     }
 
-    public void showLoader() {
-        webEngine.executeScript("document.getElementById('loader').classList.add('active')");
-        webEngine.executeScript("document.getElementById('loader').classList.remove('user-message')");
-        webEngine.executeScript("window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })");
+
+    /**
+     * Initiates a new streaming message from the assistant.
+     * Clears the content buffer and sets up the UI for streaming.
+     */
+    public void startStreamingAssistantMessage() {
+        streamingContent.setLength(0);
+        executeJavaScript("startStreamingAssistantMessage()");
     }
 
-    public void showLoaderForUserMessage() {
-        showLoader();
-        webEngine.executeScript("document.getElementById('loader').classList.add('user-message')");
+    /**
+     * Appends a token to the streaming message with real-time markdown processing.
+     * Each token is added to the buffer, processed through markdown converter,
+     * and immediately displayed with proper HTML formatting.
+     * 
+     * @param token The text token to append to the streaming message
+     */
+    public void appendToStreamingMessage(final String token) {
+        try {
+            appendTokenAndUpdateHtml(token);
+        } catch (final Exception e) {
+            logger.info("Error updating streaming message with markdown, using fallback", e);
+            appendTokenWithFallback(token);
+        }
     }
 
-    public void hideLoader() {
-        webEngine.executeScript("document.getElementById('loader').classList.remove('active')");
-        webEngine.executeScript("document.getElementById('loader').classList.remove('user-message')");
+    private void appendTokenAndUpdateHtml(final String token) {
+        streamingContent.append(token);
+        
+        final String currentMarkdown = streamingContent.toString();
+        final String htmlContent = convertMarkdownToHtml(currentMarkdown);
+        
+        safeJavaScriptCall("updateStreamingMessageWithHtml", htmlContent);
+    }
+
+    private void appendTokenWithFallback(final String token) {
+        final String escapedToken = escapeForJavaScript(token);
+        executeJavaScript("appendToStreamingMessage('" + escapedToken + "')");
+    }
+
+    private static String escapeForJavaScript(final String input) {
+        return input
+            .replace("\\", "\\\\")
+            .replace("'", "\\'")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r");
+    }
+
+    /**
+     * Finishes the current streaming message session.
+     * Delegates to finishStreamingMessageWithMarkdown for consistency.
+     */
+    public void finishStreamingMessage() {
+        finishStreamingMessageWithMarkdown();
+    }
+
+    /**
+     * Completes the streaming message session and performs cleanup.
+     * Since markdown is processed in real-time, this method only finalizes
+     * the message display, clears the buffer, and updates link behaviors.
+     */
+    public void finishStreamingMessageWithMarkdown() {
+        try {
+            logger.info("Finishing streaming message, content was processed in real-time");
+            
+            executeJavaScript("finishStreamingMessage()");
+            
+            // Clear the content buffer for next streaming session
+            streamingContent.setLength(0);
+            
+            stopOpeningUrlInWebView();
+        } catch (final Exception e) {
+            logger.error("Error finishing streaming message, using fallback", e);
+            executeJavaScript("finishStreamingMessage()");
+            streamingContent.setLength(0);
+            stopOpeningUrlInWebView();
+        }
     }
 
     private String initHtml() {
         return """
                 <html>
                 <head>
+                %s
+                %s
+                </head>
+                    <body>
+                        <div id="chat-container"></div>
+                    </body>
+                </html>
+                """.formatted(getCssStyles(), getJavaScript());
+    }
+
+    private String getCssStyles() {
+        return """
                 <style>
                 body {
                     background-color: var(--color-bg-default);
@@ -154,43 +262,12 @@ public class Browser extends StackPane {
                 }
                 .chat-message.assistant {
                 }
-                .loader {
-                  display: none;
-                  justify-content: space-around;
-                  width: 50px;
-                  height: 40px;
-                }
-                .loader.active {
-                  display: flex;
-                }
-                .loader.user-message {
-                  margin-left: auto;
-                }
-                .loader div {
-                  width: 8px;
-                  height: 8px;
-                  background-color: var(--color-accent-fg);
-                  border-radius: 50%;
-                  animation: pulse 0.6s infinite alternate;
-                }
-                .loader div:nth-child(2) {
-                  animation-delay: 0.2s;
-                }
-                                
-                .loader div:nth-child(3) {
-                  animation-delay: 0.4s;
-                }
-                                
-                @keyframes pulse {
-                  from {
-                    transform: scale(1);
-                  }
-                  to {
-                    transform: scale(0.5);
-                  }
-                }
-
                 </style>
+                """;
+    }
+
+    private String getJavaScript() {
+        return """
                 <script>
                     function addHtmlContent(htmlContent, messageType, notificationStyle) {
                         var div = document.createElement('div');
@@ -200,32 +277,93 @@ public class Browser extends StackPane {
                         var chatContainer = document.getElementById('chat-container');
                         chatContainer.appendChild(div);
                     }
+
+
+                    function startStreamingAssistantMessage() {
+                        var streamingDiv = document.createElement('div');
+                        streamingDiv.className = 'chat-message assistant';
+                        streamingDiv.id = 'streaming-message';
+                        streamingDiv.innerHTML = '';
+
+                        var chatContainer = document.getElementById('chat-container');
+                        chatContainer.appendChild(streamingDiv);
+
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }
+
+                    function appendToStreamingMessage(escapedToken) {
+                        var streamingDiv = document.getElementById('streaming-message');
+                        if (streamingDiv) {
+                            // Use textContent to preserve markdown syntax during streaming
+                            if (streamingDiv.textContent === undefined) {
+                                streamingDiv.innerText += escapedToken;
+                            } else {
+                                streamingDiv.textContent += escapedToken;
+                            }
+                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                        }
+                    }
+
+                    function updateStreamingMessageWithHtml(htmlContent) {
+                        var streamingDiv = document.getElementById('streaming-message');
+                        if (streamingDiv) {
+                            // Update with processed HTML content in real-time
+                            streamingDiv.innerHTML = htmlContent;
+                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                        }
+                    }
+
+                    function finishStreamingMessage() {
+                        var streamingDiv = document.getElementById('streaming-message');
+                        if (streamingDiv) {
+                            // Remove the streaming ID so it becomes a regular message
+                            streamingDiv.removeAttribute('id');
+                            // Scroll to bottom one final time
+                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                        }
+                    }
+
+                    function finishStreamingMessageWithMarkdown(processedHtml) {
+                        var streamingDiv = document.getElementById('streaming-message');
+                        if (streamingDiv) {
+                            // Replace raw content with processed markdown HTML
+                            streamingDiv.innerHTML = processedHtml;
+                            // Remove the streaming ID so it becomes a regular message
+                            streamingDiv.removeAttribute('id');
+                            // Scroll to bottom one final time
+                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                        }
+                    }
+
+                    function scrollToBottom() {
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }
                 </script>
-                </head>
-                    <body>
-                        <div id="chat-container"></div>
-                        <div id="loader" class="chat-message assistant loader">
-                            <div></div>
-                            <div></div>
-                            <div></div>
-                        </div>
-                    </body>
-                </html>
                 """;
     }
 
     private void updateCssColors() {
         Platform.runLater(() -> {
-                    if (ThemeManager.getInstance().getTheme() != null) {
-                        try {
-                            ThemeManager.getInstance().getTheme().parseColors().forEach((keyColor, valueColor) ->
-                                    webEngine.executeScript("document.documentElement.style.setProperty('-" + keyColor + "', '" + valueColor + "');"));
-                        } catch (IOException ex) {
-                            throw new RuntimeException(ex);
-                        }
-                    }
+            final var themeManager = ThemeManager.getInstance();
+            final var theme = themeManager.getTheme();
+            
+            if (theme != null) {
+                try {
+                    theme.parseColors().forEach(this::setCssProperty);
+                } catch (final IOException e) {
+                    logger.error("Failed to parse theme colors", e);
                 }
+            }
+        });
+    }
+    
+    private void setCssProperty(final String keyColor, final String valueColor) {
+        final String script = String.format(
+            "document.documentElement.style.setProperty('-%s', '%s');", 
+            keyColor, 
+            valueColor
         );
+        executeJavaScript(script);
     }
 
 

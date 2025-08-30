@@ -2,6 +2,7 @@ package com.patres.alina.uidesktop.ui.chat;
 
 import com.patres.alina.common.card.CardListItem;
 import com.patres.alina.common.event.ChatMessageReceivedEvent;
+import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageRole;
@@ -18,7 +19,6 @@ import com.patres.alina.uidesktop.microphone.AudioRecorder;
 import com.patres.alina.uidesktop.plugin.SearchPluginPopup;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
-import feign.FeignException;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -57,6 +57,10 @@ public class ChatWindow extends BorderPane {
     private final Consumer<SpeechShortcutTriggeredEvent> speechShortcutTriggeredEventConsumer = event -> triggerSpeechAction();
     private final Consumer<FocusShortcutTriggeredEvent> focusShortcutTriggeredEventConsumer = event -> triggerFocusAction();
     private final Consumer<ChatMessageReceivedEvent> chatMessageReceivedEventConsumer = event -> handleChatMessageReceivedEvent(event);
+    private final Consumer<ChatMessageStreamEvent> chatMessageStreamEventConsumer = event -> handleChatMessageStreamEvent(event);
+
+    private StringBuilder currentStreamingMessage = new StringBuilder();
+    private boolean isCurrentlyStreaming = false;
 
 
 
@@ -127,6 +131,11 @@ public class ChatWindow extends BorderPane {
                 FocusShortcutTriggeredEvent.class,
                 focusShortcutTriggeredEventConsumer
         );
+
+        DefaultEventBus.getInstance().subscribe(
+                ChatMessageStreamEvent.class,
+                chatMessageStreamEventConsumer
+        );
     }
 
     public void unsubscribeEvents() {
@@ -138,6 +147,11 @@ public class ChatWindow extends BorderPane {
         DefaultEventBus.getInstance().unsubscribe(
                 FocusShortcutTriggeredEvent.class,
                 focusShortcutTriggeredEventConsumer
+        );
+
+        DefaultEventBus.getInstance().unsubscribe(
+                ChatMessageStreamEvent.class,
+                chatMessageStreamEventConsumer
         );
     }
 
@@ -185,7 +199,6 @@ public class ChatWindow extends BorderPane {
     }
 
     public void startRecording() {
-        Platform.runLater(() -> browser.showLoaderForUserMessage());
         nomRecordingActionNodes.forEach(node -> node.setDisable(true));
         chatTextArea.setText(LanguageManager.getLanguageString("chat.message.sending"));
         audioRecorder.startRecording();
@@ -278,22 +291,27 @@ public class ChatWindow extends BorderPane {
     private void sendMessageToService(final String message) {
         Thread.startVirtualThread(() -> {
             try {
-                Platform.runLater(() -> browser.showLoader());
                 actionNodes.forEach(node -> node.setDisable(true));
                 chatTextArea.setText(LanguageManager.getLanguageString("chat.message.sending"));
 
                 final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(message, chatThread.id(), getCurrentPluginId());
-                final ChatMessageResponseModel chatResponse = getChatResponse(chatMessageSendModel);
-                displayMessage(chatResponse);
-
-                actionNodes.forEach(node -> node.setDisable(false));
-                chatTextArea.clear();
-
+                
+                BackendApi.sendChatMessagesStream(chatMessageSendModel);
+                
+                // Note: UI updates will be handled by the stream event handler
+                // The loader will be hidden and controls re-enabled in the stream completion handler
+                
+            } catch (Exception e) {
+                // Handle any immediate errors (e.g., connection issues before streaming starts)
+                logger.error("Error starting streaming message", e);
+                final ChatMessageResponseModel errorResponse = handelExceptionAsMessage(message, e, e.getMessage());
+                displayMessage(errorResponse);
+                
                 Platform.runLater(() -> {
+                    actionNodes.forEach(node -> node.setDisable(false));
+                    chatTextArea.clear();
                     chatTextArea.requestFocus();
                 });
-            } finally {
-                Platform.runLater(() -> browser.hideLoader());
             }
         });
     }
@@ -307,8 +325,47 @@ public class ChatWindow extends BorderPane {
             chatTextArea.requestFocus();
         });
 
-        Platform.runLater(() -> browser.hideLoader());
 
+    }
+
+    private void handleChatMessageStreamEvent(ChatMessageStreamEvent event) {
+        if (!event.getThreadId().equals(chatThread.id())) {
+            return; // Event is not for this thread
+        }
+
+        switch (event.getEventType()) {
+            case TOKEN -> {
+                if (!isCurrentlyStreaming) {
+                    // First token - initialize streaming
+                    isCurrentlyStreaming = true;
+                    currentStreamingMessage = new StringBuilder();
+                    Platform.runLater(() -> browser.startStreamingAssistantMessage());
+                }
+                // Append token and update UI
+                currentStreamingMessage.append(event.getToken());
+                Platform.runLater(() -> browser.appendToStreamingMessage(event.getToken()));
+            }
+            case COMPLETE -> {
+                isCurrentlyStreaming = false;
+                Platform.runLater(() -> {
+                    browser.finishStreamingMessage();
+                    actionNodes.forEach(node -> node.setDisable(false));
+                    chatTextArea.clear();
+                    chatTextArea.requestFocus();
+                });
+            }
+            case ERROR -> {
+                isCurrentlyStreaming = false;
+                logger.error("Streaming error: {}", event.getErrorMessage());
+                Platform.runLater(() -> {
+                    browser.finishStreamingMessage();
+                    displayMessage("Error: " + event.getErrorMessage(), ASSISTANT, ChatMessageStyleType.DANGER);
+                    actionNodes.forEach(node -> node.setDisable(false));
+                    chatTextArea.clear();
+                    chatTextArea.requestFocus();
+                });
+            }
+        }
     }
 
     private String getCurrentPluginId() {

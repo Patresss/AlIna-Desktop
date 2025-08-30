@@ -63,9 +63,16 @@ public class OpenAiApiFacade {
         List<Message> messageList = messages.stream().map(m -> (Message) m).toList();
         ChatClient.CallResponseSpec callResponseSpec = ChatClient.create(chatModel)
                 .prompt(new Prompt(messageList))
-           //     .tools(new DateTimeTools(), new SendGmailEmail())
                 .call();
         return callResponseSpec.chatResponse();
+    }
+
+    public reactor.core.publisher.Flux<String> sendMessageStream(final List<AbstractMessage> messages) {
+        List<Message> messageList = messages.stream().map(m -> (Message) m).toList();
+        return ChatClient.create(chatModel)
+                .prompt(new Prompt(messageList))
+                .stream()
+                .content();
     }
 
     public List<String> getChatModels() {

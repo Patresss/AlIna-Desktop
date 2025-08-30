@@ -40,6 +40,10 @@ public class BackendApi {
         return AppLauncher.getBean(ChatMessageController.class).sendChatMessages(chatMessageSendModel);
     }
 
+    public static void sendChatMessagesStream(ChatMessageSendModel chatMessageSendModel) {
+        AppLauncher.getBean(ChatMessageController.class).sendChatMessagesStream(chatMessageSendModel);
+    }
+
     public static List<ChatMessageResponseModel> getMessagesByThreadId(String chatThreadId) {
         return AppLauncher.getBean(ChatMessageController.class).getMessagesByThreadId(chatThreadId);
     }

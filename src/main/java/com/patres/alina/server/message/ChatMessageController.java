@@ -30,4 +30,9 @@ public class ChatMessageController {
         return chatMessageResponseModel;
     }
 
+    @PostMapping("/stream")
+    public void sendChatMessagesStream(@RequestBody ChatMessageSendModel chatMessageSendModel) {
+        chatMessageService.sendMessageStream(chatMessageSendModel);
+    }
+
 }

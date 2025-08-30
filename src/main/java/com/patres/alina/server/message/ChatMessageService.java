@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -22,6 +23,9 @@ import java.util.stream.Collectors;
 
 import static com.patres.alina.server.message.ChatMessageMapper.toChatMessageResponseModel;
 import static com.patres.alina.server.message.ChatMessageMapper.toChatMessageResponseModels;
+
+import com.patres.alina.common.event.ChatMessageStreamEvent;
+import com.patres.alina.common.event.bus.DefaultEventBus;
 
 @Service
 public class ChatMessageService {
@@ -59,6 +63,93 @@ public class ChatMessageService {
             return sendMessageWithChatThread(chatMessageSendModelWithNewThread);
         }
         return sendMessageWithChatThread(chatMessageSendModel);
+    }
+
+    public synchronized void sendMessageStream(final ChatMessageSendModel chatMessageSendModel) {
+        if (chatMessageSendModel.chatThreadId() == null) {
+            final ChatThreadResponse newChatThread = chatThreadFacade.createNewChatThread();
+            final ChatMessageSendModel chatMessageSendModelWithNewThread = new ChatMessageSendModel(
+                    chatMessageSendModel.content(),
+                    newChatThread.id(),
+                    chatMessageSendModel.pluginId(),
+                    chatMessageSendModel.styleType()
+            );
+            sendMessageStreamWithChatThread(chatMessageSendModelWithNewThread);
+        } else {
+            sendMessageStreamWithChatThread(chatMessageSendModel);
+        }
+    }
+
+    public synchronized void sendMessageStreamWithChatThread(final ChatMessageSendModel chatMessageSendModel) {
+        final String chatThreadId = chatMessageSendModel.chatThreadId();
+        logger.info("Sending streaming '{}' content, threadId={} ...", chatMessageSendModel.content(), chatThreadId);
+
+        final List<AbstractMessage> contextMessages = loadMessages(chatMessageSendModel.chatThreadId());
+        
+        final String chatContent = calculateContentWithPluginPrompt(chatMessageSendModel.content(), chatMessageSendModel.pluginId());
+        final AbstractMessage userChatMessage = new UserMessage(chatContent);
+        
+        // Store the user message first
+        storeMessageManager.storeMessage(userChatMessage, chatMessageSendModel, chatMessageSendModel.content());
+        
+        sendStreamingMessage(contextMessages, userChatMessage, chatMessageSendModel);
+    }
+
+    private void sendStreamingMessage(final List<AbstractMessage> contextMessages,
+                                     final AbstractMessage message,
+                                     final ChatMessageSendModel chatMessageSendModel) {
+        contextMessages.add(message);
+        
+        final StringBuilder fullResponse = new StringBuilder();
+        
+        try {
+            reactor.core.publisher.Flux<String> stream = openAiApi.sendMessageStream(contextMessages);
+            
+            stream.subscribe(
+                token -> {
+                    fullResponse.append(token);
+                    DefaultEventBus.getInstance().publish(
+                        new ChatMessageStreamEvent(chatMessageSendModel.chatThreadId(), token)
+                    );
+                },
+                error -> {
+                    logger.error("Error in streaming response", error);
+                    DefaultEventBus.getInstance().publish(
+                        new ChatMessageStreamEvent(
+                            chatMessageSendModel.chatThreadId(), 
+                            ChatMessageStreamEvent.StreamEventType.ERROR,
+                            error.getMessage()
+                        )
+                    );
+                },
+                () -> {
+                    logger.info("Streaming completed for threadId: {}", chatMessageSendModel.chatThreadId());
+                    
+                    // Create a ChatResponse-like object to store in database
+                    // We need to create an AssistantMessage for storage
+                    final AbstractMessage assistantMessage = new AssistantMessage(fullResponse.toString());
+                    storeMessageManager.storeMessage(assistantMessage, chatMessageSendModel, fullResponse.toString());
+                    
+                    // Publish completion event
+                    DefaultEventBus.getInstance().publish(
+                        new ChatMessageStreamEvent(
+                            chatMessageSendModel.chatThreadId(), 
+                            ChatMessageStreamEvent.StreamEventType.COMPLETE
+                        )
+                    );
+                }
+            );
+            
+        } catch (Exception e) {
+            logger.error("Error starting streaming", e);
+            DefaultEventBus.getInstance().publish(
+                new ChatMessageStreamEvent(
+                    chatMessageSendModel.chatThreadId(), 
+                    ChatMessageStreamEvent.StreamEventType.ERROR,
+                    e.getMessage()
+                )
+            );
+        }
     }
 
     public synchronized ChatMessageResponseModel sendMessageWithChatThread(final ChatMessageSendModel chatMessageSendModel) {

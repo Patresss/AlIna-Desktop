@@ -17,7 +17,12 @@
       "WebFetch(domain:*)",
       "Bash(gh issue view:*)",
       "WebFetch(domain:docs.anthropic.com)",
-      "mcp__serena"
+      "mcp__serena",
+      "Bash(./gradlew:*)",
+      "Bash(java:*)",
+      "Bash(/usr/libexec/java_home:*)",
+      "Bash(export:*)",
+      "Bash(JAVA_HOME=\"/Users/patrykpiechaczek/Library/Java/JavaVirtualMachines/temurin-24.0.2/Contents/Home\" ./gradlew build)"
     ],
     "deny": [],
     "ask": []
