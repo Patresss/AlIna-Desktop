@@ -21,7 +21,6 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.List;
 
-import static com.patres.alina.uidesktop.backend.AlinaRestApi.getAlinaRestClient;
 import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 
 public class SearchPluginPopup extends Popup {

@@ -83,12 +83,6 @@ dependencies {
     // server module
     implementation("org.springframework.ai:spring-ai-starter-model-openai:1.0.1")
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb:3.2.2")
-    implementation("org.springframework.boot:spring-boot-starter-security:3.5.4")
-    implementation("org.springframework.boot:spring-boot-starter-web:3.5.4")
-    implementation("org.springframework.boot:spring-boot-starter-actuator:3.5.4")
-    implementation("org.springframework.boot:spring-boot-starter-mail:3.2.2")
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-client:3.5.4")
-    implementation("se.michaelthelin.spotify:spotify-web-api-java:8.4.1")
 
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")

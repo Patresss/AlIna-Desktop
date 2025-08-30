@@ -8,19 +8,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import java.util.Optional;
-
 @SpringBootApplication
 public class AppLauncher {
 
     public static ConfigurableApplicationContext SPRING_CONTEXT;
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         SPRING_CONTEXT = new SpringApplicationBuilder(AppLauncher.class)
                 .web(WebApplicationType.NONE)
                 .run();
         Launcher.launchFxApp(args);
-
     }
 
     public static <T> T getBean(Class<T> type) {
