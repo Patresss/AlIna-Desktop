@@ -1,7 +1,0 @@
-{
-  "chatModel" : "gpt-4o",
-  "systemPrompt" : "Jesteś asystenetem o nazwie Alina",
-  "numberOfMessagesInContext" : 6,
-  "openAiApiKey" : "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",
-  "timeoutSeconds" : 120
-}

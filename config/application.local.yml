@@ -9,7 +9,7 @@ spring:
       max-request-size: 50MB
   ai:
     openai:
-      api-key: <add your key here>
+      api-key: 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
 
 server:
   port: 28080

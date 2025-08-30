@@ -150,5 +150,9 @@ Desktop.ini
 .eslintcache
 
 
-
+######################
+# local
+######################
 config/application.yml
+*.local.yaml
+*.local.json
