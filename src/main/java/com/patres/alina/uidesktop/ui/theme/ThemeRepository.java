@@ -36,7 +36,9 @@ public final class ThemeRepository {
         new SamplerTheme(new NordDark()),
         new SamplerTheme(new CupertinoLight()),
         new SamplerTheme(new CupertinoDark()),
-        new SamplerTheme(new Dracula())
+        new SamplerTheme(new Dracula()),
+        new SamplerTheme(new AllegroTheme()),
+        new SamplerTheme(new AllegroDarkTheme())
     );
 
     private final List<SamplerTheme> externalThemes = new ArrayList<>();

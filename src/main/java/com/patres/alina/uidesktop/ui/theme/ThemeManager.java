@@ -40,7 +40,9 @@ public final class ThemeManager {
             NordDark.class,
             CupertinoLight.class,
             CupertinoDark.class,
-            Dracula.class
+            Dracula.class,
+            AllegroTheme.class,
+            AllegroDarkTheme.class
     );
 
     private static final PseudoClass DARK = PseudoClass.getPseudoClass("dark");
@@ -128,22 +130,6 @@ public final class ThemeManager {
                 .findFirst()
                 .orElse(getDefaultTheme());
     }
-
-    public HighlightJSTheme getMatchingSourceCodeHighlightTheme(Theme theme) {
-        Objects.requireNonNull(theme);
-        if ("Nord Light".equals(theme.getName())) {
-            return HighlightJSTheme.NORD_LIGHT;
-        }
-        if ("Nord Dark".equals(theme.getName())) {
-            return HighlightJSTheme.NORD_DARK;
-        }
-        if ("Dracula".equals(theme.getName())) {
-            return HighlightJSTheme.DRACULA;
-        }
-        return theme.isDarkMode() ? HighlightJSTheme.GITHUB_DARK : HighlightJSTheme.GITHUB_LIGHT;
-    }
-
-
 
     ///////////////////////////////////////////////////////////////////////////
     // Singleton                                                             //
