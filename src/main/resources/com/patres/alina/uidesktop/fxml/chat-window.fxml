@@ -57,7 +57,7 @@
                 <RowConstraints vgrow="SOMETIMES" />
               </rowConstraints>
                <children>
-                  <Label fx:id="pluginLabel" styleClass="text-subtle" />
+                  <Label fx:id="commandLabel" styleClass="text-subtle" />
                   <Label fx:id="chatInfoLabel" styleClass="text-subtle" GridPane.columnIndex="1" />
                </children>
             </GridPane>

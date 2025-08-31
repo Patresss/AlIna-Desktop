@@ -1,4 +1,4 @@
-package com.patres.alina.server.plugin;
+package com.patres.alina.server.command;
 
 import com.patres.alina.common.card.State;
 import com.patres.alina.server.storage.Entity;

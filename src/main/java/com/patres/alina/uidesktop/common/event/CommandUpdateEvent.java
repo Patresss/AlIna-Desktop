@@ -2,15 +2,15 @@ package com.patres.alina.uidesktop.common.event;
 
 import com.patres.alina.common.event.Event;
 
-public final class PluginUpdateEvent extends Event {
+public final class CommandUpdateEvent extends Event {
 
     public enum EventType {
-        PLUGIN_ADDED,
-        PLUGIN_UPDATED,
-        PLUGIN_DELETED,
+        COMMAND_ADDED,
+        COMMAND_UPDATED,
+        COMMAND_DELETED,
     }
 
-    public PluginUpdateEvent(EventType eventType) {
+    public CommandUpdateEvent(EventType eventType) {
         this.eventType = eventType;
     }
 

@@ -66,8 +66,8 @@ public class ApplicationHeaderButtonBox extends HBox {
     }
 
     @FXML
-    public void openPlugins() {
-        applicationWindow.openPlugins();
+    public void openCommands() {
+        applicationWindow.openCommands();
     }
 
     @FXML

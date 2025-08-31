@@ -1,4 +1,4 @@
-package com.patres.alina.server.plugin;
+package com.patres.alina.server.command;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;

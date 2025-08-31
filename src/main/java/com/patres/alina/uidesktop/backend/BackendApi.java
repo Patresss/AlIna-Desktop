@@ -8,13 +8,13 @@ import com.patres.alina.common.card.UpdateStateRequest;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.message.SpeechToTextResponse;
-import com.patres.alina.common.plugin.PluginCreateRequest;
-import com.patres.alina.common.plugin.PluginDetail;
+import com.patres.alina.common.command.CommandCreateRequest;
+import com.patres.alina.common.command.CommandDetail;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.thread.ChatThreadRenameRequest;
 import com.patres.alina.common.thread.ChatThreadResponse;
 import com.patres.alina.server.message.ChatMessageController;
-import com.patres.alina.server.plugin.PluginController;
+import com.patres.alina.server.command.CommandController;
 import com.patres.alina.server.settings.SettingsController;
 import com.patres.alina.server.speech.SpeechToTextController;
 import com.patres.alina.server.thread.ChatThreadController;
@@ -66,28 +66,28 @@ public class BackendApi {
 
 
 
-    public static List<CardListItem> getPluginListItems() {
-        return AppLauncher.getBean(PluginController.class).getPluginListItems();
+    public static List<CardListItem> getCommandListItems() {
+        return AppLauncher.getBean(CommandController.class).getCommandListItems();
     }
 
-    public static PluginDetail getPluginDetails(String pluginId) {
-        return AppLauncher.getBean(PluginController.class).getPluginDetails(pluginId);
+    public static CommandDetail getCommandDetails(String commandId) {
+        return AppLauncher.getBean(CommandController.class).getCommandDetails(commandId);
     }
 
-    public static void createPluginDetail(PluginCreateRequest pluginCreateRequest) {
-         AppLauncher.getBean(PluginController.class).createPluginDetail(pluginCreateRequest);
+    public static void createCommandDetail(CommandCreateRequest commandCreateRequest) {
+         AppLauncher.getBean(CommandController.class).createCommandDetail(commandCreateRequest);
     }
 
-    public static void updatePluginDetail(PluginDetail pluginDetail) {
-         AppLauncher.getBean(PluginController.class).updatePluginDetail(pluginDetail);
+    public static void updateCommandDetail(CommandDetail commandDetail) {
+         AppLauncher.getBean(CommandController.class).updateCommandDetail(commandDetail);
     }
 
-    public static void deletePlugin(String pluginId) {
-         AppLauncher.getBean(PluginController.class).deletePlugin(pluginId);
+    public static void deleteCommand(String commandId) {
+         AppLauncher.getBean(CommandController.class).deleteCommand(commandId);
     }
 
-    public static void updatePluginState(UpdateStateRequest updateStateRequest) {
-         AppLauncher.getBean(PluginController.class).updatePluginState(updateStateRequest);
+    public static void updateCommandState(UpdateStateRequest updateStateRequest) {
+         AppLauncher.getBean(CommandController.class).updateCommandState(updateStateRequest);
     }
 
     public static SpeechToTextResponse sendChatMessagesAsAudio(File file) {

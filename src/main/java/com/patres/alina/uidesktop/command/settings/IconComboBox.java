@@ -1,4 +1,4 @@
-package com.patres.alina.uidesktop.plugin.settings;
+package com.patres.alina.uidesktop.command.settings;
 
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import javafx.collections.FXCollections;

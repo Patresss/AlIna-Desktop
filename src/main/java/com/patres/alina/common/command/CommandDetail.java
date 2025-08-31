@@ -1,9 +1,9 @@
-package com.patres.alina.common.plugin;
+package com.patres.alina.common.command;
 
 
 import com.patres.alina.common.card.State;
 
-public record PluginDetail(
+public record CommandDetail(
         String id,
         String name,
         String description,

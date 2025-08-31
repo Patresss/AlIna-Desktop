@@ -16,7 +16,7 @@ import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.common.event.shortcut.FocusShortcutTriggeredEvent;
 import com.patres.alina.uidesktop.common.event.shortcut.SpeechShortcutTriggeredEvent;
 import com.patres.alina.uidesktop.microphone.AudioRecorder;
-import com.patres.alina.uidesktop.plugin.SearchPluginPopup;
+import com.patres.alina.uidesktop.command.SearchCommandPopup;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import javafx.application.Platform;
@@ -64,8 +64,8 @@ public class ChatWindow extends BorderPane {
 
 
 
-    private SearchPluginPopup popup;
-    private CardListItem currentPlugin;
+    private SearchCommandPopup popup;
+    private CardListItem currentCommand;
 
     @FXML
     private StackPane chatAnswersPane;
@@ -83,7 +83,7 @@ public class ChatWindow extends BorderPane {
     private TextArea chatTextArea;
 
     @FXML
-    private Label pluginLabel;
+    private Label commandLabel;
 
     @FXML
     private Label chatInfoLabel;
@@ -162,7 +162,7 @@ public class ChatWindow extends BorderPane {
 
         messages.forEach(this::displayMessage);
         initializeInputHandler();
-        setCurrentPlugin(null);
+        setCurrentCommand(null);
 
         configureRecordingButton();
     }
@@ -236,12 +236,12 @@ public class ChatWindow extends BorderPane {
     }
 
     private void initializeInputHandler() {
-        popup = new SearchPluginPopup(chatTextArea);
+        popup = new SearchCommandPopup(chatTextArea);
         chatTextArea.textProperty().addListener(
                 (observableValue, oldValue, newValue) -> popup.handleTextChangeListener(newValue, applicationWindow.getStage())
         );
-        popup.getSelectedPluginProperty().addListener((observable, oldValue, newValue) -> {
-            setCurrentPlugin(newValue);
+        popup.getSelectedCommandProperty().addListener((observable, oldValue, newValue) -> {
+            setCurrentCommand(newValue);
         });
     }
 
@@ -295,7 +295,7 @@ public class ChatWindow extends BorderPane {
                 actionNodes.forEach(node -> node.setDisable(true));
                 chatTextArea.setText(LanguageManager.getLanguageString("chat.message.sending"));
 
-                final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(message, chatThread.id(), getCurrentPluginId());
+                final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(message, chatThread.id(), getCurrentCommandId());
                 
                 BackendApi.sendChatMessagesStream(chatMessageSendModel);
                 
@@ -374,8 +374,8 @@ public class ChatWindow extends BorderPane {
         }
     }
 
-    private String getCurrentPluginId() {
-        return currentPlugin == null ? null : currentPlugin.id();
+    private String getCurrentCommandId() {
+        return currentCommand == null ? null : currentCommand.id();
     }
 
     private static ChatMessageResponseModel getChatResponse(final ChatMessageSendModel chatMessageSendModel) {
@@ -396,20 +396,20 @@ public class ChatWindow extends BorderPane {
         return chatThread;
     }
 
-    public Label getPluginLabel() {
-        return pluginLabel;
+    public Label getCommandLabel() {
+        return commandLabel;
     }
 
-    private void setCurrentPlugin(final CardListItem currentPlugin) {
-        this.currentPlugin = currentPlugin;
-        if (currentPlugin == null) {
-            chatTextArea.setPromptText(LanguageManager.getLanguageString("chat.message.type.noPlugin"));
-            pluginLabel.setText(LanguageManager.getLanguageString("chat.plugin.noPlugin"));
-            pluginLabel.setGraphic(null);
+    private void setCurrentCommand(final CardListItem currentCommand) {
+        this.currentCommand = currentCommand;
+        if (currentCommand == null) {
+            chatTextArea.setPromptText(LanguageManager.getLanguageString("chat.message.type.noCommand"));
+            commandLabel.setText(LanguageManager.getLanguageString("chat.command.noCommand"));
+            commandLabel.setGraphic(null);
         } else {
-            chatTextArea.setPromptText(LanguageManager.getLanguageString("chat.message.type.plugin", currentPlugin.description()));
-            pluginLabel.setText(LanguageManager.getLanguageString("chat.plugin.current", currentPlugin.name()));
-            pluginLabel.setGraphic(new FontIcon(currentPlugin.icon()));
+            chatTextArea.setPromptText(LanguageManager.getLanguageString("chat.message.type.command", currentCommand.description()));
+            commandLabel.setText(LanguageManager.getLanguageString("chat.command.current", currentCommand.name()));
+            commandLabel.setGraphic(new FontIcon(currentCommand.icon()));
         }
 
     }

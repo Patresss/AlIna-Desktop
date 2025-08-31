@@ -2,7 +2,7 @@ package com.patres.alina.uidesktop.ui.card;
 
 import atlantafx.base.controls.ModalPane;
 import atlantafx.base.theme.Styles;
-import com.patres.alina.uidesktop.plugin.settings.PluginCard;
+import com.patres.alina.uidesktop.command.settings.CommandCard;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import javafx.fxml.FXML;

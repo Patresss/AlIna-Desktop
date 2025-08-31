@@ -1,9 +1,9 @@
-package com.patres.alina.server.plugin;
+package com.patres.alina.server.command;
 
 import com.patres.alina.common.card.CardListItem;
 import com.patres.alina.common.card.UpdateStateRequest;
-import com.patres.alina.common.plugin.PluginCreateRequest;
-import com.patres.alina.common.plugin.PluginDetail;
+import com.patres.alina.common.command.CommandCreateRequest;
+import com.patres.alina.common.command.CommandDetail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 @Service
 @Primary
 @ConditionalOnProperty(name = "storage.type", havingValue = "local", matchIfMissing = false)
-public class CommandFileService implements PluginServiceInterface {
+public class CommandFileService {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandFileService.class);
 
@@ -36,9 +36,8 @@ public class CommandFileService implements PluginServiceInterface {
         logger.info("CommandFileService initialized with directory: {}", commandsDirectory);
     }
 
-    @Override
-    public List<CardListItem> getPluginListItems() {
-        logger.debug("Loading plugin list from commands directory: {}", commandsDirectory);
+    public List<CardListItem> getCommandListItems() {
+        logger.debug("Loading command list from commands directory: {}", commandsDirectory);
         
         if (!Files.exists(commandsDirectory)) {
             logger.warn("Commands directory does not exist: {}", commandsDirectory);
@@ -64,25 +63,23 @@ public class CommandFileService implements PluginServiceInterface {
         }
     }
 
-    @Override
-    public Optional<PluginDetail> getPluginDetails(String pluginId) {
-        logger.debug("Loading plugin details for id: {}", pluginId);
+    public Optional<CommandDetail> getCommandDetails(String commandId) {
+        logger.debug("Loading command details for id: {}", commandId);
         
-        Path commandFile = getCommandFilePath(pluginId);
+        Path commandFile = getCommandFilePath(commandId);
         if (!Files.exists(commandFile)) {
-            logger.warn("Command file not found for id: {}, path: {}", pluginId, commandFile);
+            logger.warn("Command file not found for id: {}, path: {}", commandId, commandFile);
             return Optional.empty();
         }
 
         return parseCommandFile(commandFile)
-                .map(CommandMapper::toPluginDetail);
+                .map(CommandMapper::toCommandDetail);
     }
 
-    @Override
-    public String createPluginDetail(final PluginCreateRequest pluginCreateRequest) {
-        logger.info("Creating new command: {}", pluginCreateRequest);
+    public String createCommandDetail(final CommandCreateRequest commandCreateRequest) {
+        logger.info("Creating new command: {}", commandCreateRequest);
         
-        Command command = CommandMapper.toCommand(pluginCreateRequest);
+        Command command = CommandMapper.toCommand(commandCreateRequest);
         String filename = generateUniqueFilename(command.name());
         
         // Update command with actual filename as ID
@@ -110,11 +107,10 @@ public class CommandFileService implements PluginServiceInterface {
         }
     }
 
-    @Override
-    public String updatePluginDetail(final PluginDetail pluginDetail) {
-        logger.info("Updating command: {}", pluginDetail.id());
+    public String updateCommandDetail(final CommandDetail commandDetail) {
+        logger.info("Updating command: {}", commandDetail.id());
         
-        Command command = CommandMapper.toCommand(pluginDetail);
+        Command command = CommandMapper.toCommand(commandDetail);
         Path commandFile = getCommandFilePath(command.id());
         
         if (!Files.exists(commandFile)) {
@@ -134,11 +130,10 @@ public class CommandFileService implements PluginServiceInterface {
         }
     }
 
-    @Override
-    public void deletePlugin(final String pluginId) {
-        logger.info("Deleting command: {}", pluginId);
+    public void deleteCommand(final String commandId) {
+        logger.info("Deleting command: {}", commandId);
         
-        Path commandFile = getCommandFilePath(pluginId);
+        Path commandFile = getCommandFilePath(commandId);
         
         try {
             boolean deleted = Files.deleteIfExists(commandFile);
@@ -153,16 +148,15 @@ public class CommandFileService implements PluginServiceInterface {
         }
     }
 
-    @Override
-    public void updatePluginState(final UpdateStateRequest updateStateRequest) {
+    public void updateCommandState(final UpdateStateRequest updateStateRequest) {
         logger.info("Updating command state: {} -> {}", updateStateRequest.id(), updateStateRequest.state());
         
-        Optional<PluginDetail> existing = getPluginDetails(updateStateRequest.id());
+        Optional<CommandDetail> existing = getCommandDetails(updateStateRequest.id());
         if (existing.isEmpty()) {
             throw new IllegalArgumentException("Command not found: " + updateStateRequest.id());
         }
         
-        PluginDetail updated = new PluginDetail(
+        CommandDetail updated = new CommandDetail(
                 existing.get().id(),
                 existing.get().name(),
                 existing.get().description(),
@@ -171,7 +165,7 @@ public class CommandFileService implements PluginServiceInterface {
                 updateStateRequest.state()
         );
         
-        updatePluginDetail(updated);
+        updateCommandDetail(updated);
     }
 
     // Private helper methods
@@ -205,8 +199,8 @@ public class CommandFileService implements PluginServiceInterface {
         return filename.endsWith(".md") ? filename.substring(0, filename.length() - 3) : filename;
     }
 
-    private Path getCommandFilePath(String pluginId) {
-        return commandsDirectory.resolve(pluginId + ".md");
+    private Path getCommandFilePath(String commandId) {
+        return commandsDirectory.resolve(commandId + ".md");
     }
 
     private String generateUniqueFilename(String name) {

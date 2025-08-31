@@ -1,8 +1,8 @@
-package com.patres.alina.uidesktop.plugin;
+package com.patres.alina.uidesktop.command;
 
 import com.patres.alina.common.card.CardListItem;
 import com.patres.alina.uidesktop.backend.BackendApi;
-import com.patres.alina.uidesktop.common.event.PluginUpdateEvent;
+import com.patres.alina.uidesktop.common.event.CommandUpdateEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -23,53 +23,53 @@ import java.util.List;
 
 import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 
-public class SearchPluginPopup extends Popup {
+public class SearchCommandPopup extends Popup {
 
-    public static final String FIND_PLUGIN_CHARACTER = "/";
+    public static final String FIND_COMMAND_CHARACTER = "/";
     public static final int CELL_HEIGTH = 40;
     public static final int MAX_SIZE_OF_CELLS = 6;
     public static final int CELL_MARGIN_LIST_VIEW = 2;
 
-    private final ListView<CardListItem> pluginListView;
+    private final ListView<CardListItem> commandListView;
     private final TextArea chatTextArea;
-    private final ObjectProperty<CardListItem> selectedPlugin = new SimpleObjectProperty<>();
+    private final ObjectProperty<CardListItem> selectedCommand = new SimpleObjectProperty<>();
 
-    private List<CardListItem> allPlugins;
+    private List<CardListItem> allCommands;
 
-    public SearchPluginPopup(final TextArea chatTextArea) {
+    public SearchCommandPopup(final TextArea chatTextArea) {
         this.chatTextArea = chatTextArea;
-        pluginListView = createListView();
+        commandListView = createListView();
 
-        getContent().add(pluginListView);
+        getContent().add(commandListView);
         setAutoHide(true);
-        fetchAllPlugins();
+        fetchAllCommands();
         setupEscapeKeyHandler();
 
-        DefaultEventBus.getInstance().subscribe(PluginUpdateEvent.class, e -> fetchAllPlugins());
+        DefaultEventBus.getInstance().subscribe(CommandUpdateEvent.class, e -> fetchAllCommands());
     }
 
-    private void fetchAllPlugins() {
-        allPlugins = BackendApi.getPluginListItems();
+    private void fetchAllCommands() {
+        allCommands = BackendApi.getCommandListItems();
 
-        updatePlugins("");
+        updateCommands("");
     }
 
-    private void updatePlugins(final String filter) {
-        List<CardListItem> filteredPlugins = allPlugins.stream()
+    private void updateCommands(final String filter) {
+        List<CardListItem> filteredCommands = allCommands.stream()
                 .filter(p -> containsIgnoreCase(p.name(), filter))
                 .toList();
-        pluginListView.getItems().setAll(filteredPlugins);
+        commandListView.getItems().setAll(filteredCommands);
 
-        updateHeightOfListView(filteredPlugins);
+        updateHeightOfListView(filteredCommands);
 
     }
 
-    private void updateHeightOfListView(final List<CardListItem> filteredPlugins) {
-        if (filteredPlugins.size() > MAX_SIZE_OF_CELLS) {
-            pluginListView.prefHeightProperty().unbind();
-            pluginListView.setPrefHeight(MAX_SIZE_OF_CELLS * CELL_HEIGTH + CELL_MARGIN_LIST_VIEW);
+    private void updateHeightOfListView(final List<CardListItem> filteredCommands) {
+        if (filteredCommands.size() > MAX_SIZE_OF_CELLS) {
+            commandListView.prefHeightProperty().unbind();
+            commandListView.setPrefHeight(MAX_SIZE_OF_CELLS * CELL_HEIGTH + CELL_MARGIN_LIST_VIEW);
         } else {
-            pluginListView.prefHeightProperty().bind(Bindings.size(FXCollections.observableArrayList(filteredPlugins))
+            commandListView.prefHeightProperty().bind(Bindings.size(FXCollections.observableArrayList(filteredCommands))
                     .multiply(CELL_HEIGTH).add(CELL_MARGIN_LIST_VIEW));
         }
     }
@@ -91,13 +91,13 @@ public class SearchPluginPopup extends Popup {
         });
 
         listView.setOnMouseClicked(event -> {
-            updateCurrentPlugin(listView.getSelectionModel().getSelectedItem());
+            updateCurrentCommand(listView.getSelectionModel().getSelectedItem());
             hide();
         });
 
         listView.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
-                updateCurrentPlugin(listView.getSelectionModel().getSelectedItem());
+                updateCurrentCommand(listView.getSelectionModel().getSelectedItem());
                 hide();
             }
         });
@@ -108,29 +108,29 @@ public class SearchPluginPopup extends Popup {
     private void setupEscapeKeyHandler() {
         chatTextArea.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ESCAPE) {
-                updateCurrentPlugin(null);
+                updateCurrentCommand(null);
                 hide();
             }
         });
     }
 
-    private void updateCurrentPlugin(final CardListItem cardListItem) {
-        if (chatTextArea.getText().startsWith(FIND_PLUGIN_CHARACTER)) {
+    private void updateCurrentCommand(final CardListItem cardListItem) {
+        if (chatTextArea.getText().startsWith(FIND_COMMAND_CHARACTER)) {
             chatTextArea.clear();
         }
-        selectedPlugin.setValue(cardListItem);
+        selectedCommand.setValue(cardListItem);
     }
 
-    public ObjectProperty<CardListItem> getSelectedPluginProperty() {
-        return selectedPlugin;
+    public ObjectProperty<CardListItem> getSelectedCommandProperty() {
+        return selectedCommand;
     }
 
     public void handleTextChangeListener(final String text, final Stage stage) {
         Platform.runLater(() -> {
-            pluginListView.setPrefWidth(chatTextArea.getWidth());
-            if (text.startsWith(FIND_PLUGIN_CHARACTER)) {
+            commandListView.setPrefWidth(chatTextArea.getWidth());
+            if (text.startsWith(FIND_COMMAND_CHARACTER)) {
                 final String searchText = text.substring(1);
-                updatePlugins(searchText);
+                updateCommands(searchText);
 
                 final Point2D point = chatTextArea.localToScene(0.0, 0.0);
                 show(

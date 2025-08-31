@@ -1,4 +1,4 @@
-package com.patres.alina.uidesktop.plugin.settings;
+package com.patres.alina.uidesktop.command.settings;
 
 import org.kordamp.ikonli.Ikon;
 

@@ -2,10 +2,10 @@ package com.patres.alina.server.message;
 
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
-import com.patres.alina.common.plugin.PluginDetail;
+import com.patres.alina.common.command.CommandDetail;
 import com.patres.alina.common.thread.ChatThreadResponse;
 import com.patres.alina.server.openai.OpenAiApiFacade;
-import com.patres.alina.server.plugin.PluginServiceInterface;
+import com.patres.alina.server.command.CommandFileService;
 import com.patres.alina.server.thread.ChatThreadFacade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,19 +34,19 @@ public class ChatMessageService {
     private static final PageRequest CONTEXT_PAGEABLE = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
 
     private final ChatMessageStorageRepository chatMessageRepository;
-    private final PluginServiceInterface pluginService;
+    private final CommandFileService commandFileService;
     private final OpenAiApiFacade openAiApi;
     private final StoreMessageManager storeMessageManager;
     private final ChatThreadFacade chatThreadFacade;
 
     public ChatMessageService(final ChatMessageStorageRepository chatMessageRepository,
-                              final PluginServiceInterface pluginService,
+                              final CommandFileService commandFileService,
                               final OpenAiApiFacade openAiApi,
                               final StoreMessageManager storeMessageManager,
                               final ChatThreadFacade chatThreadFacade) {
         this.chatMessageRepository = chatMessageRepository;
         this.openAiApi = openAiApi;
-        this.pluginService = pluginService;
+        this.commandFileService = commandFileService;
         this.storeMessageManager = storeMessageManager;
         this.chatThreadFacade = chatThreadFacade;
     }
@@ -206,21 +206,21 @@ public class ChatMessageService {
     }
 
     private String calculateContentWithPluginPrompt(final String content, final String pluginId) {
-        final Optional<PluginDetail> pluginDetail = Optional.ofNullable(pluginId)
-                .flatMap(pluginService::getPluginDetails);
+        final Optional<CommandDetail> commandDetail = Optional.ofNullable(pluginId)
+                .flatMap(commandFileService::getCommandDetails);
 
-        final String pluginContent = pluginDetail
-                .map(PluginDetail::systemPrompt)
+        final String commandContent = commandDetail
+                .map(CommandDetail::systemPrompt)
                 .orElse("");
 
-        if (pluginContent.isBlank()) {
+        if (commandContent.isBlank()) {
             return content;
         }
 
-        if (pluginContent.contains("${message}")) {
-            return pluginContent.replaceAll("\\\\$\\\\{message}", content);
+        if (commandContent.contains("${message}")) {
+            return commandContent.replaceAll("\\\\$\\\\{message}", content);
         } else {
-            return pluginContent + System.lineSeparator() + content;
+            return commandContent + System.lineSeparator() + content;
         }
     }
 

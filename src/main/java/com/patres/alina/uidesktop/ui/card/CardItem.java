@@ -7,7 +7,7 @@ import atlantafx.base.theme.Tweaks;
 import com.patres.alina.common.card.CardListItem;
 import com.patres.alina.common.card.UpdateStateRequest;
 import com.patres.alina.common.event.bus.DefaultEventBus;
-import com.patres.alina.uidesktop.common.event.PluginUpdateEvent;
+import com.patres.alina.uidesktop.common.event.CommandUpdateEvent;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.uidesktop.ui.atlantafx.CustomTile;
@@ -128,7 +128,7 @@ public abstract class CardItem extends VBox {
     private void deletePlugin() {
         cardsPane.deletePluginCard(this);
         deleteCard();
-        DefaultEventBus.getInstance().publish(new PluginUpdateEvent(PluginUpdateEvent.EventType.PLUGIN_DELETED));
+        DefaultEventBus.getInstance().publish(new CommandUpdateEvent(CommandUpdateEvent.EventType.COMMAND_DELETED));
     }
 
     private void setCardStyle() {

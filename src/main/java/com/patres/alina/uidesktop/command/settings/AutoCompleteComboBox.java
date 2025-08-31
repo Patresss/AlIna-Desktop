@@ -1,4 +1,4 @@
-package com.patres.alina.uidesktop.plugin.settings;
+package com.patres.alina.uidesktop.command.settings;
 
 import javafx.application.Platform;
 import javafx.beans.Observable;

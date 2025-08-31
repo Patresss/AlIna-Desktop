@@ -1,8 +1,8 @@
-package com.patres.alina.server.plugin;
+package com.patres.alina.server.command;
 
 import com.patres.alina.common.card.CardListItem;
-import com.patres.alina.common.plugin.PluginCreateRequest;
-import com.patres.alina.common.plugin.PluginDetail;
+import com.patres.alina.common.command.CommandCreateRequest;
+import com.patres.alina.common.command.CommandDetail;
 
 import java.util.List;
 
@@ -18,23 +18,23 @@ public final class CommandMapper {
         );
     }
 
-    public static Command toCommand(final PluginCreateRequest pluginCreateRequest) {
+    public static Command toCommand(final CommandCreateRequest commandCreateRequest) {
         return new Command(
-                pluginCreateRequest.name(),
-                pluginCreateRequest.description(),
-                pluginCreateRequest.systemPrompt(),
-                pluginCreateRequest.icon()
+                commandCreateRequest.name(),
+                commandCreateRequest.description(),
+                commandCreateRequest.systemPrompt(),
+                commandCreateRequest.icon()
         );
     }
 
-    public static Command toCommand(final PluginDetail pluginDetail) {
+    public static Command toCommand(final CommandDetail commandDetail) {
         return new Command(
-                pluginDetail.id(),
-                pluginDetail.name(),
-                pluginDetail.description(),
-                pluginDetail.systemPrompt(),
-                pluginDetail.icon(),
-                pluginDetail.state()
+                commandDetail.id(),
+                commandDetail.name(),
+                commandDetail.description(),
+                commandDetail.systemPrompt(),
+                commandDetail.icon(),
+                commandDetail.state()
         );
     }
 
@@ -44,8 +44,8 @@ public final class CommandMapper {
                 .toList();
     }
 
-    public static PluginDetail toPluginDetail(final Command command) {
-        return new PluginDetail(
+    public static CommandDetail toCommandDetail(final Command command) {
+        return new CommandDetail(
                 command.id(),
                 command.name(),
                 command.description(),

@@ -1,7 +1,7 @@
-package com.patres.alina.common.plugin;
+package com.patres.alina.common.command;
 
 
-public record PluginCreateRequest(
+public record CommandCreateRequest(
         String name,
         String description,
         String systemPrompt,

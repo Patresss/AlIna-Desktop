@@ -6,7 +6,7 @@ import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.chat.thread.ui.ChatThreadHistoryPane;
 import com.patres.alina.uidesktop.integration.settings.IntegrationPane;
 import com.patres.alina.uidesktop.logs.LogsPane;
-import com.patres.alina.uidesktop.plugin.settings.PluginPane;
+import com.patres.alina.uidesktop.command.settings.CommandPane;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.settings.ui.AssistantSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.ServerSettingsPane;
@@ -42,7 +42,7 @@ public class ApplicationWindow extends BorderPane {
     private final ApplicationModalPaneContent serverSettingsModalPane = new ServerSettingsPane(appModalPane::hide);
     private final ApplicationModalPaneContent assistantServerSettings = new AssistantSettingsPane(appModalPane::hide);
     private final ApplicationModalPaneContent chatThreadHistoryPane = new ChatThreadHistoryPane(appModalPane::hide, this);
-    private final ApplicationModalPaneContent pluginPane = new PluginPane(appModalPane::hide, this);
+    private final ApplicationModalPaneContent commandPane = new CommandPane(appModalPane::hide, this);
     private final ApplicationModalPaneContent integrationPane = new IntegrationPane(appModalPane::hide, this);
     private final ApplicationModalPaneContent logsPane = new LogsPane(appModalPane::hide);
 
@@ -113,9 +113,9 @@ public class ApplicationWindow extends BorderPane {
         appModalPane.show(assistantServerSettings);
     }
 
-    public void openPlugins() {
-        pluginPane.reload();
-        appModalPane.show(pluginPane);
+    public void openCommands() {
+        commandPane.reload();
+        appModalPane.show(commandPane);
     }
 
     public void openIntegrations() {
