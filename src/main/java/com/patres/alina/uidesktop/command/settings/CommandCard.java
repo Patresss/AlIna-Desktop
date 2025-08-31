@@ -2,7 +2,7 @@ package com.patres.alina.uidesktop.command.settings;
 
 import com.patres.alina.common.card.CardListItem;
 import com.patres.alina.common.card.UpdateStateRequest;
-import com.patres.alina.common.command.CommandDetail;
+import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
@@ -40,8 +40,8 @@ public class CommandCard extends CardItem {
 
     @Override
     protected ApplicationModalPaneContent createEditPane() {
-        final CommandDetail commandDetails = BackendApi.getCommandDetails(cardListItem.id());
-        return new CommandEditPane(applicationWindow::openCommands, commandDetails);
+        final Command command = BackendApi.getCommand(cardListItem.id());
+        return new CommandEditPane(applicationWindow::openCommands, command);
     }
 
 

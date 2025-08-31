@@ -2,7 +2,7 @@ package com.patres.alina.server.message;
 
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
-import com.patres.alina.common.command.CommandDetail;
+import com.patres.alina.server.command.Command;
 import com.patres.alina.common.thread.ChatThreadResponse;
 import com.patres.alina.server.openai.OpenAiApiFacade;
 import com.patres.alina.server.command.CommandFileService;
@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.model.ChatResponse;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
 import org.springframework.stereotype.Service;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 import static com.patres.alina.server.message.ChatMessageMapper.toChatMessageResponseModel;
 import static com.patres.alina.server.message.ChatMessageMapper.toChatMessageResponseModels;
 
-import com.patres.alina.common.command.CommandConstants;
+import com.patres.alina.server.command.CommandConstants;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 
@@ -147,11 +146,11 @@ public class ChatMessageService {
     }
 
     private String calculateContentWithCommandPrompt(final String content, final String commandId) {
-        final Optional<CommandDetail> commandDetail = Optional.ofNullable(commandId)
-                .flatMap(commandFileService::getCommandDetails);
+        final Optional<Command> commandOpt = Optional.ofNullable(commandId)
+                .flatMap(commandFileService::findById);
 
-        final String commandContent = commandDetail
-                .map(CommandDetail::systemPrompt)
+        final String commandContent = commandOpt
+                .map(Command::systemPrompt)
                 .orElse("");
 
         if (commandContent.isBlank()) {

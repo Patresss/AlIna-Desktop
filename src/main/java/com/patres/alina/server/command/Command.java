@@ -1,7 +1,6 @@
 package com.patres.alina.server.command;
 
 import com.patres.alina.common.card.State;
-import com.patres.alina.server.storage.Entity;
 
 public record Command(
         String id,
@@ -10,7 +9,7 @@ public record Command(
         String systemPrompt,
         String icon,
         State state
-) implements Entity<String> {
+) {
 
     public Command(String name,
                    String description,
@@ -26,12 +25,7 @@ public record Command(
         );
     }
 
-    @Override
-    public String getId() {
-        return id;
-    }
-
-    private static String generateIdFromName(String name) {
+    public static String generateIdFromName(final String name) {
         if (name == null || name.isBlank()) {
             return "unnamed-command";
         }

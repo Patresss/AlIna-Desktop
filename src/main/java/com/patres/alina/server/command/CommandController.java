@@ -2,8 +2,6 @@ package com.patres.alina.server.command;
 
 import com.patres.alina.common.card.CardListItem;
 import com.patres.alina.common.card.UpdateStateRequest;
-import com.patres.alina.common.command.CommandCreateRequest;
-import com.patres.alina.common.command.CommandDetail;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,23 +17,23 @@ public class CommandController {
     }
 
     @GetMapping
-    public List<CardListItem> getCommandListItems() {
-        return commandFileService.getCommandListItems();
+    public List<CardListItem> listCommands() {
+        return commandFileService.getListCardItems();
     }
 
-    @GetMapping("/details/{commandId}")
-    public CommandDetail getCommandDetails(@PathVariable final String commandId) {
-        return commandFileService.getCommandDetails(commandId).orElse(null);
+    @GetMapping("/{commandId}")
+    public Command getCommand(@PathVariable final String commandId) {
+        return commandFileService.findById(commandId).orElse(null);
     }
 
     @PostMapping
-    public String createCommandDetail(@RequestBody final CommandCreateRequest commandCreateRequest) {
-        return commandFileService.createCommandDetail(commandCreateRequest);
+    public String createCommand(@RequestBody final Command command) {
+        return commandFileService.create(command);
     }
 
     @PutMapping
-    public String updateCommandDetail(@RequestBody final CommandDetail commandDetail) {
-        return commandFileService.updateCommandDetail(commandDetail);
+    public String updateCommand(@RequestBody final Command command) {
+        return commandFileService.update(command);
     }
 
     @DeleteMapping("/{commandId}")
@@ -44,7 +42,7 @@ public class CommandController {
     }
 
     @PatchMapping("/state")
-    public void updateCommandState(@RequestBody UpdateStateRequest updateStateRequest) {
+    public void updateCommandState(@RequestBody final UpdateStateRequest updateStateRequest) {
         commandFileService.updateCommandState(updateStateRequest);
     }
 

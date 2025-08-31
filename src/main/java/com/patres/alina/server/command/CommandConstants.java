@@ -1,4 +1,4 @@
-package com.patres.alina.common.command;
+package com.patres.alina.server.command;
 
 public final class CommandConstants {
     

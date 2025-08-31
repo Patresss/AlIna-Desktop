@@ -22,8 +22,8 @@ public class CommandPane extends CardsPane {
 
     @Override
     public List<CommandCard> createCards() {
-        final var commandListItems = BackendApi.getCommandListItems();
-        return commandListItems.stream()
+        final var commands = BackendApi.getListCommands();
+        return commands.stream()
                 .map(commandListItem -> new CommandCard(commandListItem, this, applicationWindow))
                 .toList();
     }

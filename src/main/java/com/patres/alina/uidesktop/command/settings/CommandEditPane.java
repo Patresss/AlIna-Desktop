@@ -1,7 +1,7 @@
 package com.patres.alina.uidesktop.command.settings;
 
 import atlantafx.base.controls.ToggleSwitch;
-import com.patres.alina.common.command.CommandDetail;
+import com.patres.alina.server.command.Command;
 import com.patres.alina.common.card.State;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.common.event.CommandUpdateEvent;
@@ -20,14 +20,14 @@ import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResiza
 
 public class CommandEditPane extends CommandSavePane {
 
-    private final CommandDetail commandDetail;
+    private final Command command;
 
     private TextField commandIdTextField;
     private ToggleSwitch stateToggleSwitch;
 
-    public CommandEditPane(Runnable backFunction, CommandDetail commandDetail) {
+    public CommandEditPane(Runnable backFunction, Command command) {
         super(backFunction);
-        this.commandDetail = commandDetail;
+        this.command = command;
         reload();
     }
 
@@ -37,15 +37,15 @@ public class CommandEditPane extends CommandSavePane {
     }
 
     private void editCommand() {
-        final CommandDetail commandEditRequest = new CommandDetail(
-                commandDetail.id(),
+        final Command commandEditRequest = new Command(
+                command.id(),
                 commandNameTextField.getText(),
                 commandDescriptionTextArea.getText(),
                 commandSystemPromptTextArea.getText(),
                 iconComboBox.getValue().getObject().name(),
                 stateToggleSwitch.isSelected() ? State.ENABLED : State.DISABLED
         );
-        BackendApi.updateCommandDetail(commandEditRequest);
+        BackendApi.updateCommand(commandEditRequest);
         backFunction.run();
 
         DefaultEventBus.getInstance().publish(new CommandUpdateEvent(CommandUpdateEvent.EventType.COMMAND_UPDATED));
@@ -77,12 +77,12 @@ public class CommandEditPane extends CommandSavePane {
 
     @Override
     public void reload() {
-        commandIdTextField.setText(commandDetail.id());
-        stateToggleSwitch.setSelected(commandDetail.state() == State.ENABLED);
-        commandNameTextField.setText(commandDetail.name());
-        commandDescriptionTextArea.setText(commandDetail.description());
-        commandSystemPromptTextArea.setText(commandDetail.systemPrompt());
-        iconComboBox.getSelectionModel().select(CONVERTER.fromString(commandDetail.icon()));
+        commandIdTextField.setText(command.id());
+        stateToggleSwitch.setSelected(command.state() == State.ENABLED);
+        commandNameTextField.setText(command.name());
+        commandDescriptionTextArea.setText(command.description());
+        commandSystemPromptTextArea.setText(command.systemPrompt());
+        iconComboBox.getSelectionModel().select(CONVERTER.fromString(command.icon()));
     }
 
 }

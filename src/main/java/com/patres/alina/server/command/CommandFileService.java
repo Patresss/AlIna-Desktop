@@ -1,9 +1,8 @@
 package com.patres.alina.server.command;
 
 import com.patres.alina.common.card.CardListItem;
+import com.patres.alina.common.card.State;
 import com.patres.alina.common.card.UpdateStateRequest;
-import com.patres.alina.common.command.CommandCreateRequest;
-import com.patres.alina.common.command.CommandDetail;
 import com.patres.alina.server.parser.MarkdownParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,22 +25,22 @@ public class CommandFileService {
     private final Path commandsDirectory;
     private final MarkdownParser markdownParser;
 
-    public CommandFileService(Path commandsStoragePath, MarkdownParser markdownParser) {
+    public CommandFileService(final Path commandsStoragePath, final MarkdownParser markdownParser) {
         this.commandsDirectory = commandsStoragePath;
         this.markdownParser = markdownParser;
         logger.info("CommandFileService initialized with directory: {}", commandsDirectory);
     }
 
-    public List<CardListItem> getCommandListItems() {
+    public List<CardListItem> getListCardItems() {
         logger.debug("Loading command list from commands directory: {}", commandsDirectory);
-        
+
         if (!Files.exists(commandsDirectory)) {
             logger.warn("Commands directory does not exist: {}", commandsDirectory);
             return List.of();
         }
 
         try (Stream<Path> paths = Files.list(commandsDirectory)) {
-            List<Command> commands = paths
+            final List<Command> commands = paths
                     .filter(path -> path.toString().endsWith(".md"))
                     .map(this::parseCommandFile)
                     .filter(Optional::isPresent)
@@ -49,7 +48,9 @@ public class CommandFileService {
                     .sorted(createCommandComparator())
                     .toList();
 
-            List<CardListItem> items = CommandMapper.toCardListItems(commands);
+            final List<CardListItem> items = commands.stream()
+                    .map(CommandFileService::toCardListItem)
+                    .toList();
             logger.debug("Loaded {} commands from files", items.size());
             return items;
 
@@ -59,66 +60,61 @@ public class CommandFileService {
         }
     }
 
-    public Optional<CommandDetail> getCommandDetails(String commandId) {
-        logger.debug("Loading command details for id: {}", commandId);
-        
-        Path commandFile = getCommandFilePath(commandId);
+    public Optional<Command> findById(final String commandId) {
+        logger.debug("Loading command by id: {}", commandId);
+
+        final Path commandFile = getCommandFilePath(commandId);
         if (!Files.exists(commandFile)) {
             logger.warn("Command file not found for id: {}, path: {}", commandId, commandFile);
             return Optional.empty();
         }
 
-        return parseCommandFile(commandFile)
-                .map(CommandMapper::toCommandDetail);
+        return parseCommandFile(commandFile);
     }
 
-    public String createCommandDetail(final CommandCreateRequest commandCreateRequest) {
-        logger.info("Creating new command: {}", commandCreateRequest);
-        
-        Command command = CommandMapper.toCommand(commandCreateRequest);
-        String filename = generateUniqueFilename(command.name());
-        
-        command = new Command(
+    public String create(final Command request) {
+        logger.info("Creating new command: {}", request);
+        final String filename = generateUniqueFilename(request.name());
+        final Command command = new Command(
                 filename,
-                command.name(),
-                command.description(),
-                command.systemPrompt(),
-                command.icon(),
-                command.state()
+                request.name(),
+                request.description(),
+                request.systemPrompt(),
+                request.icon(),
+                State.ENABLED
         );
-        
-        Path commandFile = commandsDirectory.resolve(filename + ".md");
-        
+
+        final Path commandFile = commandsDirectory.resolve(filename + ".md");
+
         try {
-            String content = markdownParser.generateMarkdownWithFrontmatter(command);
+            final String content = markdownParser.generateMarkdownWithFrontmatter(command);
             Files.writeString(commandFile, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            
+
             logger.info("Created command file: {} for command: {}", commandFile, command.name());
             return command.id();
-            
+
         } catch (IOException e) {
             logger.error("Failed to create command file: {}", commandFile, e);
             throw new RuntimeException("Failed to create command file", e);
         }
     }
 
-    public String updateCommandDetail(final CommandDetail commandDetail) {
-        logger.info("Updating command: {}", commandDetail.id());
-        
-        Command command = CommandMapper.toCommand(commandDetail);
-        Path commandFile = getCommandFilePath(command.id());
-        
+    public String update(final Command command) {
+        logger.info("Updating command: {}", command.id());
+
+        final Path commandFile = getCommandFilePath(command.id());
+
         if (!Files.exists(commandFile)) {
             throw new IllegalArgumentException("Command file not found for id: " + command.id());
         }
-        
+
         try {
-            String content = markdownParser.generateMarkdownWithFrontmatter(command);
+            final String content = markdownParser.generateMarkdownWithFrontmatter(command);
             Files.writeString(commandFile, content, StandardOpenOption.TRUNCATE_EXISTING);
-            
+
             logger.info("Updated command file: {}", commandFile);
             return command.id();
-            
+
         } catch (IOException e) {
             logger.error("Failed to update command file: {}", commandFile, e);
             throw new RuntimeException("Failed to update command file", e);
@@ -127,11 +123,11 @@ public class CommandFileService {
 
     public void deleteCommand(final String commandId) {
         logger.info("Deleting command: {}", commandId);
-        
-        Path commandFile = getCommandFilePath(commandId);
-        
+
+        final Path commandFile = getCommandFilePath(commandId);
+
         try {
-            boolean deleted = Files.deleteIfExists(commandFile);
+            final boolean deleted = Files.deleteIfExists(commandFile);
             if (deleted) {
                 logger.info("Deleted command file: {}", commandFile);
             } else {
@@ -145,13 +141,13 @@ public class CommandFileService {
 
     public void updateCommandState(final UpdateStateRequest updateStateRequest) {
         logger.info("Updating command state: {} -> {}", updateStateRequest.id(), updateStateRequest.state());
-        
-        Optional<CommandDetail> existing = getCommandDetails(updateStateRequest.id());
+
+        final Optional<Command> existing = findById(updateStateRequest.id());
         if (existing.isEmpty()) {
             throw new IllegalArgumentException("Command not found: " + updateStateRequest.id());
         }
-        
-        CommandDetail updated = new CommandDetail(
+
+        final Command updated = new Command(
                 existing.get().id(),
                 existing.get().name(),
                 existing.get().description(),
@@ -159,20 +155,20 @@ public class CommandFileService {
                 existing.get().icon(),
                 updateStateRequest.state()
         );
-        
-        updateCommandDetail(updated);
+
+        update(updated);
     }
 
     // Private helper methods
 
-    private Optional<Command> parseCommandFile(Path filePath) {
+    private Optional<Command> parseCommandFile(final Path filePath) {
         try {
-            String content = Files.readString(filePath);
-            String id = getFileId(filePath);
-            
-            MarkdownParser.ParsedCommand parsed = markdownParser.parseMarkdownWithFrontmatter(content, id);
-            
-            Command command = new Command(
+            final String content = Files.readString(filePath);
+            final String id = getFileId(filePath);
+
+            final MarkdownParser.ParsedCommand parsed = markdownParser.parseMarkdownWithFrontmatter(content, id);
+
+            final Command command = new Command(
                     parsed.id(),
                     parsed.metadata().name(),
                     parsed.metadata().description(),
@@ -180,50 +176,52 @@ public class CommandFileService {
                     parsed.metadata().icon(),
                     parsed.metadata().state()
             );
-            
+
             return Optional.of(command);
-            
+
         } catch (IOException e) {
             logger.warn("Failed to parse command file: {}", filePath, e);
             return Optional.empty();
         }
     }
 
-    private String getFileId(Path filePath) {
-        String filename = filePath.getFileName().toString();
+    private String getFileId(final Path filePath) {
+        final String filename = filePath.getFileName().toString();
         return filename.endsWith(".md") ? filename.substring(0, filename.length() - 3) : filename;
     }
 
-    private Path getCommandFilePath(String commandId) {
+    private Path getCommandFilePath(final String commandId) {
         return commandsDirectory.resolve(commandId + ".md");
     }
 
-    private String generateUniqueFilename(String name) {
-        String baseFilename = generateSafeFilename(name);
+    private String generateUniqueFilename(final String name) {
+        final String baseFilename = Command.generateIdFromName(name);
         String filename = baseFilename;
         int counter = 1;
-        
+
         while (Files.exists(commandsDirectory.resolve(filename + ".md"))) {
             filename = baseFilename + "-" + counter;
             counter++;
         }
-        
-        return filename;
-    }
 
-    private String generateSafeFilename(String name) {
-        if (name == null || name.isBlank()) {
-            return "unnamed-command";
-        }
-        return name.toLowerCase()
-                  .replaceAll("[^a-z0-9\\-_]", "-")
-                  .replaceAll("-+", "-")
-                  .replaceAll("^-|-$", "");
+        return filename;
     }
 
     private Comparator<Command> createCommandComparator() {
         // Sort by state (ENABLED first), then by name alphabetically
-        return Comparator.comparing(Command::state, Comparator.reverseOrder())
-                         .thenComparing(Command::name, String.CASE_INSENSITIVE_ORDER);
+        return Comparator.comparing(Command::state)
+                .thenComparing(Command::name, String.CASE_INSENSITIVE_ORDER);
     }
+
+    private static CardListItem toCardListItem(final Command command) {
+        return new CardListItem(
+                command.id(),
+                command.name(),
+                command.description(),
+                command.icon(),
+                command.state()
+        );
+    }
+
+
 }

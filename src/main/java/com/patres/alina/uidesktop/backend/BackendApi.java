@@ -6,8 +6,7 @@ import com.patres.alina.common.card.UpdateStateRequest;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.message.SpeechToTextResponse;
-import com.patres.alina.common.command.CommandCreateRequest;
-import com.patres.alina.common.command.CommandDetail;
+import com.patres.alina.server.command.Command;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.thread.ChatThreadRenameRequest;
 import com.patres.alina.common.thread.ChatThreadResponse;
@@ -50,20 +49,20 @@ public class BackendApi {
     }
 
 
-    public static List<CardListItem> getCommandListItems() {
-        return AppLauncher.getBean(CommandController.class).getCommandListItems();
+    public static List<CardListItem> getListCommands() {
+        return AppLauncher.getBean(CommandController.class).listCommands();
     }
 
-    public static CommandDetail getCommandDetails(String commandId) {
-        return AppLauncher.getBean(CommandController.class).getCommandDetails(commandId);
+    public static Command getCommand(String commandId) {
+        return AppLauncher.getBean(CommandController.class).getCommand(commandId);
     }
 
-    public static void createCommandDetail(CommandCreateRequest commandCreateRequest) {
-        AppLauncher.getBean(CommandController.class).createCommandDetail(commandCreateRequest);
+    public static void createCommand(Command command) {
+        AppLauncher.getBean(CommandController.class).createCommand(command);
     }
 
-    public static void updateCommandDetail(CommandDetail commandDetail) {
-        AppLauncher.getBean(CommandController.class).updateCommandDetail(commandDetail);
+    public static void updateCommand(Command command) {
+        AppLauncher.getBean(CommandController.class).updateCommand(command);
     }
 
     public static void deleteCommand(String commandId) {

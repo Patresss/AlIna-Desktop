@@ -1,6 +1,6 @@
 package com.patres.alina.uidesktop.command.settings;
 
-import com.patres.alina.common.command.CommandCreateRequest;
+import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.common.event.CommandUpdateEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
@@ -28,14 +28,14 @@ public class CommandCreatePane extends CommandSavePane {
     }
 
     private void createCommand() {
-        CommandCreateRequest commandCreateRequest = new CommandCreateRequest(
+        Command command = new Command(
                 commandNameTextField.getText(),
                 commandDescriptionTextArea.getText(),
                 commandSystemPromptTextArea.getText(),
                 iconComboBox.getValue().getObject().name()
         );
 
-        BackendApi.createCommandDetail(commandCreateRequest);
+        BackendApi.createCommand(command);
         backFunction.run();
         DefaultEventBus.getInstance().publish(new CommandUpdateEvent(CommandUpdateEvent.EventType.COMMAND_ADDED));
     }
