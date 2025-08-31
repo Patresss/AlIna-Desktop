@@ -194,6 +194,30 @@ public class Browser extends StackPane {
         }
     }
 
+    /**
+     * Shows the loader to indicate processing is in progress.
+     * The loader will appear as an assistant message.
+     */
+    public void showLoader() {
+        executeJavaScript("showLoader()");
+    }
+
+    /**
+     * Shows the loader positioned as a user message.
+     * Useful for indicating processing related to user input.
+     */
+    public void showLoaderForUserMessage() {
+        executeJavaScript("showLoaderForUserMessage()");
+    }
+
+    /**
+     * Hides the loader element.
+     * Called when the first AI response token arrives or when an error occurs.
+     */
+    public void hideLoader() {
+        executeJavaScript("hideLoader()");
+    }
+
     private String initHtml() {
         return """
                 <html>
@@ -203,6 +227,11 @@ public class Browser extends StackPane {
                 </head>
                     <body>
                         <div id="chat-container"></div>
+                        <div id="loader" class="chat-message assistant loader">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                        </div>
                     </body>
                 </html>
                 """.formatted(getCssStyles(), getJavaScript());
@@ -262,6 +291,35 @@ public class Browser extends StackPane {
                 }
                 .chat-message.assistant {
                 }
+                .loader {
+                  display: none;
+                  justify-content: space-around;
+                  width: 50px;
+                  height: 40px;
+                }
+                .loader.active {
+                  display: flex;
+                }
+                .loader.user-message {
+                  margin-left: auto;
+                }
+                .loader div {
+                  width: 8px;
+                  height: 8px;
+                  background-color: var(--color-accent-fg);
+                  border-radius: 50%;
+                  animation: pulse 0.6s infinite alternate;
+                }
+                .loader div:nth-child(2) {
+                  animation-delay: 0.2s;
+                }
+                .loader div:nth-child(3) {
+                  animation-delay: 0.4s;
+                }
+                @keyframes pulse {
+                  from { transform: scale(1); }
+                  to { transform: scale(0.5); }
+                }
                 </style>
                 """;
     }
@@ -278,6 +336,21 @@ public class Browser extends StackPane {
                         chatContainer.appendChild(div);
                     }
 
+                    function showLoader() {
+                        document.getElementById('loader').classList.add('active');
+                        document.getElementById('loader').classList.remove('user-message');
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }
+
+                    function showLoaderForUserMessage() {
+                        showLoader();
+                        document.getElementById('loader').classList.add('user-message');
+                    }
+
+                    function hideLoader() {
+                        document.getElementById('loader').classList.remove('active');
+                        document.getElementById('loader').classList.remove('user-message');
+                    }
 
                     function startStreamingAssistantMessage() {
                         var streamingDiv = document.createElement('div');

@@ -22,7 +22,10 @@
       "Bash(java:*)",
       "Bash(/usr/libexec/java_home:*)",
       "Bash(export:*)",
-      "Bash(JAVA_HOME=\"/Users/patrykpiechaczek/Library/Java/JavaVirtualMachines/temurin-24.0.2/Contents/Home\" ./gradlew build)"
+      "Bash(JAVA_HOME=\"/Users/patrykpiechaczek/Library/Java/JavaVirtualMachines/temurin-24.0.2/Contents/Home\" ./gradlew build)",
+      "mcp__ide__getDiagnostics",
+      "WebSearch",
+      "Bash(JAVA_HOME=\"/Users/patrykpiechaczek/Library/Java/JavaVirtualMachines/temurin-24.0.2/Contents/Home\" ./gradlew test)"
     ],
     "deny": [],
     "ask": []
