@@ -5,7 +5,6 @@ import com.patres.alina.server.message.ChatMessageStorageRepository;
 import com.patres.alina.server.message.ConversationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -21,7 +20,6 @@ public class LocalStorageConfiguration {
     private static final Logger logger = LoggerFactory.getLogger(LocalStorageConfiguration.class);
     
     @Bean
-    @ConditionalOnProperty(name = "storage.type", havingValue = "local", matchIfMissing = false)
     public Path localStorageBasePath() {
         String pathProperty = System.getProperty("storage.local.base.path", "data");
         Path dataDir = Paths.get(pathProperty).toAbsolutePath();
@@ -37,7 +35,6 @@ public class LocalStorageConfiguration {
     }
     
     @Bean
-    @ConditionalOnProperty(name = "storage.type", havingValue = "local", matchIfMissing = false)  
     public Path conversationsStoragePath(Path localStorageBasePath) {
         Path conversationsDir = localStorageBasePath.resolve("conversations");
         
@@ -52,7 +49,6 @@ public class LocalStorageConfiguration {
     }
     
     @Bean
-    @ConditionalOnProperty(name = "storage.type", havingValue = "local", matchIfMissing = false)
     public Path commandsStoragePath(Path localStorageBasePath) {
         Path commandsDir = localStorageBasePath.resolve("../commands").normalize();
         
@@ -68,7 +64,6 @@ public class LocalStorageConfiguration {
     
     @Bean
     @Primary
-    @ConditionalOnProperty(name = "storage.type", havingValue = "local", matchIfMissing = false)
     public ChatMessageStorageRepository conversationRepository(
             Path conversationsStoragePath, 
             ObjectMapper objectMapper) {
@@ -77,5 +72,4 @@ public class LocalStorageConfiguration {
         return new ConversationRepository(conversationsStoragePath, objectMapper);
     }
 
-    // No separate repository for threads; threads list comes from files in conversations dir
 }
