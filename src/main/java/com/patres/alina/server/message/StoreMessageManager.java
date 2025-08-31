@@ -19,13 +19,13 @@ public class StoreMessageManager {
     private static final Logger logger = LoggerFactory.getLogger(StoreMessageManager.class);
 
     private final ChatThreadFacade chatThreadFacade;
-    private final ChatMessageRepository chatMessageRepository;
+    private final ChatMessageStorageRepository chatMessageStorageRepository;
 
     public StoreMessageManager(final ChatThreadFacade chatThreadFacade,
-                               final ChatMessageRepository chatMessageRepository
+                               final ChatMessageStorageRepository chatMessageStorageRepository
     ) {
         this.chatThreadFacade = chatThreadFacade;
-        this.chatMessageRepository = chatMessageRepository;
+        this.chatMessageStorageRepository = chatMessageStorageRepository;
     }
 
 
@@ -51,7 +51,7 @@ public class StoreMessageManager {
                 chatMessageSendModel.pluginId(),
                 "chatMessage.getName()" // TODO
         );
-        chatMessageRepository.save(chatMessageResponse);
+        chatMessageStorageRepository.save(chatMessageResponse);
         chatThreadFacade.setModifiedAt(chatMessageSendModel.chatThreadId());
     }
 

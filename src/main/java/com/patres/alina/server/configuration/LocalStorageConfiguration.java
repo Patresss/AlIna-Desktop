@@ -1,0 +1,64 @@
+package com.patres.alina.server.configuration;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.patres.alina.server.message.ChatMessageStorageRepository;
+import com.patres.alina.server.message.ConversationRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+@Configuration
+public class LocalStorageConfiguration {
+    
+    private static final Logger logger = LoggerFactory.getLogger(LocalStorageConfiguration.class);
+    
+    @Bean
+    @ConditionalOnProperty(name = "storage.type", havingValue = "local", matchIfMissing = false)
+    public Path localStorageBasePath() {
+        String pathProperty = System.getProperty("storage.local.base.path", "data");
+        Path dataDir = Paths.get(pathProperty).toAbsolutePath();
+        
+        try {
+            Files.createDirectories(dataDir);
+            logger.info("Created local storage base directory: {}", dataDir);
+            return dataDir;
+        } catch (IOException e) {
+            logger.error("Failed to create local storage directory: {}", dataDir, e);
+            throw new RuntimeException("Failed to create local storage directory", e);
+        }
+    }
+    
+    @Bean
+    @ConditionalOnProperty(name = "storage.type", havingValue = "local", matchIfMissing = false)  
+    public Path conversationsStoragePath(Path localStorageBasePath) {
+        Path conversationsDir = localStorageBasePath.resolve("conversations");
+        
+        try {
+            Files.createDirectories(conversationsDir);
+            logger.info("Created conversations storage directory: {}", conversationsDir);
+            return conversationsDir;
+        } catch (IOException e) {
+            logger.error("Failed to create conversations storage directory: {}", conversationsDir, e);
+            throw new RuntimeException("Failed to create conversations storage directory", e);
+        }
+    }
+    
+    @Bean
+    @Primary
+    @ConditionalOnProperty(name = "storage.type", havingValue = "local", matchIfMissing = false)
+    public ChatMessageStorageRepository conversationRepository(
+            Path conversationsStoragePath, 
+            ObjectMapper objectMapper) {
+        
+        logger.info("Configuring JSONL conversation storage at: {}", conversationsStoragePath);
+        return new ConversationRepository(conversationsStoragePath, objectMapper);
+    }
+}

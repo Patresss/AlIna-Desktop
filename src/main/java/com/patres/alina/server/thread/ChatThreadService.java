@@ -1,7 +1,7 @@
 package com.patres.alina.server.thread;
 
 import com.patres.alina.common.thread.ChatThreadResponse;
-import com.patres.alina.server.message.ChatMessageRepository;
+import com.patres.alina.server.message.ChatMessageStorageRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,12 +19,12 @@ public class ChatThreadService {
     private static final Logger logger = LoggerFactory.getLogger(ChatThreadService.class);
 
     private final ChatThreadRepository chatThreadRepository;
-    private final ChatMessageRepository chatMessageRepository;
+    private final ChatMessageStorageRepository chatMessageStorageRepository;
 
     public ChatThreadService(final ChatThreadRepository chatThreadRepository,
-                             final ChatMessageRepository chatMessageRepository
+                             final ChatMessageStorageRepository chatMessageStorageRepository
     ) {
-        this.chatMessageRepository = chatMessageRepository;
+        this.chatMessageStorageRepository = chatMessageStorageRepository;
         this.chatThreadRepository = chatThreadRepository;
     }
 
@@ -36,8 +36,15 @@ public class ChatThreadService {
     }
 
     public List<ChatThreadResponse> getChatThreads() {
-        List<ChatThread> chatThreads = chatThreadRepository.findAvailableChatThreads();
-        return toChatThreadResponses(chatThreads);
+        List<ChatThread> allChatThreads = chatThreadRepository.findAvailableChatThreads();
+        logger.info("Found {} total chat threads from MongoDB", allChatThreads.size());
+
+        List<ChatThread> threadsWithMessages = allChatThreads.stream()
+                .filter(thread -> chatMessageStorageRepository.conversationExists(thread.id()))
+                .toList();
+
+        logger.info("Filtered to {} threads with JSONL messages", threadsWithMessages.size());
+        return toChatThreadResponses(threadsWithMessages);
     }
 
     public void setModifiedAt(final String chatThreadId) {
@@ -46,7 +53,7 @@ public class ChatThreadService {
 
     public void deleteChatThread(final String chatThreadId) {
         chatThreadRepository.deleteById(chatThreadId);
-        chatMessageRepository.deleteByChatThreadId(chatThreadId);
+        chatMessageStorageRepository.deleteByThreadId(chatThreadId);
     }
 
     public void renameChatThread(final String chatThreadId, final String newName) {

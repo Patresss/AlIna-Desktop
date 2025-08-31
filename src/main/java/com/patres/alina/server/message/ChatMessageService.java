@@ -33,13 +33,13 @@ public class ChatMessageService {
     private static final Logger logger = LoggerFactory.getLogger(ChatMessageService.class);
     private static final PageRequest CONTEXT_PAGEABLE = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-    private final ChatMessageRepository chatMessageRepository;
+    private final ChatMessageStorageRepository chatMessageRepository;
     private final PluginService pluginService;
     private final OpenAiApiFacade openAiApi;
     private final StoreMessageManager storeMessageManager;
     private final ChatThreadFacade chatThreadFacade;
 
-    public ChatMessageService(final ChatMessageRepository chatMessageRepository,
+    public ChatMessageService(final ChatMessageStorageRepository chatMessageRepository,
                               final PluginService pluginService,
                               final OpenAiApiFacade openAiApi,
                               final StoreMessageManager storeMessageManager,
@@ -197,12 +197,12 @@ public class ChatMessageService {
     }
 
     public List<ChatMessageResponseModel> getMessagesByThreadId(final String chatThreadId) {
-        final List<ChatMessageEntry> chatMessageEntries = chatMessageRepository.findChatMessagesToDisplay(chatThreadId);
+        final List<ChatMessageEntry> chatMessageEntries = chatMessageRepository.findMessagesToDisplay(chatThreadId);
         return toChatMessageResponseModels(chatMessageEntries, chatThreadId);
     }
 
     public void deleteMessagesByChatThreadId(final String chatThreadId) {
-        chatMessageRepository.deleteByChatThreadId(chatThreadId);
+        chatMessageRepository.deleteByThreadId(chatThreadId);
     }
 
     private String calculateContentWithPluginPrompt(final String content, final String pluginId) {
@@ -218,14 +218,14 @@ public class ChatMessageService {
         }
 
         if (pluginContent.contains("${message}")) {
-            return pluginContent.replaceAll("\\$\\{message}", content);
+            return pluginContent.replaceAll("\\\\$\\\\{message}", content);
         } else {
             return pluginContent + System.lineSeparator() + content;
         }
     }
 
     private List<AbstractMessage> loadMessages(final String chatThreadId) {
-        final List<ChatMessageEntry> messages = chatMessageRepository.findChatMessagesForContext(chatThreadId, CONTEXT_PAGEABLE).reversed();
+        final List<ChatMessageEntry> messages = chatMessageRepository.findMessagesForContext(chatThreadId, CONTEXT_PAGEABLE).reversed();
         return messages.stream()
                 .map(ChatMessageMapper::toAbstractMessage)
                 .collect(Collectors.toList());

@@ -83,6 +83,8 @@ dependencies {
     // server module
     implementation("org.springframework.ai:spring-ai-starter-model-openai:1.0.1")
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb:3.2.2")
+    
+    // Local file storage - Jackson already included via Spring Boot
 
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
