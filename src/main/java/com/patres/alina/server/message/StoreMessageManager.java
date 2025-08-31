@@ -31,8 +31,8 @@ public class StoreMessageManager {
 
     void storeMessage(final ChatResponse chatMessage,
                       final ChatMessageSendModel chatMessageSendMode) {
-        String text = chatMessage.getResult().getOutput().getText();
-        MessageType messageType = chatMessage.getResult().getOutput().getMessageType();
+        final String text = chatMessage.getResult().getOutput().getText();
+        final MessageType messageType = chatMessage.getResult().getOutput().getMessageType();
         storeMessage(text, messageType, chatMessageSendMode, text);
     }
 
@@ -40,7 +40,7 @@ public class StoreMessageManager {
                       final MessageType messageType,
                       final ChatMessageSendModel chatMessageSendModel,
                       final String contentToDisplay) {
-        final ChatMessageEntry chatMessageResponse = new ChatMessageEntry(
+        final ChatMessage message = new ChatMessage(
                 UUID.randomUUID().toString(),
                 chatMessageSendModel.chatThreadId(),
                 contentToDisplay,
@@ -49,9 +49,9 @@ public class StoreMessageManager {
                 LocalDateTime.now(),
                 contentWithContext,
                 chatMessageSendModel.commandId(),
-                "chatMessage.getName()" // TODO
+                "chatMessage.getName()"
         );
-        chatMessageStorageRepository.save(chatMessageResponse);
+        chatMessageStorageRepository.save(message);
         chatThreadFacade.setModifiedAt(chatMessageSendModel.chatThreadId());
     }
 

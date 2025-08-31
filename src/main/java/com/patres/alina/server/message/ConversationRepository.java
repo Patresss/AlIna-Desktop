@@ -15,93 +15,74 @@ import java.util.stream.Collectors;
  * New messages are simply appended to the end of the file.
  */
 public class ConversationRepository implements ChatMessageStorageRepository {
-    
+
     private final Path conversationsDir;
     private final ObjectMapper objectMapper;
-    
-    public ConversationRepository(Path conversationsDir, ObjectMapper objectMapper) {
+
+    public ConversationRepository(final Path conversationsDir, final ObjectMapper objectMapper) {
         this.conversationsDir = conversationsDir;
         this.objectMapper = objectMapper;
     }
-    
+
     @Override
-    public void save(ChatMessageEntry entry) {
-        if (entry.chatThreadId() == null) {
+    public void save(final ChatMessage message) {
+        if (message.chatThreadId() == null) {
             throw new IllegalArgumentException("chatThreadId cannot be null");
         }
-        
-        JsonLinesRepository<ChatMessageEntity, String> conversationRepo = getConversationRepository(entry.chatThreadId());
-        
-        ChatMessageEntity entity = new ChatMessageEntity(entry);
-        conversationRepo.save(entity);
+
+        final JsonLinesRepository<ChatMessage, String> repo = getConversationRepository(message.chatThreadId());
+        repo.save(message);
     }
-    
+
     @Override
-    public List<ChatMessageEntry> findMessagesWithContent(String chatThreadId, Set<ChatMessageRole> roles) {
+    public List<ChatMessage> findMessagesWithContent(final String chatThreadId, final Set<ChatMessageRole> roles) {
         return getConversationMessages(chatThreadId).stream()
-            .filter(this::hasContent)
-            .filter(msg -> hasMatchingRole(msg, roles))
-            .collect(Collectors.toList());
+                .filter(this::hasContent)
+                .filter(msg -> hasMatchingRole(msg, roles))
+                .collect(Collectors.toList());
     }
-    
+
     @Override
-    public List<ChatMessageEntry> findLastMessagesForContext(String chatThreadId, Set<ChatMessageRole> roles, int limit) {
+    public List<ChatMessage> findLastMessagesForContext(final String chatThreadId, final Set<ChatMessageRole> roles, final int limit) {
         return getConversationMessages(chatThreadId).stream()
-            .filter(msg -> hasMatchingRole(msg, roles))
-            .collect(Collectors.collectingAndThen(Collectors.toList(), list -> {
-                if (limit <= 0) {
-                    return List.of();
-                }
-                int from = Math.max(0, list.size() - limit);
-                return list.subList(from, list.size());
-            }));
+                .filter(msg -> hasMatchingRole(msg, roles))
+                .collect(Collectors.collectingAndThen(Collectors.toList(), list -> {
+                    if (limit <= 0) {
+                        return List.of();
+                    }
+                    final int from = Math.max(0, list.size() - limit);
+                    return list.subList(from, list.size());
+                }));
     }
-    
+
     @Override
-    public void deleteByThreadId(String chatThreadId) {
-        JsonLinesRepository<ChatMessageEntity, String> conversationRepo = getConversationRepository(chatThreadId);
-        conversationRepo.deleteAll();
+    public void deleteByThreadId(final String chatThreadId) {
+        final JsonLinesRepository<ChatMessage, String> repo = getConversationRepository(chatThreadId);
+        repo.deleteAll();
     }
-    
+
     @Override
-    public boolean conversationExists(String chatThreadId) {
-        JsonLinesRepository<ChatMessageEntity, String> conversationRepo = getConversationRepository(chatThreadId);
-        return conversationRepo.count() > 0;
+    public boolean conversationExists(final String chatThreadId) {
+        final JsonLinesRepository<ChatMessage, String> repo = getConversationRepository(chatThreadId);
+        return repo.count() > 0;
     }
-    
-    /**
-     * Get JSONL repository for a specific conversation
-     */
-    private JsonLinesRepository<ChatMessageEntity, String> getConversationRepository(String chatThreadId) {
-        Path conversationFile = conversationsDir.resolve(chatThreadId + ".jsonl");
-        return new JsonLinesRepository<>(conversationFile, ChatMessageEntity.class, objectMapper);
+
+    private JsonLinesRepository<ChatMessage, String> getConversationRepository(final String chatThreadId) {
+        final Path conversationFile = conversationsDir.resolve(chatThreadId + ".jsonl");
+        return new JsonLinesRepository<>(conversationFile, ChatMessage.class, objectMapper);
     }
-    
-    /**
-     * Get all messages for a conversation (in chronological order from JSONL file)
-     */
-    private List<ChatMessageEntry> getConversationMessages(String chatThreadId) {
-        JsonLinesRepository<ChatMessageEntity, String> conversationRepo = getConversationRepository(chatThreadId);
-        
-        return conversationRepo.findAll().stream()
-            .map(ChatMessageEntity::getChatMessage)
-            .collect(Collectors.toList());
+
+    private List<ChatMessage> getConversationMessages(final String chatThreadId) {
+        final JsonLinesRepository<ChatMessage, String> repo = getConversationRepository(chatThreadId);
+        return repo.findAll();
     }
-    
-    /**
-     * Check if message has non-empty content
-     */
-    private boolean hasContent(ChatMessageEntry message) {
+
+    private boolean hasContent(final ChatMessage message) {
         return message.content() != null && !message.content().trim().isEmpty();
     }
-    
-    /**
-     * Check if message role matches any of the specified roles
-     */
-    private boolean hasMatchingRole(ChatMessageEntry message, Set<ChatMessageRole> roles) {
+
+    private boolean hasMatchingRole(final ChatMessage message, final Set<ChatMessageRole> roles) {
         return message.role() != null && roles.stream()
-            .anyMatch(role -> role.getChatMessageRole().equals(message.role().getValue()));
+                .anyMatch(role -> role.getChatMessageRole().equals(message.role().getValue()));
     }
-    
-    // Pageable support removed; context selection is now limit-based.
 }

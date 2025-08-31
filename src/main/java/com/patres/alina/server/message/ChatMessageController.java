@@ -1,7 +1,5 @@
 package com.patres.alina.server.message;
 
-import com.patres.alina.common.event.ChatMessageReceivedEvent;
-import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import org.springframework.web.bind.annotation.*;
@@ -14,17 +12,17 @@ public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
 
-    public ChatMessageController(ChatMessageService chatMessageService) {
+    public ChatMessageController(final ChatMessageService chatMessageService) {
         this.chatMessageService = chatMessageService;
     }
 
     @GetMapping("/{chatThreadId}")
-    public List<ChatMessageResponseModel> getMessagesByThreadId(@PathVariable String chatThreadId) {
+    public List<ChatMessageResponseModel> getMessagesByThreadId(@PathVariable final String chatThreadId) {
         return chatMessageService.getMessagesByThreadId(chatThreadId);
     }
 
     @PostMapping("/stream")
-    public void sendChatMessagesStream(@RequestBody ChatMessageSendModel chatMessageSendModel) {
+    public void sendChatMessagesStream(@RequestBody final ChatMessageSendModel chatMessageSendModel) {
         chatMessageService.sendMessageStream(chatMessageSendModel);
     }
 
