@@ -16,8 +16,13 @@ public class CommandController {
     }
 
     @GetMapping
-    public List<Command> getCommands() {
+    public List<Command> getEnabledCommands() {
         return commandFileService.getCommands();
+    }
+
+    @GetMapping("/all")
+    public List<Command> getAllCommands() {
+        return commandFileService.getAllCommands();
     }
 
     @GetMapping("/{commandId}")

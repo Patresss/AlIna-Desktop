@@ -1,6 +1,5 @@
 package com.patres.alina.server.command;
 
-import com.patres.alina.common.card.CardListItem;
 import com.patres.alina.common.card.State;
 import com.patres.alina.common.card.UpdateStateRequest;
 import com.patres.alina.server.parser.MarkdownParser;
@@ -32,7 +31,17 @@ public class CommandFileService {
     }
 
     public List<Command> getCommands() {
-        logger.debug("Loading command list from commands directory: {}", commandsDirectory);
+        return loadCommands(ListMode.ENABLED_ONLY);
+    }
+
+    public List<Command> getAllCommands() {
+        return loadCommands(ListMode.ALL);
+    }
+
+    private enum ListMode { ENABLED_ONLY, ALL }
+
+    private List<Command> loadCommands(final ListMode mode) {
+        logger.debug("Loading command list from commands directory: {} (mode={})", commandsDirectory, mode);
 
         if (!Files.exists(commandsDirectory)) {
             logger.warn("Commands directory does not exist: {}", commandsDirectory);
@@ -40,14 +49,16 @@ public class CommandFileService {
         }
 
         try (Stream<Path> paths = Files.list(commandsDirectory)) {
-            final List<Command> commands = paths
+            final Stream<Command> stream = paths
                     .filter(path -> path.toString().endsWith(".md"))
                     .map(this::parseCommandFile)
                     .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .filter( command -> command.state() == State.ENABLED)
+                    .map(Optional::get);
+
+            final List<Command> commands = (mode == ListMode.ENABLED_ONLY ? stream.filter(cmd -> cmd.state() == State.ENABLED) : stream)
                     .sorted(createCommandComparator())
                     .toList();
+
             logger.debug("Loaded {} commands from files", commands.size());
             return commands;
 
@@ -156,8 +167,6 @@ public class CommandFileService {
         update(updated);
     }
 
-    // Private helper methods
-
     private Optional<Command> parseCommandFile(final Path filePath) {
         try {
             final String content = Files.readString(filePath);
@@ -207,7 +216,5 @@ public class CommandFileService {
     private Comparator<Command> createCommandComparator() {
         return Comparator.comparing(Command::name, String.CASE_INSENSITIVE_ORDER);
     }
-
-
 
 }

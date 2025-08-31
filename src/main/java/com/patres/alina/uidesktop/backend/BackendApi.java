@@ -48,8 +48,12 @@ public class BackendApi {
     }
 
 
-    public static List<Command> getCommands() {
-        return AppLauncher.getBean(CommandController.class).getCommands();
+    public static List<Command> getEnabledCommands() {
+        return AppLauncher.getBean(CommandController.class).getEnabledCommands();
+    }
+
+    public static List<Command> getAllCommands() {
+        return AppLauncher.getBean(CommandController.class).getAllCommands();
     }
 
     public static Command getCommand(String commandId) {

@@ -26,7 +26,7 @@ public class CommandPane extends CardsPane {
 
     @Override
     public List<CommandCard> createCards() {
-        final var commands = BackendApi.getCommands();
+        final var commands = BackendApi.getAllCommands();
         return commands.stream()
                 .map(CardListItemMapper::toCardListItem)
                 .map(command -> new CommandCard(command, this, applicationWindow))

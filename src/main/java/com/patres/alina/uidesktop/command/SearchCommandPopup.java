@@ -51,7 +51,7 @@ public class SearchCommandPopup extends Popup {
     }
 
     private void fetchAllCommands() {
-        allCommands = BackendApi.getCommands();
+        allCommands = BackendApi.getEnabledCommands();
 
         updateCommands("");
     }
