@@ -1,6 +1,5 @@
 package com.patres.alina.server.command;
 
-import com.patres.alina.common.card.CardListItem;
 import com.patres.alina.common.card.UpdateStateRequest;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,8 +16,8 @@ public class CommandController {
     }
 
     @GetMapping
-    public List<CardListItem> listCommands() {
-        return commandFileService.getListCardItems();
+    public List<Command> getCommands() {
+        return commandFileService.getCommands();
     }
 
     @GetMapping("/{commandId}")

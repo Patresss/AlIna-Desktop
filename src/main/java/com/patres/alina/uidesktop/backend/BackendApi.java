@@ -1,7 +1,6 @@
 package com.patres.alina.uidesktop.backend;
 
 import com.patres.alina.AppLauncher;
-import com.patres.alina.common.card.CardListItem;
 import com.patres.alina.common.card.UpdateStateRequest;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
@@ -49,8 +48,8 @@ public class BackendApi {
     }
 
 
-    public static List<CardListItem> getListCommands() {
-        return AppLauncher.getBean(CommandController.class).listCommands();
+    public static List<Command> getCommands() {
+        return AppLauncher.getBean(CommandController.class).getCommands();
     }
 
     public static Command getCommand(String commandId) {

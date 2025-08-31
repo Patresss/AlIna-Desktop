@@ -1,7 +1,9 @@
 package com.patres.alina.uidesktop.command;
 
 import com.patres.alina.common.card.CardListItem;
+import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.backend.BackendApi;
+import com.patres.alina.uidesktop.command.settings.CardListItemMapper;
 import com.patres.alina.uidesktop.common.event.CommandUpdateEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import javafx.application.Platform;
@@ -34,7 +36,7 @@ public class SearchCommandPopup extends Popup {
     private final TextArea chatTextArea;
     private final ObjectProperty<CardListItem> selectedCommand = new SimpleObjectProperty<>();
 
-    private List<CardListItem> allCommands;
+    private List<Command> allCommands;
 
     public SearchCommandPopup(final TextArea chatTextArea) {
         this.chatTextArea = chatTextArea;
@@ -49,7 +51,7 @@ public class SearchCommandPopup extends Popup {
     }
 
     private void fetchAllCommands() {
-        allCommands = BackendApi.getListCommands();
+        allCommands = BackendApi.getCommands();
 
         updateCommands("");
     }
@@ -57,6 +59,7 @@ public class SearchCommandPopup extends Popup {
     private void updateCommands(final String filter) {
         List<CardListItem> filteredCommands = allCommands.stream()
                 .filter(p -> containsIgnoreCase(p.name(), filter))
+                .map(CardListItemMapper::toCardListItem)
                 .toList();
         commandListView.getItems().setAll(filteredCommands);
 

@@ -13,8 +13,8 @@ import com.patres.alina.uidesktop.ui.card.CardsPane;
 public class CommandCard extends CardItem {
 
     public CommandCard(final CardListItem cardListItem,
-                      final CardsPane cardsPane,
-                      final ApplicationWindow applicationWindow) {
+                       final CardsPane cardsPane,
+                       final ApplicationWindow applicationWindow) {
         super(cardListItem, cardsPane, applicationWindow);
     }
 

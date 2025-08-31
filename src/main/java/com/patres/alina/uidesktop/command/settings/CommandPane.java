@@ -1,5 +1,7 @@
 package com.patres.alina.uidesktop.command.settings;
 
+import com.patres.alina.common.card.CardListItem;
+import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.uidesktop.ui.card.CardsPane;
@@ -7,6 +9,8 @@ import javafx.scene.control.Button;
 import org.kordamp.ikonli.feather.Feather;
 
 import java.util.List;
+
+import static com.patres.alina.uidesktop.command.settings.CardListItemMapper.toCardListItem;
 
 public class CommandPane extends CardsPane {
 
@@ -22,9 +26,10 @@ public class CommandPane extends CardsPane {
 
     @Override
     public List<CommandCard> createCards() {
-        final var commands = BackendApi.getListCommands();
+        final var commands = BackendApi.getCommands();
         return commands.stream()
-                .map(commandListItem -> new CommandCard(commandListItem, this, applicationWindow))
+                .map(CardListItemMapper::toCardListItem)
+                .map(command -> new CommandCard(command, this, applicationWindow))
                 .toList();
     }
 

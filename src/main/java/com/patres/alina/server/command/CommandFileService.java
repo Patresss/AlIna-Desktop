@@ -31,7 +31,7 @@ public class CommandFileService {
         logger.info("CommandFileService initialized with directory: {}", commandsDirectory);
     }
 
-    public List<CardListItem> getListCardItems() {
+    public List<Command> getCommands() {
         logger.debug("Loading command list from commands directory: {}", commandsDirectory);
 
         if (!Files.exists(commandsDirectory)) {
@@ -45,14 +45,11 @@ public class CommandFileService {
                     .map(this::parseCommandFile)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
+                    .filter( command -> command.state() == State.ENABLED)
                     .sorted(createCommandComparator())
                     .toList();
-
-            final List<CardListItem> items = commands.stream()
-                    .map(CommandFileService::toCardListItem)
-                    .toList();
-            logger.debug("Loaded {} commands from files", items.size());
-            return items;
+            logger.debug("Loaded {} commands from files", commands.size());
+            return commands;
 
         } catch (IOException e) {
             logger.error("Failed to list files in commands directory: {}", commandsDirectory, e);
@@ -208,20 +205,9 @@ public class CommandFileService {
     }
 
     private Comparator<Command> createCommandComparator() {
-        // Sort by state (ENABLED first), then by name alphabetically
-        return Comparator.comparing(Command::state)
-                .thenComparing(Command::name, String.CASE_INSENSITIVE_ORDER);
+        return Comparator.comparing(Command::name, String.CASE_INSENSITIVE_ORDER);
     }
 
-    private static CardListItem toCardListItem(final Command command) {
-        return new CardListItem(
-                command.id(),
-                command.name(),
-                command.description(),
-                command.icon(),
-                command.state()
-        );
-    }
 
 
 }
