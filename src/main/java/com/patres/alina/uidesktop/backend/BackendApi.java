@@ -14,10 +14,12 @@ import com.patres.alina.server.command.CommandController;
 import com.patres.alina.server.settings.SettingsController;
 import com.patres.alina.server.speech.SpeechToTextController;
 import com.patres.alina.server.thread.ChatThreadController;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
+import com.patres.alina.server.message.exception.CannotConvertSpeechToTextException;
 
 
 public class BackendApi {
@@ -77,7 +79,12 @@ public class BackendApi {
     }
 
     public static SpeechToTextResponse sendChatMessagesAsAudio(File file) {
-        return AppLauncher.getBean(SpeechToTextController.class).speechToText((MultipartFile) file);
+        try {
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            return AppLauncher.getBean(SpeechToTextController.class).speechToText(bytes);
+        } catch (IOException e) {
+            throw new CannotConvertSpeechToTextException(e);
+        }
     }
 
 

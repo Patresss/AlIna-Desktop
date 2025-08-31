@@ -62,11 +62,7 @@ dependencies {
     implementation("com.github.kwhat:jnativehook:2.2.2")
     implementation("commons-io:commons-io:2.14.0")
     implementation("org.apache.commons:commons-lang3:3.14.0")
-    implementation("io.github.openfeign:feign-core:13.1")
-    implementation("io.github.openfeign:feign-jackson:13.1")
-    implementation("io.github.openfeign:feign-okhttp:13.1")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
-    implementation("io.github.openfeign.form:feign-form:3.8.0")
 
 
     testImplementation("org.jetbrains.kotlin:kotlin-test")
@@ -79,7 +75,6 @@ dependencies {
     implementation("org.slf4j:slf4j-log4j12:1.7.5")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.2")
-    implementation("com.squareup.retrofit2:converter-jackson:2.11.0")
 
     // server module
     implementation("org.springframework.ai:spring-ai-starter-model-openai:1.0.1")
@@ -131,4 +126,3 @@ val packageExecutableZip = tasks.create<Zip>("packageExecutableZip") {
     destinationDirectory.set(file("${rootDir}/release/${project.version}"))
     from("$buildDir/image")
 }
-

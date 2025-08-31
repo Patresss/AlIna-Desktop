@@ -2,12 +2,11 @@ package com.patres.alina.server.message;
 
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@RestController
-@RequestMapping(path = "/chat-messages")
+@Component
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
@@ -16,13 +15,11 @@ public class ChatMessageController {
         this.chatMessageService = chatMessageService;
     }
 
-    @GetMapping("/{chatThreadId}")
-    public List<ChatMessageResponseModel> getMessagesByThreadId(@PathVariable final String chatThreadId) {
+    public List<ChatMessageResponseModel> getMessagesByThreadId(final String chatThreadId) {
         return chatMessageService.getMessagesByThreadId(chatThreadId);
     }
 
-    @PostMapping("/stream")
-    public void sendChatMessagesStream(@RequestBody final ChatMessageSendModel chatMessageSendModel) {
+    public void sendChatMessagesStream(final ChatMessageSendModel chatMessageSendModel) {
         chatMessageService.sendMessageStream(chatMessageSendModel);
     }
 

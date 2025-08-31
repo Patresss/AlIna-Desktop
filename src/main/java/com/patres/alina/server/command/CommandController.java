@@ -1,12 +1,11 @@
 package com.patres.alina.server.command;
 
 import com.patres.alina.common.card.UpdateStateRequest;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@RestController
-@RequestMapping(path = "/commands")
+@Component
 public class CommandController {
 
     private final CommandFileService commandFileService;
@@ -15,38 +14,31 @@ public class CommandController {
         this.commandFileService = commandFileService;
     }
 
-    @GetMapping
     public List<Command> getEnabledCommands() {
         return commandFileService.getCommands();
     }
 
-    @GetMapping("/all")
     public List<Command> getAllCommands() {
         return commandFileService.getAllCommands();
     }
 
-    @GetMapping("/{commandId}")
-    public Command getCommand(@PathVariable final String commandId) {
+    public Command getCommand(final String commandId) {
         return commandFileService.findById(commandId).orElse(null);
     }
 
-    @PostMapping
-    public String createCommand(@RequestBody final Command command) {
+    public String createCommand(final Command command) {
         return commandFileService.create(command);
     }
 
-    @PutMapping
-    public String updateCommand(@RequestBody final Command command) {
+    public String updateCommand(final Command command) {
         return commandFileService.update(command);
     }
 
-    @DeleteMapping("/{commandId}")
-    public void deleteCommand(@PathVariable final String commandId) {
+    public void deleteCommand(final String commandId) {
         commandFileService.deleteCommand(commandId);
     }
 
-    @PatchMapping("/state")
-    public void updateCommandState(@RequestBody final UpdateStateRequest updateStateRequest) {
+    public void updateCommandState(final UpdateStateRequest updateStateRequest) {
         commandFileService.updateCommandState(updateStateRequest);
     }
 
