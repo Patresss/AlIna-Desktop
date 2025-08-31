@@ -49,10 +49,7 @@
                       <items>
                           <MenuItem mnemonicParsing="false" onAction="#openAssistantSettings" text="%settings.assistant.title" />
                           <MenuItem mnemonicParsing="false" onAction="#openUiSettings" text="%settings.ui.title" />
-                          <MenuItem mnemonicParsing="false" onAction="#openServerSettings" text="%settings.server.title" />
                           <MenuItem mnemonicParsing="false" onAction="#openPlugins" text="%plugin.title" />
-                          <MenuItem mnemonicParsing="false" onAction="#openIntegrations" text="%integration.title" />
-                          <MenuItem mnemonicParsing="false" onAction="#openLogs" text="%logs.title" />
                       </items>
                       <graphic>
                           <FontIcon iconLiteral="mdmz-settings" />

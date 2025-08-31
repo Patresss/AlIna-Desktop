@@ -4,8 +4,6 @@ import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.chat.thread.ui.ChatThreadHistoryPane;
-import com.patres.alina.uidesktop.integration.settings.IntegrationPane;
-import com.patres.alina.uidesktop.logs.LogsPane;
 import com.patres.alina.uidesktop.command.settings.CommandPane;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.settings.ui.AssistantSettingsPane;
@@ -39,12 +37,9 @@ public class ApplicationWindow extends BorderPane {
 
     private final AppModalPane appModalPane = new AppModalPane();
     private final ApplicationModalPaneContent uiSettingsModalPane = new UiSettingsPane(appModalPane::hide);
-    private final ApplicationModalPaneContent serverSettingsModalPane = new ServerSettingsPane(appModalPane::hide);
     private final ApplicationModalPaneContent assistantServerSettings = new AssistantSettingsPane(appModalPane::hide);
     private final ApplicationModalPaneContent chatThreadHistoryPane = new ChatThreadHistoryPane(appModalPane::hide, this);
     private final ApplicationModalPaneContent commandPane = new CommandPane(appModalPane::hide, this);
-    private final ApplicationModalPaneContent integrationPane = new IntegrationPane(appModalPane::hide, this);
-    private final ApplicationModalPaneContent logsPane = new LogsPane(appModalPane::hide);
 
     public ApplicationWindow() {
         super();
@@ -103,11 +98,6 @@ public class ApplicationWindow extends BorderPane {
         appModalPane.show(uiSettingsModalPane);
     }
 
-    public void openServerSettings() {
-        serverSettingsModalPane.reload();
-        appModalPane.show(serverSettingsModalPane);
-    }
-
     public void openAssistantSettings() {
         assistantServerSettings.reload();
         appModalPane.show(assistantServerSettings);
@@ -116,16 +106,6 @@ public class ApplicationWindow extends BorderPane {
     public void openCommands() {
         commandPane.reload();
         appModalPane.show(commandPane);
-    }
-
-    public void openIntegrations() {
-        integrationPane.reload();
-        appModalPane.show(integrationPane);
-    }
-
-    public void openLogs() {
-        logsPane.reload();
-        appModalPane.show(logsPane);
     }
 
     public Stage getStage() {

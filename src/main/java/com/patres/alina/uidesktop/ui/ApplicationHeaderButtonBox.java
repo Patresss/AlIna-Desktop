@@ -56,11 +56,6 @@ public class ApplicationHeaderButtonBox extends HBox {
     }
 
     @FXML
-    public void openServerSettings() {
-        applicationWindow.openServerSettings();
-    }
-
-    @FXML
     public void openAssistantSettings() {
         applicationWindow.openAssistantSettings();
     }
@@ -68,16 +63,6 @@ public class ApplicationHeaderButtonBox extends HBox {
     @FXML
     public void openCommands() {
         applicationWindow.openCommands();
-    }
-
-    @FXML
-    public void openIntegrations() {
-        applicationWindow.openIntegrations();
-    }
-
-    @FXML
-    public void openLogs() {
-        applicationWindow.openLogs();
     }
 
     public Stage getStage() {
