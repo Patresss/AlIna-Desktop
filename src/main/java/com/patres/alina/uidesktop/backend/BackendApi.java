@@ -8,7 +8,7 @@ import com.patres.alina.common.message.SpeechToTextResponse;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.thread.ChatThreadRenameRequest;
-import com.patres.alina.common.thread.ChatThreadResponse;
+import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.server.message.ChatMessageController;
 import com.patres.alina.server.command.CommandController;
 import com.patres.alina.server.settings.SettingsController;
@@ -31,11 +31,11 @@ public class BackendApi {
     }
 
 
-    public static List<ChatThreadResponse> getChatThreads() {
+    public static List<ChatThread> getChatThreads() {
         return AppLauncher.getBean(ChatThreadController.class).getChatThreads();
     }
 
-    public static ChatThreadResponse createChatThread() {
+    public static ChatThread createChatThread() {
         return AppLauncher.getBean(ChatThreadController.class).createNewChatThread();
     }
 

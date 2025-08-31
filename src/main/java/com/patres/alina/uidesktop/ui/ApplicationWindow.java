@@ -1,6 +1,6 @@
 package com.patres.alina.uidesktop.ui;
 
-import com.patres.alina.common.thread.ChatThreadResponse;
+import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.chat.thread.ui.ChatThreadHistoryPane;
@@ -28,7 +28,7 @@ public class ApplicationWindow extends BorderPane {
 
     private ChatWindow chatWindow;
 
-    private ChatThreadResponse chatThread;
+    private ChatThread chatThread;
 
 
     @FXML
@@ -84,7 +84,7 @@ public class ApplicationWindow extends BorderPane {
         loadChatThread(chatThread);
     }
 
-    public void loadChatThread(ChatThreadResponse chatThread) {
+    public void loadChatThread(ChatThread chatThread) {
         centerPane.getChildren().removeIf(node -> node instanceof ChatWindow);
         if (chatWindow != null) {
             chatWindow.unsubscribeEvents();
@@ -93,7 +93,7 @@ public class ApplicationWindow extends BorderPane {
         centerPane.getChildren().add(chatWindow);
     }
 
-    public void openChatThread(ChatThreadResponse chatThread) {
+    public void openChatThread(ChatThread chatThread) {
         loadChatThread(chatThread);
         appModalPane.hide(true);
     }
@@ -137,7 +137,7 @@ public class ApplicationWindow extends BorderPane {
         return getTop();
     }
 
-    public Optional<ChatThreadResponse> getChatThread() {
+    public Optional<ChatThread> getChatThread() {
         return Optional.of(chatWindow)
                 .map(ChatWindow::getChatThread);
     }

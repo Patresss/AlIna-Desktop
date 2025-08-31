@@ -1,7 +1,7 @@
 package com.patres.alina.uidesktop.chat.thread.ui;
 
 import atlantafx.base.theme.Styles;
-import com.patres.alina.common.thread.ChatThreadResponse;
+import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
@@ -27,7 +27,7 @@ public class ChatThreadHistoryPane extends ApplicationModalPaneContent {
 
     @Override
     public void reload() {
-        final List<ChatThreadResponse> chatThreads = BackendApi.getChatThreads();
+        final List<ChatThread> chatThreads = BackendApi.getChatThreads();
         final List<ChatThreadHistoryCard> cards = chatThreads.stream()
                 .map(chatThread -> new ChatThreadHistoryCard(chatThread, this))
                 .toList();
@@ -53,7 +53,7 @@ public class ChatThreadHistoryPane extends ApplicationModalPaneContent {
         return cardsHolder;
     }
 
-    public void selectChatThread(final ChatThreadResponse chatThread) {
+    public void selectChatThread(final ChatThread chatThread) {
         applicationWindow.openChatThread(chatThread);
     }
 

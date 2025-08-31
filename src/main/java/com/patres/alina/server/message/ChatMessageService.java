@@ -7,7 +7,7 @@ import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
-import com.patres.alina.common.thread.ChatThreadResponse;
+import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.server.command.CommandConstants;
 import com.patres.alina.server.command.CommandFileService;
@@ -53,7 +53,7 @@ public class ChatMessageService {
 
     public synchronized void sendMessageStream(final ChatMessageSendModel chatMessageSendModel) {
         if (chatMessageSendModel.chatThreadId() == null) {
-            final ChatThreadResponse newChatThread = chatThreadFacade.createNewChatThread();
+            final ChatThread newChatThread = chatThreadFacade.createNewChatThread();
             final ChatMessageSendModel withNewThread = new ChatMessageSendModel(
                     chatMessageSendModel.content(),
                     newChatThread.id(),

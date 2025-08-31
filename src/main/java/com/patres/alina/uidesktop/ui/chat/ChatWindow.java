@@ -8,7 +8,7 @@ import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.message.ChatMessageStyleType;
-import com.patres.alina.common.thread.ChatThreadResponse;
+import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.messagecontext.MessageContextException;
 import com.patres.alina.uidesktop.messagecontext.MessageWithContextGenerator;
@@ -50,7 +50,7 @@ public class ChatWindow extends BorderPane {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatWindow.class);
 
-    private final ChatThreadResponse chatThread;
+    private final ChatThread chatThread;
     private final List<ChatMessageResponseModel> messages;
     private final ApplicationWindow applicationWindow;
 
@@ -95,7 +95,7 @@ public class ChatWindow extends BorderPane {
     private final List<Node> actionNodes;
     private final List<Node> nomRecordingActionNodes;
 
-    public ChatWindow(ChatThreadResponse chatThread, ApplicationWindow applicationWindow) {
+    public ChatWindow(ChatThread chatThread, ApplicationWindow applicationWindow) {
         super();
         this.chatThread = chatThread;
         this.applicationWindow = applicationWindow;
@@ -384,7 +384,7 @@ public class ChatWindow extends BorderPane {
         return new ChatMessageResponseModel(errorMessage + ": " + message, ASSISTANT, LocalDateTime.now(), ChatMessageStyleType.DANGER, null);
     }
 
-    public ChatThreadResponse getChatThread() {
+    public ChatThread getChatThread() {
         return chatThread;
     }
 

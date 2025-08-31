@@ -76,4 +76,6 @@ public class LocalStorageConfiguration {
         logger.info("Configuring JSONL conversation storage at: {}", conversationsStoragePath);
         return new ConversationRepository(conversationsStoragePath, objectMapper);
     }
+
+    // No separate repository for threads; threads list comes from files in conversations dir
 }

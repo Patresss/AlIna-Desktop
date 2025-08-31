@@ -1,6 +1,6 @@
 package com.patres.alina.server.thread;
 
-import com.patres.alina.common.thread.ChatThreadResponse;
+import com.patres.alina.common.thread.ChatThread;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,7 +16,7 @@ public class ChatThreadFacade {
         chatThreadService.setModifiedAt(chatThreadId);
     }
 
-    public ChatThreadResponse createNewChatThread() {
+    public ChatThread createNewChatThread() {
         return chatThreadService.createNewChatThread();
     }
 }

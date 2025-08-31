@@ -5,7 +5,7 @@ import atlantafx.base.controls.Tile;
 import atlantafx.base.theme.Styles;
 import atlantafx.base.theme.Tweaks;
 import com.patres.alina.common.thread.ChatThreadRenameRequest;
-import com.patres.alina.common.thread.ChatThreadResponse;
+import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.atlantafx.CustomTile;
 import javafx.scene.control.MenuButton;
@@ -23,10 +23,10 @@ public class ChatThreadHistoryCard extends Card {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private final ChatThreadResponse chatThread;
+    private final ChatThread chatThread;
     private final ChatThreadHistoryPane chatThreadHistoryPane;
 
-    public ChatThreadHistoryCard(final ChatThreadResponse chatThread, final ChatThreadHistoryPane chatThreadHistoryPane) {
+    public ChatThreadHistoryCard(final ChatThread chatThread, final ChatThreadHistoryPane chatThreadHistoryPane) {
         this.chatThread = chatThread;
         this.chatThreadHistoryPane = chatThreadHistoryPane;
         initializeCard();
@@ -100,7 +100,7 @@ public class ChatThreadHistoryCard extends Card {
         tile.setOnMouseClicked(e -> chatThreadHistoryPane.selectChatThread(chatThread));
     }
 
-    public ChatThreadResponse getChatThread() {
+    public ChatThread getChatThread() {
         return chatThread;
     }
 }
