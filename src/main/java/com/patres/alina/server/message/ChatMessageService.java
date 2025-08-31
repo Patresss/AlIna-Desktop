@@ -5,7 +5,7 @@ import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.plugin.PluginDetail;
 import com.patres.alina.common.thread.ChatThreadResponse;
 import com.patres.alina.server.openai.OpenAiApiFacade;
-import com.patres.alina.server.plugin.PluginService;
+import com.patres.alina.server.plugin.PluginServiceInterface;
 import com.patres.alina.server.thread.ChatThreadFacade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,13 +34,13 @@ public class ChatMessageService {
     private static final PageRequest CONTEXT_PAGEABLE = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
 
     private final ChatMessageStorageRepository chatMessageRepository;
-    private final PluginService pluginService;
+    private final PluginServiceInterface pluginService;
     private final OpenAiApiFacade openAiApi;
     private final StoreMessageManager storeMessageManager;
     private final ChatThreadFacade chatThreadFacade;
 
     public ChatMessageService(final ChatMessageStorageRepository chatMessageRepository,
-                              final PluginService pluginService,
+                              final PluginServiceInterface pluginService,
                               final OpenAiApiFacade openAiApi,
                               final StoreMessageManager storeMessageManager,
                               final ChatThreadFacade chatThreadFacade) {

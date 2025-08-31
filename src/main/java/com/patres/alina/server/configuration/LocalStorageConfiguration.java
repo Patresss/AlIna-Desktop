@@ -52,6 +52,21 @@ public class LocalStorageConfiguration {
     }
     
     @Bean
+    @ConditionalOnProperty(name = "storage.type", havingValue = "local", matchIfMissing = false)
+    public Path commandsStoragePath(Path localStorageBasePath) {
+        Path commandsDir = localStorageBasePath.resolve("../commands").normalize();
+        
+        try {
+            Files.createDirectories(commandsDir);
+            logger.info("Created commands storage directory: {}", commandsDir);
+            return commandsDir;
+        } catch (IOException e) {
+            logger.error("Failed to create commands storage directory: {}", commandsDir, e);
+            throw new RuntimeException("Failed to create commands storage directory", e);
+        }
+    }
+    
+    @Bean
     @Primary
     @ConditionalOnProperty(name = "storage.type", havingValue = "local", matchIfMissing = false)
     public ChatMessageStorageRepository conversationRepository(

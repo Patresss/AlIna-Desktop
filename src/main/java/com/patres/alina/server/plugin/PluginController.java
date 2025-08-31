@@ -12,9 +12,9 @@ import java.util.List;
 @RequestMapping(path = "/plugins")
 public class PluginController {
 
-    private final PluginService pluginService;
+    private final PluginServiceInterface pluginService;
 
-    public PluginController(PluginService pluginService) {
+    public PluginController(PluginServiceInterface pluginService) {
         this.pluginService = pluginService;
     }
 

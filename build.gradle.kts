@@ -78,6 +78,7 @@ dependencies {
     implementation("org.slf4j:slf4j-api:1.7.5")
     implementation("org.slf4j:slf4j-log4j12:1.7.5")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.2")
     implementation("com.squareup.retrofit2:converter-jackson:2.11.0")
 
     // server module
