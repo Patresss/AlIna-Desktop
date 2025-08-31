@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Component;
@@ -23,7 +22,6 @@ import java.util.List;
 public class OpenAiApiFacade {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenAiApiFacade.class);
-    private static final String CHAT_MODEL_PATTERN = "gpt";
     public static final String SPEECH_TO_TEXT_MODEL = "whisper-1";
 
     private final OpenAiApiCreator openAiApiCreator;
@@ -57,14 +55,6 @@ public class OpenAiApiFacade {
 //                        .build(),
 //                audio.getPath());
         return "transcription.getText();";
-    }
-
-    public ChatResponse sendMessage(final List<AbstractMessage> messages) {
-        List<Message> messageList = messages.stream().map(m -> (Message) m).toList();
-        ChatClient.CallResponseSpec callResponseSpec = ChatClient.create(chatModel)
-                .prompt(new Prompt(messageList))
-                .call();
-        return callResponseSpec.chatResponse();
     }
 
     public reactor.core.publisher.Flux<String> sendMessageStream(final List<AbstractMessage> messages) {

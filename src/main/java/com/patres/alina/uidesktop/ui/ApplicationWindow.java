@@ -7,7 +7,6 @@ import com.patres.alina.uidesktop.chat.thread.ui.ChatThreadHistoryPane;
 import com.patres.alina.uidesktop.command.settings.CommandPane;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.settings.ui.AssistantSettingsPane;
-import com.patres.alina.uidesktop.settings.ui.ServerSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.UiSettingsPane;
 import com.patres.alina.uidesktop.ui.chat.ChatWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;

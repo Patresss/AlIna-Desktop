@@ -14,7 +14,6 @@ public class OpenAiApiCreator {
         OpenAiApi api = createOpenAiApi(apiKey);
         var defaults = OpenAiChatOptions.builder()
                 .model(model)
-
                 .build();
 
         return OpenAiChatModel.builder()
