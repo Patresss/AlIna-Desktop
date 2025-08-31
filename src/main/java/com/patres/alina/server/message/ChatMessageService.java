@@ -13,8 +13,8 @@ import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import com.patres.alina.common.settings.AssistantSettings;
+import com.patres.alina.common.settings.FileManager;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import static com.patres.alina.server.message.ChatMessageMapper.toChatMessageResponseModel;
 import static com.patres.alina.server.message.ChatMessageMapper.toChatMessageResponseModels;
 
+import com.patres.alina.common.command.CommandConstants;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 
@@ -31,38 +32,26 @@ import com.patres.alina.common.event.bus.DefaultEventBus;
 public class ChatMessageService {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatMessageService.class);
-    private static final PageRequest CONTEXT_PAGEABLE = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
 
     private final ChatMessageStorageRepository chatMessageRepository;
     private final CommandFileService commandFileService;
     private final OpenAiApiFacade openAiApi;
     private final StoreMessageManager storeMessageManager;
     private final ChatThreadFacade chatThreadFacade;
+    private final FileManager<AssistantSettings> assistantSettingsManager;
 
     public ChatMessageService(final ChatMessageStorageRepository chatMessageRepository,
                               final CommandFileService commandFileService,
                               final OpenAiApiFacade openAiApi,
                               final StoreMessageManager storeMessageManager,
-                              final ChatThreadFacade chatThreadFacade) {
+                              final ChatThreadFacade chatThreadFacade,
+                              final FileManager<AssistantSettings> assistantSettingsManager) {
         this.chatMessageRepository = chatMessageRepository;
         this.openAiApi = openAiApi;
         this.commandFileService = commandFileService;
         this.storeMessageManager = storeMessageManager;
         this.chatThreadFacade = chatThreadFacade;
-    }
-
-    public synchronized ChatMessageResponseModel sendMessage(final ChatMessageSendModel chatMessageSendModel) {
-        if (chatMessageSendModel.chatThreadId() == null) {
-            final ChatThreadResponse newChatThread = chatThreadFacade.createNewChatThread();
-            final ChatMessageSendModel chatMessageSendModelWithNewThread = new ChatMessageSendModel(
-                    chatMessageSendModel.content(),
-                    newChatThread.id(),
-                    chatMessageSendModel.pluginId(),
-                    chatMessageSendModel.styleType()
-            );
-            return sendMessageWithChatThread(chatMessageSendModelWithNewThread);
-        }
-        return sendMessageWithChatThread(chatMessageSendModel);
+        this.assistantSettingsManager = assistantSettingsManager;
     }
 
     public synchronized void sendMessageStream(final ChatMessageSendModel chatMessageSendModel) {
@@ -71,7 +60,7 @@ public class ChatMessageService {
             final ChatMessageSendModel chatMessageSendModelWithNewThread = new ChatMessageSendModel(
                     chatMessageSendModel.content(),
                     newChatThread.id(),
-                    chatMessageSendModel.pluginId(),
+                    chatMessageSendModel.commandId(),
                     chatMessageSendModel.styleType()
             );
             sendMessageStreamWithChatThread(chatMessageSendModelWithNewThread);
@@ -86,7 +75,7 @@ public class ChatMessageService {
 
         final List<AbstractMessage> contextMessages = loadMessages(chatMessageSendModel.chatThreadId());
         
-        final String chatContent = calculateContentWithPluginPrompt(chatMessageSendModel.content(), chatMessageSendModel.pluginId());
+        final String chatContent = calculateContentWithCommandPrompt(chatMessageSendModel.content(), chatMessageSendModel.commandId());
         final AbstractMessage userChatMessage = new UserMessage(chatContent);
         
         // Store the user message first
@@ -152,61 +141,13 @@ public class ChatMessageService {
         }
     }
 
-    public synchronized ChatMessageResponseModel sendMessageWithChatThread(final ChatMessageSendModel chatMessageSendModel) {
-        final String chatThreadId = chatMessageSendModel.chatThreadId();
-        logger.info("Sending '{}' content, threadId={} ...", chatMessageSendModel.content(), chatThreadId);
-
-        final List<AbstractMessage> contextMessages = loadMessages(chatMessageSendModel.chatThreadId());
-
-
-        final String chatContent = calculateContentWithPluginPrompt(chatMessageSendModel.content(), chatMessageSendModel.pluginId());
-        final AbstractMessage userChatMessage =  new UserMessage(chatContent);
-
-        logger.info("Processing first request '{}' content, threadId={} ...", chatMessageSendModel.content(), chatThreadId);
-        final ChatResponse response = sendUserMessage(contextMessages, userChatMessage, chatMessageSendModel, chatMessageSendModel.content());
-
-//        final ChatResponse functionableResponse = getFunctionableResponse(contextMessages, response, chatMessageSendModel);
-//        logger.info("Received content for threadId {}: '{}'", chatThreadId, functionableResponse.getContent());
-        return toChatMessageResponseModel(response, chatMessageSendModel);
-    }
-//
-//    private ChatResponse sendFunctionMessage(final List<ChatMessage> contextMessages,
-//                                            final ChatMessage message,
-//                                            final ChatMessageSendModel chatMessageSendModel) {
-//        contextMessages.add(message);
-//        final ChatMessage response = openAiApi.sendFunctionMessage(message);
-//        storeMessageManager.storeMessage(response, chatMessageSendModel);
-//        return response;
-//    }
-
-    private ChatResponse sendMessage(final List<AbstractMessage> contextMessages,
-                                    final AbstractMessage message,
-                                    final ChatMessageSendModel chatMessageSendModel) {
-        contextMessages.add(message);
-        final ChatResponse response = openAiApi.sendMessage(contextMessages);
-        storeMessageManager.storeMessage(response, chatMessageSendModel);
-        return response;
-    }
-
-    private ChatResponse sendUserMessage(final List<AbstractMessage> contextMessages,
-                                        final AbstractMessage message,
-                                        final ChatMessageSendModel chatMessageSendModel,
-                                        final String contentToDisplay) {
-        storeMessageManager.storeMessage(message, chatMessageSendModel, contentToDisplay);
-        return sendMessage(contextMessages, message, chatMessageSendModel);
-    }
-
     public List<ChatMessageResponseModel> getMessagesByThreadId(final String chatThreadId) {
         final List<ChatMessageEntry> chatMessageEntries = chatMessageRepository.findMessagesToDisplay(chatThreadId);
         return toChatMessageResponseModels(chatMessageEntries, chatThreadId);
     }
 
-    public void deleteMessagesByChatThreadId(final String chatThreadId) {
-        chatMessageRepository.deleteByThreadId(chatThreadId);
-    }
-
-    private String calculateContentWithPluginPrompt(final String content, final String pluginId) {
-        final Optional<CommandDetail> commandDetail = Optional.ofNullable(pluginId)
+    private String calculateContentWithCommandPrompt(final String content, final String commandId) {
+        final Optional<CommandDetail> commandDetail = Optional.ofNullable(commandId)
                 .flatMap(commandFileService::getCommandDetails);
 
         final String commandContent = commandDetail
@@ -217,15 +158,17 @@ public class ChatMessageService {
             return content;
         }
 
-        if (commandContent.contains("${message}")) {
-            return commandContent.replaceAll("\\\\$\\\\{message}", content);
+        if (commandContent.contains(CommandConstants.ARGUMENTS_PLACEHOLDER)) {
+            return commandContent.replaceAll(java.util.regex.Pattern.quote(CommandConstants.ARGUMENTS_PLACEHOLDER), content);
         } else {
             return commandContent + System.lineSeparator() + content;
         }
     }
 
     private List<AbstractMessage> loadMessages(final String chatThreadId) {
-        final List<ChatMessageEntry> messages = chatMessageRepository.findMessagesForContext(chatThreadId, CONTEXT_PAGEABLE).reversed();
+        final int numberOfMessagesInContext = assistantSettingsManager.getSettings().numberOfMessagesInContext();
+        final List<ChatMessageEntry> messages = chatMessageRepository
+                .findLastMessagesForContext(chatThreadId, numberOfMessagesInContext);
         return messages.stream()
                 .map(ChatMessageMapper::toAbstractMessage)
                 .collect(Collectors.toList());

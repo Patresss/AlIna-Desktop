@@ -4,11 +4,9 @@ import com.patres.alina.common.card.CardListItem;
 import com.patres.alina.common.card.UpdateStateRequest;
 import com.patres.alina.common.command.CommandCreateRequest;
 import com.patres.alina.common.command.CommandDetail;
+import com.patres.alina.server.parser.MarkdownParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Primary;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -21,8 +19,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 @Service
-@Primary
-@ConditionalOnProperty(name = "storage.type", havingValue = "local", matchIfMissing = false)
 public class CommandFileService {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandFileService.class);
@@ -82,7 +78,6 @@ public class CommandFileService {
         Command command = CommandMapper.toCommand(commandCreateRequest);
         String filename = generateUniqueFilename(command.name());
         
-        // Update command with actual filename as ID
         command = new Command(
                 filename,
                 command.name(),

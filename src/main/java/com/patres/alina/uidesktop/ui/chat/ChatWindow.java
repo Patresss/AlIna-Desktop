@@ -378,14 +378,6 @@ public class ChatWindow extends BorderPane {
         return currentCommand == null ? null : currentCommand.id();
     }
 
-    private static ChatMessageResponseModel getChatResponse(final ChatMessageSendModel chatMessageSendModel) {
-        try {
-            return BackendApi.sendChatMessages(chatMessageSendModel);
-        } catch (Exception e) {
-            return handelExceptionAsMessage(chatMessageSendModel.content(), e, e.getMessage());
-        }
-    }
-
     private static ChatMessageResponseModel handelExceptionAsMessage(final String content, final Exception e, final String message) {
         logger.error("Cannot send a message `{}` to server", content, e);
         final String errorMessage = LanguageManager.getLanguageString("chat.message.error");

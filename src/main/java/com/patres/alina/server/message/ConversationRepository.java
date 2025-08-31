@@ -3,7 +3,6 @@ package com.patres.alina.server.message;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.server.storage.JsonLinesRepository;
-import org.springframework.data.domain.Pageable;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -46,12 +45,16 @@ public class ConversationRepository implements ChatMessageStorageRepository {
     }
     
     @Override
-    public List<ChatMessageEntry> findMessagesForContext(String chatThreadId, Set<ChatMessageRole> roles, Pageable pageable) {
-        List<ChatMessageEntry> filtered = getConversationMessages(chatThreadId).stream()
+    public List<ChatMessageEntry> findLastMessagesForContext(String chatThreadId, Set<ChatMessageRole> roles, int limit) {
+        return getConversationMessages(chatThreadId).stream()
             .filter(msg -> hasMatchingRole(msg, roles))
-            .collect(Collectors.toList());
-        
-        return applyPagination(filtered, pageable);
+            .collect(Collectors.collectingAndThen(Collectors.toList(), list -> {
+                if (limit <= 0) {
+                    return List.of();
+                }
+                int from = Math.max(0, list.size() - limit);
+                return list.subList(from, list.size());
+            }));
     }
     
     @Override
@@ -100,15 +103,5 @@ public class ConversationRepository implements ChatMessageStorageRepository {
             .anyMatch(role -> role.getChatMessageRole().equals(message.role().getValue()));
     }
     
-    /**
-     * Apply pagination to a list of messages
-     */
-    private List<ChatMessageEntry> applyPagination(List<ChatMessageEntry> messages, Pageable pageable) {
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), messages.size());
-        if (start >= messages.size()) {
-            return List.of();
-        }
-        return messages.subList(start, end);
-    }
+    // Pageable support removed; context selection is now limit-based.
 }

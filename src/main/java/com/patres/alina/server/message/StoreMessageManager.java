@@ -48,7 +48,7 @@ public class StoreMessageManager {
                 ChatMessageStyleType.NONE,
                 LocalDateTime.now(),
                 contentWithContext,
-                chatMessageSendModel.pluginId(),
+                chatMessageSendModel.commandId(),
                 "chatMessage.getName()" // TODO
         );
         chatMessageStorageRepository.save(chatMessageResponse);

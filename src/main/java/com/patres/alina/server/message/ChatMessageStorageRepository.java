@@ -1,7 +1,6 @@
 package com.patres.alina.server.message;
 
 import com.patres.alina.common.message.ChatMessageRole;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Set;
@@ -28,15 +27,15 @@ public interface ChatMessageStorageRepository {
     }
     
     /**
-     * Find messages for AI context with pagination
+     * Find last messages for AI context (limit by count)
      */
-    List<ChatMessageEntry> findMessagesForContext(String chatThreadId, Set<ChatMessageRole> roles, Pageable pageable);
-            
+    List<ChatMessageEntry> findLastMessagesForContext(String chatThreadId, Set<ChatMessageRole> roles, int limit);
+
     /**
-     * Find messages for AI context (all roles)
+     * Find last messages for AI context (all roles)
      */
-    default List<ChatMessageEntry> findMessagesForContext(String chatThreadId, Pageable pageable) {
-        return findMessagesForContext(chatThreadId, Set.of(USER, ASSISTANT, SYSTEM, FUNCTION), pageable);
+    default List<ChatMessageEntry> findLastMessagesForContext(String chatThreadId, int limit) {
+        return findLastMessagesForContext(chatThreadId, Set.of(USER, ASSISTANT, SYSTEM, FUNCTION), limit);
     }
     
     /**

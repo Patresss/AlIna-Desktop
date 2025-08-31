@@ -23,13 +23,6 @@ public class ChatMessageController {
         return chatMessageService.getMessagesByThreadId(chatThreadId);
     }
 
-    @PostMapping
-    public ChatMessageResponseModel sendChatMessages(@RequestBody ChatMessageSendModel chatMessageSendModel) {
-        ChatMessageResponseModel chatMessageResponseModel = chatMessageService.sendMessage(chatMessageSendModel);
-        DefaultEventBus.getInstance().publish(new ChatMessageReceivedEvent(chatMessageResponseModel));
-        return chatMessageResponseModel;
-    }
-
     @PostMapping("/stream")
     public void sendChatMessagesStream(@RequestBody ChatMessageSendModel chatMessageSendModel) {
         chatMessageService.sendMessageStream(chatMessageSendModel);

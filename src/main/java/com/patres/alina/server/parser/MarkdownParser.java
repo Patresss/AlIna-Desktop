@@ -1,8 +1,9 @@
-package com.patres.alina.server.command;
+package com.patres.alina.server.parser;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.patres.alina.common.card.State;
+import com.patres.alina.server.command.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

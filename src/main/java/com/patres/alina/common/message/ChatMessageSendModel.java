@@ -5,15 +5,15 @@ import static com.patres.alina.common.message.ChatMessageStyleType.NONE;
 public record ChatMessageSendModel(
         String content,
         String chatThreadId,
-        String pluginId,
+        String commandId,
         ChatMessageStyleType styleType
 ) {
 
     public ChatMessageSendModel(
             String content,
             String chatThreadId,
-            String pluginId
+            String commandId
     ) {
-        this(content, chatThreadId, pluginId, NONE);
+        this(content, chatThreadId, commandId, NONE);
     }
 }

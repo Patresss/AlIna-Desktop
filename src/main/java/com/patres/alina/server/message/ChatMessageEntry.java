@@ -13,7 +13,7 @@ public record ChatMessageEntry(
         ChatMessageStyleType styleType,
         LocalDateTime createdAt,
         String contentWithContext,
-        String pluginId,
+        String commandId,
         String name
 ) {
 }

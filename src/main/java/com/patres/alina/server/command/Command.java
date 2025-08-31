@@ -4,12 +4,12 @@ import com.patres.alina.common.card.State;
 import com.patres.alina.server.storage.Entity;
 
 public record Command(
-        String id,              // filename without extension
-        String name,            // from frontmatter
-        String description,     // from frontmatter  
-        String systemPrompt,    // markdown content after frontmatter
-        String icon,            // from frontmatter, default "bi-slash"
-        State state             // from frontmatter, default ENABLED
+        String id,
+        String name,
+        String description,
+        String systemPrompt,
+        String icon,
+        State state
 ) implements Entity<String> {
 
     public Command(String name,
