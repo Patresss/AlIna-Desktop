@@ -1,0 +1,28 @@
+{
+  "name": "alina-desktop-mcp",
+  "version": "1.0.0",
+  "description": "MCP server dependencies for AlIna Desktop AI Assistant",
+  "type": "module",
+  "main": "test-mcp-server.js",
+  "scripts": {
+    "start": "node test-mcp-server.js",
+    "test-server": "node test-mcp-server.js",
+    "install-mcp-deps": "npm install @modelcontextprotocol/sdk"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "assistant",
+    "alina"
+  ],
+  "author": "AlIna Desktop",
+  "license": "MIT"
+}

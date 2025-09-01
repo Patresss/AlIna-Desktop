@@ -28,6 +28,7 @@ javafx {
 repositories {
     mavenCentral()
     maven { url = uri("https://sandec.jfrog.io/artifactory/repo") }
+    maven { url = uri("https://repo.spring.io/milestone") }
 }
 
 
@@ -78,10 +79,8 @@ dependencies {
 
     // server module
     implementation("org.springframework.ai:spring-ai-starter-model-openai:1.0.1")
+    implementation("org.springframework.ai:spring-ai-starter-mcp-client:1.0.1")
     
-    // Local file storage - Jackson already included via Spring Boot
-
-
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
 

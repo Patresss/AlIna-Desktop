@@ -11,6 +11,7 @@ import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.server.command.CommandConstants;
 import com.patres.alina.server.command.CommandFileService;
+import com.patres.alina.server.mcp.McpChatIntegrationService;
 import com.patres.alina.server.openai.OpenAiApiFacade;
 import com.patres.alina.server.thread.ChatThreadFacade;
 import org.slf4j.Logger;
@@ -36,19 +37,22 @@ public class ChatMessageService {
     private final StoreMessageManager storeMessageManager;
     private final ChatThreadFacade chatThreadFacade;
     private final FileManager<AssistantSettings> assistantSettingsManager;
+    private final McpChatIntegrationService mcpChatIntegrationService;
 
     public ChatMessageService(final ChatMessageStorageRepository chatMessageRepository,
                               final CommandFileService commandFileService,
                               final OpenAiApiFacade openAiApi,
                               final StoreMessageManager storeMessageManager,
                               final ChatThreadFacade chatThreadFacade,
-                              final FileManager<AssistantSettings> assistantSettingsManager) {
+                              final FileManager<AssistantSettings> assistantSettingsManager,
+                              final McpChatIntegrationService mcpChatIntegrationService) {
         this.chatMessageRepository = chatMessageRepository;
         this.openAiApi = openAiApi;
         this.commandFileService = commandFileService;
         this.storeMessageManager = storeMessageManager;
         this.chatThreadFacade = chatThreadFacade;
         this.assistantSettingsManager = assistantSettingsManager;
+        this.mcpChatIntegrationService = mcpChatIntegrationService;
     }
 
     public synchronized void sendMessageStream(final ChatMessageSendModel chatMessageSendModel) {
@@ -85,10 +89,17 @@ public class ChatMessageService {
                                       final ChatMessageSendModel chatMessageSendModel) {
         contextMessages.add(message);
 
+        // Enhance messages with MCP tools if available
+        final List<AbstractMessage> enhancedMessages = mcpChatIntegrationService.enhanceMessagesWithMcpTools(contextMessages);
+        
+        if (mcpChatIntegrationService.hasMcpTools()) {
+            logger.debug("Enhanced chat messages with {} MCP tools", mcpChatIntegrationService.getAvailableToolCount());
+        }
+
         final StringBuilder fullResponse = new StringBuilder();
 
         try {
-            final reactor.core.publisher.Flux<String> stream = openAiApi.sendMessageStream(contextMessages);
+            final reactor.core.publisher.Flux<String> stream = openAiApi.sendMessageStream(enhancedMessages);
 
             stream.subscribe(
                     token -> {

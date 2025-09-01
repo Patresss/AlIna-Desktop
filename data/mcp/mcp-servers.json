@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "test-server": {
+      "command": "node",
+      "args": ["test-mcp-server.js"],
+      "env": {}
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/patrykpiechaczek/Desktop", "/Users/patrykpiechaczek/Documents"],
+      "env": {}
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "env": {}
+    }
+  }
+}
