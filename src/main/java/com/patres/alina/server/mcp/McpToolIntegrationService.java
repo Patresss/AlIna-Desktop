@@ -25,7 +25,7 @@ public class McpToolIntegrationService implements ToolCallbackProvider {
     private final List<McpToolDescriptor> toolDescriptors = new CopyOnWriteArrayList<>();
 
     @Autowired
-    public McpToolIntegrationService(McpClientManager clientManager) {
+    public McpToolIntegrationService(final McpClientManager clientManager) {
         this.clientManager = clientManager;
     }
 
@@ -42,7 +42,7 @@ public class McpToolIntegrationService implements ToolCallbackProvider {
     }
 
     @EventListener
-    public void onConfigurationChange(McpConfigurationService.McpConfigurationChangedEvent event) {
+    public void onConfigurationChange(final McpConfigurationService.McpConfigurationChangedEvent event) {
         logger.info("MCP configuration changed, refreshing tool callbacks");
         refreshToolCallbacks();
     }
@@ -55,49 +55,38 @@ public class McpToolIntegrationService implements ToolCallbackProvider {
         toolDescriptors.clear();
         
         // Get all active clients
-        List<McpSyncClient> activeClients = clientManager.getActiveClients();
+        final List<McpSyncClient> activeClients = clientManager.getActiveClients();
         logger.info("Discovered {} active MCP clients", activeClients.size());
-        
-        // Create tool callbacks for each client
-        for (McpSyncClient client : activeClients) {
-            try {
-                // Create a tool callback provider for this client
-                SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(client);
-                ToolCallback[] clientCallbacks = provider.getToolCallbacks();
-                if (clientCallbacks.length > 0) {
-                    // Add all tools from this client
-                    for (ToolCallback callback : clientCallbacks) {
-                        toolCallbacks.add(callback);
-                        
-                        // Create descriptor for tracking with simplified info
-                        McpToolDescriptor descriptor = new McpToolDescriptor(
-                            callback.toString(), // Use toString as name
-                            "MCP Tool", // Generic description
-                            client.toString() // Client identifier
-                        );
-                        toolDescriptors.add(descriptor);
-                        
-                        logger.debug("Added MCP tool: {} from client: {}", callback, client);
-                    }
-                    
-                    logger.info("Added {} tools from MCP client: {}", clientCallbacks.length, client);
-                }
-                
-            } catch (Exception e) {
-                logger.error("Failed to get tools from MCP client: {}", client, e);
-                // Continue with other clients
-            }
-        }
+        activeClients.forEach(this::addToolsFromClient);
         
         logger.info("MCP tool refresh complete. Total tools available: {}", toolCallbacks.size());
-        
-        // Log available tools
-        if (logger.isInfoEnabled() && !toolCallbacks.isEmpty()) {
-            List<String> toolNames = toolCallbacks.stream()
-                .map(ToolCallback::toString)
-                .toList();
-            logger.info("Available MCP tools: {}", toolNames);
+        logAvailableToolNames();
+    }
+
+    private void addToolsFromClient(final McpSyncClient client) {
+        try {
+            final SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(client);
+            final ToolCallback[] clientCallbacks = provider.getToolCallbacks();
+            if (clientCallbacks == null || clientCallbacks.length == 0) {
+                return;
+            }
+            for (final ToolCallback callback : clientCallbacks) {
+                toolCallbacks.add(callback);
+                toolDescriptors.add(new McpToolDescriptor(callback.toString(), "MCP Tool", client.toString()));
+                logger.debug("Added MCP tool: {} from client: {}", callback, client);
+            }
+            logger.info("Added {} tools from MCP client: {}", clientCallbacks.length, client);
+        } catch (final Exception e) {
+            logger.error("Failed to get tools from MCP client: {}", client, e);
         }
+    }
+
+    private void logAvailableToolNames() {
+        if (!logger.isInfoEnabled() || toolCallbacks.isEmpty()) {
+            return;
+        }
+        final List<String> toolNames = toolCallbacks.stream().map(ToolCallback::toString).toList();
+        logger.info("Available MCP tools: {}", toolNames);
     }
 
     public List<McpToolDescriptor> getToolDescriptors() {

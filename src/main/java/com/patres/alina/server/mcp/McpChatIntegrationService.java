@@ -20,7 +20,7 @@ public class McpChatIntegrationService {
     private final McpToolIntegrationService toolIntegrationService;
 
     @Autowired
-    public McpChatIntegrationService(McpToolIntegrationService toolIntegrationService) {
+    public McpChatIntegrationService(final McpToolIntegrationService toolIntegrationService) {
         this.toolIntegrationService = toolIntegrationService;
     }
 
@@ -28,42 +28,20 @@ public class McpChatIntegrationService {
      * Enhances chat messages with MCP tool capabilities
      * Adds system message about available tools if any are present
      */
-    public List<AbstractMessage> enhanceMessagesWithMcpTools(List<AbstractMessage> messages) {
-        List<AbstractMessage> enhancedMessages = new ArrayList<>(messages);
+    public List<AbstractMessage> enhanceMessagesWithMcpTools(final List<AbstractMessage> messages) {
+        final List<AbstractMessage> enhancedMessages = new ArrayList<>(messages);
         
-        int availableToolCount = toolIntegrationService.getAvailableToolCount();
+        final int availableToolCount = toolIntegrationService.getAvailableToolCount();
         if (availableToolCount > 0) {
             logger.debug("Enhancing chat messages with {} MCP tools", availableToolCount);
             
             // Get tool descriptions
-            List<McpToolIntegrationService.McpToolDescriptor> toolDescriptors = 
+            final List<McpToolIntegrationService.McpToolDescriptor> toolDescriptors = 
                 toolIntegrationService.getToolDescriptors();
             
             // Create system message describing available tools
-            StringBuilder toolDescription = new StringBuilder();
-            toolDescription.append("You have access to external tools through MCP (Model Context Protocol). ");
-            toolDescription.append("Available tools:\n");
-            
-            for (McpToolIntegrationService.McpToolDescriptor descriptor : toolDescriptors) {
-                toolDescription.append("- ").append(descriptor.getName())
-                              .append(": ").append(descriptor.getDescription())
-                              .append("\n");
-            }
-            
-            toolDescription.append("\nPolicy: When a tool can improve accuracy (e.g., fetching the current time), call it directly without asking for permission. Execute the most relevant tool, incorporate its result, and answer succinctly.");
-            
-            SystemMessage toolSystemMessage = new SystemMessage(toolDescription.toString());
-            
-            // Add system message at the beginning (after any existing system messages)
-            int insertIndex = 0;
-            for (int i = 0; i < enhancedMessages.size(); i++) {
-                if (enhancedMessages.get(i) instanceof SystemMessage) {
-                    insertIndex = i + 1;
-                } else {
-                    break;
-                }
-            }
-            
+            final SystemMessage toolSystemMessage = buildToolsSystemMessage(toolDescriptors);
+            final int insertIndex = findInsertIndexForSystemMessage(enhancedMessages);
             enhancedMessages.add(insertIndex, toolSystemMessage);
             
             logger.debug("Added MCP tools system message to chat context");
@@ -74,25 +52,31 @@ public class McpChatIntegrationService {
         return enhancedMessages;
     }
 
-    /**
-     * Handles tool call execution results
-     * This method can be used to process and format tool call results
-     */
-    public String handleToolCallResult(String toolName, Map<String, Object> parameters, Object result) {
-        logger.debug("Handling MCP tool call result for tool: {}", toolName);
-        
-        if (result == null) {
-            return "Tool call completed but returned no result.";
+    private SystemMessage buildToolsSystemMessage(final List<McpToolIntegrationService.McpToolDescriptor> toolDescriptors) {
+        final StringBuilder toolDescription = new StringBuilder();
+        toolDescription.append("You have access to external tools through MCP (Model Context Protocol). ");
+        toolDescription.append("Available tools:\n");
+
+        for (final McpToolIntegrationService.McpToolDescriptor descriptor : toolDescriptors) {
+            toolDescription.append("- ").append(descriptor.getName())
+                    .append(": ").append(descriptor.getDescription())
+                    .append("\n");
         }
-        
-        // Convert result to string representation
-        String resultText = result.toString();
-        
-        // Log the tool call for debugging
-        logger.info("MCP tool call completed - Tool: {}, Parameters: {}, Result length: {}", 
-                   toolName, parameters, resultText.length());
-        
-        return resultText;
+
+        toolDescription.append("\nPolicy: When a tool can improve accuracy (e.g., fetching the current time), call it directly without asking for permission. Execute the most relevant tool, incorporate its result, and answer succinctly.");
+        return new SystemMessage(toolDescription.toString());
+    }
+
+    private int findInsertIndexForSystemMessage(final List<AbstractMessage> messages) {
+        int insertIndex = 0;
+        for (int i = 0; i < messages.size(); i++) {
+            if (messages.get(i) instanceof SystemMessage) {
+                insertIndex = i + 1;
+            } else {
+                break;
+            }
+        }
+        return insertIndex;
     }
 
     /**
@@ -109,10 +93,4 @@ public class McpChatIntegrationService {
         return toolIntegrationService.getAvailableToolCount();
     }
 
-    /**
-     * Gets all available MCP tool callbacks
-     */
-    public ToolCallback[] getMcpToolCallbacks() {
-        return toolIntegrationService.getToolCallbacks();
-    }
 }
