@@ -264,9 +264,10 @@ public class Browser extends StackPane {
                 }
                 .chat-message {
                   background-color: var(--color-bg-subtle);
+                  border-left: 4px solid var(--color-accent-fg);
                   color: var(--color-fg-default);
                   box-shadow: 0 2px 4px var(--color-neutral-muted);
-                  border-radius: 15px;
+                  border-radius: 4px;
                   padding: 2px 15px;
                   margin: 10px 5px;
                   max-width: 85%;
@@ -290,6 +291,7 @@ public class Browser extends StackPane {
                   margin-left: auto;
                 }
                 .chat-message.assistant {
+                  border-left: 4px solid var(--color-accent-0);
                 }
                 .loader {
                   display: none;
@@ -306,7 +308,7 @@ public class Browser extends StackPane {
                 .loader div {
                   width: 8px;
                   height: 8px;
-                  background-color: var(--color-accent-fg);
+                  background-color: var(--color-accent-0);
                   border-radius: 50%;
                   animation: pulse 0.6s infinite alternate;
                 }

@@ -90,6 +90,9 @@ ChatWindow {
     -fx-cursor: hand;
 }
 
+.primary-button {
+    -color-button-fg: -color-accent-fg;
+}
 /*.tool-bar > .container > .button,*/
 /*.tool-bar > .container > .menu-button {*/
 /*    -fx-background-color: transparent;*/
