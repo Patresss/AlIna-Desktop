@@ -156,3 +156,8 @@ Desktop.ini
 config/application.yml
 *.local.yaml
 *.local.json
+
+######################
+# AI festure descriptions
+######################
+/festures/

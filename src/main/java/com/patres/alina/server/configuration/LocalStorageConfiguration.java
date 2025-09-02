@@ -50,7 +50,7 @@ public class LocalStorageConfiguration {
     
     @Bean
     public Path commandsStoragePath(Path localStorageBasePath) {
-        Path commandsDir = localStorageBasePath.resolve("../commands").normalize();
+        Path commandsDir = localStorageBasePath.resolve("commands").normalize();
         
         try {
             Files.createDirectories(commandsDir);

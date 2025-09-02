@@ -47,7 +47,8 @@ public class McpConfigurationValidator {
             warnings.add("Server '" + serverName + "': command '" + command + "' may not be accessible");
         }
 
-        if (config.args() != null && config.args().contains(null)) {
+        // Avoid List.of().contains(null) which throws NPE on JDK immutable lists
+        if (config.args() != null && config.args().stream().anyMatch(java.util.Objects::isNull)) {
             errors.add("Server '" + serverName + "': args cannot contain null values");
         }
 

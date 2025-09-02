@@ -21,7 +21,8 @@ public class McpConfigurationService {
 
     private static final Logger logger = LoggerFactory.getLogger(McpConfigurationService.class);
 
-    private final Path configPath;
+    private final Path configPath; // primary/shared config
+    private final Path localOverridePath; // preferred local override
     private final McpConfigurationValidator validator;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
@@ -34,9 +35,11 @@ public class McpConfigurationService {
         this.validator = validator;
         this.eventPublisher = eventPublisher;
         this.configPath = Paths.get("data/mcp/mcp-servers.json").toAbsolutePath();
+        this.localOverridePath = Paths.get("data/mcp/mcp-servers.local.json").toAbsolutePath();
         this.objectMapper = createObjectMapper();
         ensureDirectoryExists(configPath.getParent());
-        logger.info("McpConfigurationService initialized with config path: {}", configPath);
+        logger.info("McpConfigurationService initialized with configuration path: {} (local override: {})",
+                configPath, localOverridePath);
     }
 
     public synchronized McpServersConfig loadConfiguration() {
@@ -79,33 +82,47 @@ public class McpConfigurationService {
     }
 
     private McpServersConfig loadFromFileOrCreateEmpty() {
-        logger.info("Loading MCP configuration from: {}", configPath);
+        final Path effectivePath = selectEffectiveConfigPath();
+        logger.info("Loading MCP configuration from: {}", effectivePath);
         try {
-            if (Files.exists(configPath)) {
-                return readAndValidateConfig();
+            if (Files.exists(effectivePath)) {
+                return readAndValidateConfig(effectivePath);
             }
-            logger.info("MCP configuration file not found at {}, creating empty configuration", configPath);
+            logger.info("MCP configuration file not found at {}, creating empty configuration at primary path {}",
+                    effectivePath, configPath);
             final McpServersConfig empty = McpServersConfig.empty();
+            // Persist empty baseline only to the primary shared config
             saveConfiguration(empty);
             return empty;
         } catch (final IOException e) {
-            logger.error("Failed to load MCP configuration from {}", configPath, e);
+            logger.error("Failed to load MCP configuration from {}", effectivePath, e);
             return McpServersConfig.empty();
         }
     }
 
-    private McpServersConfig readAndValidateConfig() throws IOException {
-        final String jsonContent = Files.readString(configPath, StandardCharsets.UTF_8);
+    private McpServersConfig readAndValidateConfig(final Path path) throws IOException {
+        final String jsonContent = Files.readString(path, StandardCharsets.UTF_8);
         final McpServersConfig config = objectMapper.readValue(jsonContent, McpServersConfig.class);
         final McpConfigurationValidator.ValidationResult result = validator.validate(config);
         if (!result.isValid()) {
-            logger.error("MCP configuration validation failed: {}", result.getErrors());
+            logger.error("MCP configuration validation failed for {}: {}", path, result.getErrors());
             logger.warn("Using empty configuration due to validation errors");
             return McpServersConfig.empty();
         }
         logWarningsIfAny(result);
-        logger.info("MCP configuration loaded successfully with {} servers", config.mcpServers().size());
+        logger.info("MCP configuration loaded successfully from {} with {} servers", path, config.mcpServers().size());
         return config;
+    }
+
+    private Path selectEffectiveConfigPath() {
+        try {
+            if (Files.exists(localOverridePath)) {
+                return localOverridePath;
+            }
+        } catch (final Exception e) {
+            logger.debug("Error checking local override paths", e);
+        }
+        return configPath;
     }
 
     private void ensureDirectoryExists(final Path dir) {
