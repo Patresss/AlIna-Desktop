@@ -40,9 +40,7 @@ public final class ThemeManager {
             NordDark.class,
             CupertinoLight.class,
             CupertinoDark.class,
-            Dracula.class,
-            AllegroTheme.class,
-            AllegroDarkTheme.class
+            Dracula.class
     );
 
     private static final PseudoClass DARK = PseudoClass.getPseudoClass("dark");
