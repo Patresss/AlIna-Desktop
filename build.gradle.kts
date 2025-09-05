@@ -60,10 +60,6 @@ dependencies {
     implementation("org.springframework.ai:spring-ai-starter-model-openai:1.0.1")
     implementation("org.springframework.ai:spring-ai-starter-mcp-client:1.0.1")
 
-    // Provide missing service interfaces during jlink merged module compilation
-    implementation("jakarta.servlet:jakarta.servlet-api:6.0.0")
-    implementation("io.projectreactor.tools:blockhound:1.0.9.RELEASE")
-    
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
 
@@ -85,21 +81,12 @@ tasks.withType<JavaExec> {
     jvmArgs = runArgsValue
 }
 
-// Package default data files (css, config, commands) into resources under default-data/
-tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") {
-    from("data/css") { into("default-data/css") }
-    from("data/config") { into("default-data/config") }
-    from("data/commands") { into("default-data/commands") }
-}
-
 // Runtime image and installer packaging
 // Inspired by build-working-examlpe.gradle, adapted for Spring + JavaFX
 val os = org.gradle.internal.os.OperatingSystem.current()
 
 jlink {
     addExtraDependencies("javafx")
-    // Explicitly include jakarta servlet API as it's referenced by spring-web provider
-    addExtraDependencies("jakarta.servlet")
     // Ensure jackson-dataformat-yaml is included on module path
     addExtraDependencies("jackson-dataformat-yaml")
 
