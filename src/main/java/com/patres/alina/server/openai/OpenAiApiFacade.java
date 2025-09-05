@@ -15,6 +15,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.io.File;
 import java.util.Arrays;
@@ -42,7 +43,17 @@ public class OpenAiApiFacade {
     }
 
     public void updateOpenAiService(final AssistantSettings settings) {
-        chatModel = openAiApiCreator.createOpenAiChatModel(settings.openAiApiKey(), settings.chatModel());
+        try {
+            chatModel = openAiApiCreator.createOpenAiChatModel(settings.openAiApiKey(), settings.chatModel());
+            if (chatModel == null) {
+                logger.warn("OpenAI chat model is null - API key not properly configured. Please set a valid API key in assistant settings.");
+            } else {
+                logger.info("OpenAI chat model updated successfully");
+            }
+        } catch (Exception e) {
+            logger.error("Failed to update OpenAI service", e);
+            chatModel = null;
+        }
     }
 
     public String speechToText(final File audio) {
@@ -55,7 +66,12 @@ public class OpenAiApiFacade {
         return "transcription.getText();";
     }
 
-    public reactor.core.publisher.Flux<String> sendMessageStream(final List<AbstractMessage> messages) {
+    public Flux<String> sendMessageStream(final List<AbstractMessage> messages) {
+        if (chatModel == null) {
+            logger.warn("Cannot send message - OpenAI chat model is not configured. Please set a valid API key in assistant settings.");
+            return Flux.just("Error: OpenAI API key not configured. Please set a valid API key in assistant settings.");
+        }
+        
         List<Message> messageList = messages.stream().map(m -> (Message) m).toList();
         ChatClient client = ChatClient
                 .builder(chatModel)

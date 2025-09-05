@@ -10,9 +10,10 @@ public record AssistantSettings(
     public static final String DEFAULT_CHAT_MODEL = "gpt-3.5-turbo-0613";
     public static final int DEFAULT_NUMBER_OF_CONTEXTS = 5;
     public static final int DEFAULT_TIMEOUT = 120;
+    public static final String DEFAULT_OPENAI_API_KEY = "your-api-key-here";
 
     public AssistantSettings() {
-        this(DEFAULT_CHAT_MODEL, null, DEFAULT_NUMBER_OF_CONTEXTS, null, DEFAULT_TIMEOUT);
+        this(DEFAULT_CHAT_MODEL, null, DEFAULT_NUMBER_OF_CONTEXTS, DEFAULT_OPENAI_API_KEY, DEFAULT_TIMEOUT);
     }
 
     public AssistantSettings(final String chatModel,
@@ -23,7 +24,7 @@ public record AssistantSettings(
         this.chatModel = (chatModel != null) ? chatModel : DEFAULT_CHAT_MODEL;
         this.systemPrompt = systemPrompt;
         this.numberOfMessagesInContext = (numberOfMessagesInContext > 0) ? numberOfMessagesInContext : DEFAULT_NUMBER_OF_CONTEXTS;
-        this.openAiApiKey = openAiApiKey;
+        this.openAiApiKey = openAiApiKey != null ? openAiApiKey : DEFAULT_OPENAI_API_KEY;
         this.timeoutSeconds = (timeoutSeconds > 0) ? timeoutSeconds : DEFAULT_TIMEOUT;
     }
 
