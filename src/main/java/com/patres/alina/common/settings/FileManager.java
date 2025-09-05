@@ -29,8 +29,8 @@ public class FileManager<T> {
     private Optional<T> currentSettings = Optional.empty();
 
     public FileManager(String name, Class<T> classToMap, Supplier<T> defaultValueSupplier) {
-        this.path = "config/" + name + ".json";
-        this.localPath = "config/" + name + ".local.json";
+        this.path = "data/config/" + name + ".json";
+        this.localPath = "data/config/" + name + ".local.json";
         this.name = name;
         this.classToMap = classToMap;
         this.defaultValueSupplier = defaultValueSupplier;
@@ -38,8 +38,8 @@ public class FileManager<T> {
     }
 
     public FileManager(String name, Class<T> classToMap, Supplier<T> defaultValueSupplier, Supplier<Event> saveEventSupplier) {
-        this.path = "config/" + name + ".json";
-        this.localPath = "config/" + name + ".local.json";
+        this.path = "data/config/" + name + ".json";
+        this.localPath = "data/config/" + name + ".local.json";
         this.name = name;
         this.classToMap = classToMap;
         this.defaultValueSupplier = defaultValueSupplier;

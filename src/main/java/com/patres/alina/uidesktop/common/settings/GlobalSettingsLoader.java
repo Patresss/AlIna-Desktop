@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class GlobalSettingsLoader {
 
-    private static final String path = "config/Settings.json";
+    private static final String path = "data/config/Settings.json";
     private static final Logger logger = LoggerFactory.getLogger(GlobalSettingsLoader.class);
     private static final ObjectMapper mapper = createMapper();
 
