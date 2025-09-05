@@ -17,6 +17,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static com.patres.alina.uidesktop.settings.SettingsMangers.UI_SETTINGS;
 import static com.patres.alina.uidesktop.shortcuts.key.KeyboardKey.getKeyEvent;
@@ -24,6 +26,9 @@ import static com.patres.alina.uidesktop.shortcuts.key.KeyboardKey.getKeyEventAs
 
 
 public class ShortcutKeyListener extends Listener implements NativeKeyListener {
+
+    private final static Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
+
 
     private final Set<KeyboardKey> pressedKeys;
 
@@ -35,13 +40,16 @@ public class ShortcutKeyListener extends Listener implements NativeKeyListener {
     }
 
     public static void init() {
-        final ShortcutKeyListener shortcutKeyListener = new ShortcutKeyListener(UI_SETTINGS.getSettings().shortcutKeysSettings());
-        GlobalScreen.addNativeKeyListener(shortcutKeyListener);
-
-        DefaultEventBus.getInstance().subscribe(
-                UiSettingsUpdateEvent.class,
-                event -> shortcutKeyListener.updateShortcutKeysSettings()
-        );
+        try {
+            final ShortcutKeyListener shortcutKeyListener = new ShortcutKeyListener(UI_SETTINGS.getSettings().shortcutKeysSettings());
+            GlobalScreen.addNativeKeyListener(shortcutKeyListener);
+            DefaultEventBus.getInstance().subscribe(
+                    UiSettingsUpdateEvent.class,
+                    event -> shortcutKeyListener.updateShortcutKeysSettings()
+            );
+        } catch (Throwable e) {
+            logger.warning("ShortcutKeyListener native hook disabled: " + e.getMessage());
+        }
     }
 
     private void updateShortcutKeysSettings() {

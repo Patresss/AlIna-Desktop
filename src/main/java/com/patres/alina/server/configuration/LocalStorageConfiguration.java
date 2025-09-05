@@ -2,6 +2,7 @@ package com.patres.alina.server.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.patres.alina.server.message.ChatMessageStorageRepository;
+import com.patres.alina.common.storage.AppPaths;
 import com.patres.alina.server.message.ConversationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,17 +22,9 @@ public class LocalStorageConfiguration {
     
     @Bean
     public Path localStorageBasePath() {
-        String pathProperty = System.getProperty("storage.local.base.path", "data");
-        Path dataDir = Paths.get(pathProperty).toAbsolutePath();
-        
-        try {
-            Files.createDirectories(dataDir);
-            logger.info("Created local storage base directory: {}", dataDir);
-            return dataDir;
-        } catch (IOException e) {
-            logger.error("Failed to create local storage directory: {}", dataDir, e);
-            throw new RuntimeException("Failed to create local storage directory", e);
-        }
+        Path dataDir = AppPaths.baseDataDir();
+        logger.info("Using local storage base directory: {}", dataDir);
+        return dataDir;
     }
     
     @Bean

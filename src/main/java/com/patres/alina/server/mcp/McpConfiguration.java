@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import com.patres.alina.common.storage.AppPaths;
 
 @Configuration
 public class McpConfiguration {
@@ -21,7 +22,7 @@ public class McpConfiguration {
      */
     @Bean
     public Path mcpStoragePath() {
-        Path mcpDir = Paths.get("data/mcp").toAbsolutePath();
+        Path mcpDir = AppPaths.resolve("mcp");
         
         try {
             Files.createDirectories(mcpDir);

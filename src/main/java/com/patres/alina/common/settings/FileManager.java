@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.patres.alina.common.event.Event;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import org.apache.commons.io.FileUtils;
+import com.patres.alina.common.storage.AppPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +30,8 @@ public class FileManager<T> {
     private Optional<T> currentSettings = Optional.empty();
 
     public FileManager(String name, Class<T> classToMap, Supplier<T> defaultValueSupplier) {
-        this.path = "data/config/" + name + ".json";
-        this.localPath = "data/config/" + name + ".local.json";
+        this.path = AppPaths.resolve("config/" + name + ".json").toString();
+        this.localPath = AppPaths.resolve("config/" + name + ".local.json").toString();
         this.name = name;
         this.classToMap = classToMap;
         this.defaultValueSupplier = defaultValueSupplier;
@@ -38,8 +39,8 @@ public class FileManager<T> {
     }
 
     public FileManager(String name, Class<T> classToMap, Supplier<T> defaultValueSupplier, Supplier<Event> saveEventSupplier) {
-        this.path = "data/config/" + name + ".json";
-        this.localPath = "data/config/" + name + ".local.json";
+        this.path = AppPaths.resolve("config/" + name + ".json").toString();
+        this.localPath = AppPaths.resolve("config/" + name + ".local.json").toString();
         this.name = name;
         this.classToMap = classToMap;
         this.defaultValueSupplier = defaultValueSupplier;

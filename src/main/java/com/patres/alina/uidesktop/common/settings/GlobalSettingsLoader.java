@@ -2,6 +2,7 @@ package com.patres.alina.uidesktop.common.settings;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.patres.alina.common.storage.AppPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class GlobalSettingsLoader {
 
-    private static final String path = "data/config/Settings.json";
+    private static final String path = AppPaths.resolve("config/Settings.json").toString();
     private static final Logger logger = LoggerFactory.getLogger(GlobalSettingsLoader.class);
     private static final ObjectMapper mapper = createMapper();
 

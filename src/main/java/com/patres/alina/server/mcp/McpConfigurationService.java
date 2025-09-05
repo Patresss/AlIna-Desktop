@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import com.patres.alina.common.storage.AppPaths;
 import java.util.Optional;
 
 @Service
@@ -34,8 +35,8 @@ public class McpConfigurationService {
                                    final ApplicationEventPublisher eventPublisher) {
         this.validator = validator;
         this.eventPublisher = eventPublisher;
-        this.configPath = Paths.get("data/mcp/mcp-servers.json").toAbsolutePath();
-        this.localOverridePath = Paths.get("data/mcp/mcp-servers.local.json").toAbsolutePath();
+        this.configPath = AppPaths.resolve("mcp/mcp-servers.json");
+        this.localOverridePath = AppPaths.resolve("mcp/mcp-servers.local.json");
         this.objectMapper = createObjectMapper();
         ensureDirectoryExists(configPath.getParent());
         logger.info("McpConfigurationService initialized with configuration path: {} (local override: {})",

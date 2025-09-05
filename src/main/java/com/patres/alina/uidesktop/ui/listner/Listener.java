@@ -19,11 +19,11 @@ public class Listener {
         logger.setLevel(Level.WARNING);
         logger.setUseParentHandlers(false);
 
-        // Zacoemnotwane bo nie ma polskich znaków w TextArea
+        // Rejestracja natywnych hooków może się nie udać w środowiskach z niestandardowym classloaderem (np. zainstalowana app)
         try {
             GlobalScreen.registerNativeHook();
-        } catch (NativeHookException e) {
-            throw new RuntimeException(e);
+        } catch (Throwable e) {
+            logger.log(Level.WARNING, "GlobalScreen native hook disabled: " + e.getMessage());
         }
     }
 

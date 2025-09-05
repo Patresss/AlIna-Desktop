@@ -21,6 +21,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import com.patres.alina.common.storage.AppPaths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -34,7 +35,7 @@ public final class ThemeRepository {
     private static final Comparator<SamplerTheme> THEME_COMPARATOR = Comparator.comparing(SamplerTheme::getName);
     private static final Logger logger = LoggerFactory.getLogger(ThemeRepository.class);
 
-    private static final String DATA_DIR = "data";
+    private static final String DATA_DIR = AppPaths.baseDataDir().toString();
     private static final String CSS_DIR_NAME = "css";
     private static final String CSS_EXTENSION = ".css";
     private static final String DARK_KEYWORD = "dark";
