@@ -56,7 +56,6 @@ public class ChatWindow extends BorderPane {
 
     private final Consumer<SpeechShortcutTriggeredEvent> speechShortcutTriggeredEventConsumer = event -> triggerSpeechAction();
     private final Consumer<FocusShortcutTriggeredEvent> focusShortcutTriggeredEventConsumer = event -> triggerFocusAction();
-    private final Consumer<ChatMessageReceivedEvent> chatMessageReceivedEventConsumer = event -> handleChatMessageReceivedEvent(event);
     private final Consumer<ChatMessageStreamEvent> chatMessageStreamEventConsumer = event -> handleChatMessageStreamEvent(event);
 
     private StringBuilder currentStreamingMessage = new StringBuilder();
@@ -291,9 +290,11 @@ public class ChatWindow extends BorderPane {
     private void sendMessageToService(final String message) {
         Thread.startVirtualThread(() -> {
             try {
-                Platform.runLater(() -> browser.showLoader()); // Show loader immediately
-                actionNodes.forEach(node -> node.setDisable(true));
-                chatTextArea.setText(LanguageManager.getLanguageString("chat.message.sending"));
+                Platform.runLater(() -> {
+                    browser.showLoader();
+                    actionNodes.forEach(node -> node.setDisable(true));
+                    chatTextArea.setText(LanguageManager.getLanguageString("chat.message.sending"));
+                });
 
                 final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(message, chatThread.id(), getCurrentCommandId());
                 
