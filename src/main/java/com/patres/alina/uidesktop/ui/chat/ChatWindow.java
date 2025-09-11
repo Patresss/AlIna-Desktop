@@ -1,7 +1,6 @@
 package com.patres.alina.uidesktop.ui.chat;
 
 import com.patres.alina.common.card.CardListItem;
-import com.patres.alina.common.event.ChatMessageReceivedEvent;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.message.ChatMessageResponseModel;
@@ -320,20 +319,9 @@ public class ChatWindow extends BorderPane {
     }
 
 
-    private void handleChatMessageReceivedEvent(ChatMessageReceivedEvent event) {
-        actionNodes.forEach(node -> node.setDisable(false));
-        chatTextArea.clear();
-
-        Platform.runLater(() -> {
-            chatTextArea.requestFocus();
-        });
-
-
-    }
-
     private void handleChatMessageStreamEvent(ChatMessageStreamEvent event) {
         if (!event.getThreadId().equals(chatThread.id())) {
-            return; // Event is not for this thread
+            return;
         }
 
         switch (event.getEventType()) {
@@ -389,10 +377,6 @@ public class ChatWindow extends BorderPane {
         return chatThread;
     }
 
-    public Label getCommandLabel() {
-        return commandLabel;
-    }
-
     private void setCurrentCommand(final CardListItem currentCommand) {
         this.currentCommand = currentCommand;
         if (currentCommand == null) {
@@ -406,10 +390,5 @@ public class ChatWindow extends BorderPane {
         }
 
     }
-
-    public TextArea getChatTextArea() {
-        return chatTextArea;
-    }
-
 
 }
