@@ -220,7 +220,9 @@ tasks.register<Exec>("jpackageFat") {
     }
 
     val os = org.gradle.internal.os.OperatingSystem.current()
+    val requestedInstallerType = (findProperty("installerType") as String?)?.lowercase()
     val installerType = when {
+        !requestedInstallerType.isNullOrBlank() -> requestedInstallerType
         os.isWindows -> "exe"
         os.isMacOsX -> "pkg"
         os.isLinux -> "deb"
