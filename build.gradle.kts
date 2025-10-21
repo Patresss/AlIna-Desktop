@@ -114,15 +114,26 @@ jlink {
 
     // Configure jpackage for platform-specific installer
     jpackage {
+        // Allow override via -PinstallerType=exe|msi|pkg|dmg|deb|rpm|app-image
+        val requestedInstallerType = (findProperty("installerType") as String?)?.lowercase()
         // Choose sensible default per platform
         installerType = when {
+            !requestedInstallerType.isNullOrBlank() -> requestedInstallerType
             os.isWindows -> "exe"
             os.isMacOsX -> "pkg" // use dmg/pkg on macOS; pkg is scriptable
             os.isLinux -> "deb"
             else -> "app-image"
         }
 
-        appVersion = project.version.toString()
+        // Sanitize version for platforms that require numeric versions (macOS/Windows/Linux packages)
+        fun sanitizeVersion(ver: String): String {
+            val digits = ver.replace(Regex("[^0-9.]"), "")
+            val parts = digits.split('.').filter { it.isNotBlank() }
+            val normalized = (parts + listOf("0", "0", "0")).take(3).joinToString(".")
+            return if (normalized.isBlank()) "1.0.0" else normalized
+        }
+        val needsNumericVersion = os.isMacOsX || os.isWindows || os.isLinux
+        appVersion = if (needsNumericVersion) sanitizeVersion(project.version.toString()) else project.version.toString()
         // Put deliverables under release/<version>/
         outputDir = "release/${project.version}"
 
@@ -179,6 +190,13 @@ tasks.register("createInstaller") {
             println("Removed intermediate image directory '$imageDir': $deleted")
         }
     }
+}
+
+// Convenience task using fat JAR path (avoids jlink/JPMS issues)
+tasks.register("createInstallerFat") {
+    group = "distribution"
+    description = "Build platform installer via jpackageFat (uses Spring Boot fat JAR)."
+    dependsOn(tasks.named("jpackageFat"))
 }
 
 // Zip the app image (not the installer) as an alternative delivery
@@ -258,8 +276,8 @@ tasks.register<Exec>("jpackageApp") {
         val inputDir = file("$buildDir/jpackage/input").apply { mkdirs() }
         val libDir = file("$inputDir/lib").apply { mkdirs() }
 
-        // copy main jar
-        val mainJar = layout.buildDirectory.file("libs/${project.name}-${project.version}.jar").get().asFile
+        // copy main jar (Spring Boot reconfigures 'jar' to produce '-plain.jar')
+        val mainJar = layout.buildDirectory.file("libs/${project.name}-${project.version}-plain.jar").get().asFile
         mainJar.copyTo(file("$inputDir/${mainJar.name}"), overwrite = true)
 
         // copy dependencies
