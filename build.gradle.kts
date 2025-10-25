@@ -229,8 +229,9 @@ tasks.register<Exec>("jpackageFat") {
         else -> "app-image"
     }
 
-    val iconIco = file("src/main/resources/icon/desktop/main_icon.ico")
+    val iconIco = file("src/main/resources/com/patres/alina/uidesktop/assets/app-icon.ico")
     val iconIcns = file("src/main/resources/icon/desktop/main_icon.icns")
+    val iconPng = file("src/main/resources/com/patres/alina/uidesktop/assets/icon-square-512.png")
     val bootJar = layout.buildDirectory.file("libs/${project.name}-${project.version}.jar").get().asFile
 
     fun sanitizeVersion(ver: String): String {
@@ -261,8 +262,12 @@ tasks.register<Exec>("jpackageFat") {
         }
         baseCmd += listOf("--mac-package-identifier", macPackageIdentifier, "--mac-package-name", title)
     }
-    if (os.isLinux && iconIco.exists()) {
-        baseCmd += listOf("--icon", iconIco.absolutePath, "--linux-shortcut")
+    if (os.isLinux) {
+        if (iconPng.exists()) {
+            baseCmd += listOf("--icon", iconPng.absolutePath, "--linux-shortcut")
+        } else if (iconIco.exists()) {
+            baseCmd += listOf("--icon", iconIco.absolutePath, "--linux-shortcut")
+        }
     }
     commandLine(baseCmd)
 }
@@ -309,8 +314,9 @@ tasks.register<Exec>("jpackageApp") {
             ?.joinToString(separator = File.pathSeparator) { "lib/${it.name}" }
             ?: ""
 
-        val iconIco = file("src/main/resources/icon/desktop/main_icon.ico")
+        val iconIco = file("src/main/resources/com/patres/alina/uidesktop/assets/app-icon.ico")
         val iconIcns = file("src/main/resources/icon/desktop/main_icon.icns")
+        val iconPng = file("src/main/resources/com/patres/alina/uidesktop/assets/icon-square-512.png")
         // main jar already defined above as 'mainJar'
 
         val baseCmd = mutableListOf(
@@ -335,8 +341,12 @@ tasks.register<Exec>("jpackageApp") {
             if (iconIcns.exists()) baseCmd += listOf("--icon", iconIcns.absolutePath)
             baseCmd += listOf("--mac-package-identifier", macPackageIdentifier, "--mac-package-name", title)
         }
-        if (os.isLinux && iconIco.exists()) {
-            baseCmd += listOf("--icon", iconIco.absolutePath, "--linux-shortcut")
+        if (os.isLinux) {
+            if (iconPng.exists()) {
+                baseCmd += listOf("--icon", iconPng.absolutePath, "--linux-shortcut")
+            } else if (iconIco.exists()) {
+                baseCmd += listOf("--icon", iconIco.absolutePath, "--linux-shortcut")
+            }
         }
 
         println("Executing: ${baseCmd.joinToString(" ")}")

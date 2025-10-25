@@ -1,0 +1,66 @@
+<svg width="100" height="105" viewBox="0 0 100 105" xmlns="http://www.w3.org/2000/svg" aria-label="Logo AlIna">
+
+    <!--
+      Ikona logo dla 'AlIna'.
+      Przedstawia przyjazną głowę robota stylizowaną na chmurkę czatu.
+    --><style>
+    .logo-fill {
+    fill: #171f23; /* Kolor wypełnienia wewnątrz chmurki */
+    stroke: none;
+    }
+    .logo-outline {
+    fill: transparent;
+    stroke: #54cab6;
+    stroke-width: 6; /* Gruba linia obrysu */
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    }
+
+    .logo-text {
+    fill: #54cab6;
+    stroke: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-weight: 600; /* Semi-bold */
+    font-size: 24px;
+    text-anchor: middle;
+    dominant-baseline: central;
+    }
+</style>
+
+    <!-- Kształt wypełnienia wewnątrz chmurki (bez obrysu) --><path class="logo-fill"
+                                                                    d="M 20 25
+           H 80
+           A 10 10 0 0 1 90 35
+           V 70
+           A 10 10 0 0 1 80 80
+           L 75 80
+           L 85 95
+           L 65 80
+           L 20 80
+           A 10 10 0 0 1 10 70
+           V 35
+           A 10 10 0 0 1 20 25 Z" />
+
+    <!-- Główny kształt głowy / chmurki czatu z "ogonkiem" po prawej na dole (TYLKO OBRYS) --><path class="logo-outline"
+                                                                                                    d="M 20 25
+           H 80
+           A 10 10 0 0 1 90 35
+           V 70
+           A 10 10 0 0 1 80 80
+           L 75 80
+           L 85 95
+           L 65 80
+           L 20 80
+           A 10 10 0 0 1 10 70
+           V 35
+           A 10 10 0 0 1 20 25 Z" />
+
+    <!-- Czułka robota --><path class="logo-outline" d="M 35 25 L 30 15" />
+    <path class="logo-outline" d="M 65 25 L 70 15" />
+    <!-- Centralnie umieszczony tekst "AlIna" -->
+    <text x="50" y="48" class="logo-text">AlIna</text>
+
+    <!-- Uśmiech robota (poniżej tekstu) -->
+    <path class="logo-outline" d="M 35 65 Q 50 75, 65 65" />
+
+</svg>
