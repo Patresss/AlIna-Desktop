@@ -57,8 +57,8 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.2")
 
     // server module
-    implementation("org.springframework.ai:spring-ai-starter-model-openai:1.0.1")
-    implementation("org.springframework.ai:spring-ai-starter-mcp-client:1.0.1")
+    implementation("org.springframework.ai:spring-ai-starter-model-openai:1.0.3")
+    implementation("org.springframework.ai:spring-ai-starter-mcp-client:1.0.3")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
