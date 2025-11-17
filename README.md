@@ -2,6 +2,18 @@
 
 AlIna is a native desktop AI chat application. It combines a modern JavaFX UI with Spring Boot services running in the same process. 
 Conversations and settings are stored locally, while integrations (Spring AI/OpenAI, MCP) enable powerful tool usage.
+https://github.com/Patresss/AlIna-Desktop/blob/main/examples/commands.png?raw=true
+
+### Dark mode
+![](https://github.com/Patresss/AlIna-Desktop/blob/main/examples/main_dark.png?raw=true)
+
+### Light Mode
+![](https://github.com/Patresss/AlIna-Desktop/blob/main/examples/light.png?raw=true)
+
+
+### Comands
+![](https://github.com/Patresss/AlIna-Desktop/blob/main/examples/commands.png?raw=true)
+
 
 Key features:
 - Chat UI with streaming responses.
