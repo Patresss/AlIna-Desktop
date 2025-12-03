@@ -13,6 +13,7 @@ import com.patres.alina.uidesktop.shortcuts.key.KeyboardKey;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.uidesktop.ui.listner.Listener;
 import com.patres.alina.uidesktop.ui.util.SystemClipboard;
+import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,11 +102,21 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
     }
 
     private void executeCommandWithSelectedText(Command command) {
-        String selectedText = SystemClipboard.copySelectedValue();
+        CompletableFuture.runAsync(() -> {
+            try {
+                // Wait for user to release shortcut keys (200ms is enough for natural key release)
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+            String selectedText = SystemClipboard.copySelectedValue();
+            logger.info("Executing command '{}' with selected text: '{}'", command.name(), selectedText);
 
-        logger.info("Executing command '{}' with selected text", command.name());
-
-        applicationWindow.getChatWindow().sendMessage(selectedText, command.id());
+            Platform.runLater(() -> {
+                applicationWindow.getChatWindow().sendMessage(selectedText, command.id());
+            });
+        });
     }
 
     private void subscribeToMessageCompletion() {
