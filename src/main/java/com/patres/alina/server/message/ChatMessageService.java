@@ -172,7 +172,7 @@ public class ChatMessageService {
         }
 
         if (commandContent.contains(CommandConstants.ARGUMENTS_PLACEHOLDER)) {
-            return commandContent.replaceAll(java.util.regex.Pattern.quote(CommandConstants.ARGUMENTS_PLACEHOLDER), content);
+            return commandContent.replace(CommandConstants.ARGUMENTS_PLACEHOLDER, content);
         }
         return commandContent + System.lineSeparator() + content;
     }

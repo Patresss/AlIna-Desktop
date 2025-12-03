@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,6 +42,16 @@ public class ChatThreadService {
         final ChatThread chatThread = newChatThread();
         logger.info("Created new chat thread (no file yet): id=`{}`, name=`{}`", chatThread.id(), chatThread.name());
         return chatThread;
+    }
+
+    public Optional<ChatThread> getChatThread(final String chatThreadId) {
+        logger.debug("Getting chat thread: {}", chatThreadId);
+        final Path file = conversationFile(chatThreadId);
+        if (!Files.exists(file)) {
+            logger.debug("Chat thread file not found: {}", file);
+            return Optional.empty();
+        }
+        return Optional.of(toChatThread(file));
     }
 
     public List<ChatThread> getChatThreads() {

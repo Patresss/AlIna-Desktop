@@ -8,7 +8,6 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 
-import static com.patres.alina.uidesktop.RetryLogic.runWithRetry;
 import static java.awt.event.KeyEvent.*;
 
 public class SystemClipboard {
@@ -16,8 +15,22 @@ public class SystemClipboard {
     private static final Logger logger = LoggerFactory.getLogger(SystemClipboard.class);
 
     public static String copySelectedValue() {
+
         try {
-            return runWithRetry(SystemClipboard::tryToCopySelectedValue, 3);
+
+            // Try multiple times with delays between attempts for macOS
+                try {
+                    String result = tryToCopySelectedValue();
+                    if (result != null && !result.trim().isEmpty()) {
+                        logger.info("Successfully copied selected text: '{}' ({} chars)", result.substring(0, Math.min(100, result.length())), result.length());
+                        return result;
+                    }
+                } catch (Exception e) {
+                    logger.warn("Attempt failed: {}", e.getMessage());
+
+                }
+            logger.error("Failed to copy selected text");
+            return "";
         } catch (Exception e) {
             logger.error("Cannot copy selected values", e);
             return "";
@@ -27,11 +40,28 @@ public class SystemClipboard {
     private static String tryToCopySelectedValue() {
         try {
             String previousValueFromClipboard = SystemClipboard.get();
+            logger.info("Previous clipboard value: '{}'", previousValueFromClipboard != null ? previousValueFromClipboard.substring(0, Math.min(100, previousValueFromClipboard.length())) : "null");
+
+
+            logger.info("Sending Command+C to copy selected text...");
+
             SystemClipboard.copy();
+
             String selectedText = SystemClipboard.get();
-            SystemClipboard.copy(previousValueFromClipboard);
+            logger.info("Selected text after copy: '{}'", selectedText != null ? selectedText.substring(0, Math.min(100, selectedText.length())) : "null");
+
+            // Restore previous clipboard value
+            // How are you
+//            if (previousValueFromClipboard != null) {
+//                SystemClipboard.copy(previousValueFromClipboard);
+//                logger.info("Restored previous clipboard value");
+//            }
+
+            // CRITICAL: Wait for the original application to stabilize after Control+Q was pressed
+            // This gives time for the selection to remain active
             return selectedText;
         } catch (Exception e) {
+            logger.error("Error in tryToCopySelectedValue", e);
             throw new RuntimeException(e);
         }
     }
@@ -41,27 +71,38 @@ public class SystemClipboard {
         clipboard.setContents(new StringSelection(text), null);
     }
 
-    public static void copy() throws AWTException, InterruptedException {
-        Robot robot = new Robot();
+    public static void copy() {
+        try {
+            logger.info("Sending copy command (Cmd+C on macOS, Ctrl+C on others)");
 
-//        int controlKey = IS_OS_MAC ? VK_META : VK_CONTROL;
-        int controlKey = VK_CONTROL;
-        robot.keyPress(controlKey);
-        robot.keyPress(VK_C);
-        robot.keyRelease(VK_C);
-        robot.keyRelease(controlKey);
-        Thread.sleep(100L);
+            Robot robot = new Robot();
+            int controlKey = isMacOS() ? VK_META : VK_CONTROL;
+            robot.keyPress(controlKey);
+            robot.keyPress(VK_C);
+            Thread.sleep(1000);
+            robot.keyRelease(VK_C);
+            robot.keyRelease(controlKey);
+            logger.info("Copy command sent, waiting for clipboard update");
+        } catch (AWTException | InterruptedException e) {
+            e.printStackTrace();
+            // todo
+        }
+
     }
 
     public static void paste() throws AWTException {
         Robot robot = new Robot();
 
-//        int controlKey = IS_OS_MAC ? VK_META : VK_CONTROL;
-        int controlKey = VK_CONTROL;
+        int controlKey = isMacOS() ? VK_META : VK_CONTROL;
         robot.keyPress(controlKey);
         robot.keyPress(VK_V);
-        robot.keyRelease(controlKey);
         robot.keyRelease(VK_V);
+        robot.keyRelease(controlKey);
+    }
+
+    private static boolean isMacOS() {
+        String os = System.getProperty("os.name").toLowerCase();
+        return os.contains("mac");
     }
 
     public static String get() throws Exception {

@@ -256,13 +256,17 @@ public class ChatWindow extends BorderPane {
     }
 
     @FXML
-    public void sendMessage() {
+    public void sendMessage() { // send message from UI TODO zmien nazwe
         final String message = chatTextArea.getText().trim();
         chatTextArea.clear();
         displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
         prepareContextAndSendMessageToService(message);
     }
 
+    public void sendMessage(final String message, final String commandId) {
+        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
+        prepareContextAndSendMessageToService(message, commandId);
+    }
 
     private void displayMessage(final ChatMessageResponseModel message) {
         displayMessage(message.content(), message.seder(), message.styleType());
@@ -275,18 +279,26 @@ public class ChatWindow extends BorderPane {
     }
 
     private void prepareContextAndSendMessageToService(final String message) {
+        prepareContextAndSendMessageToService(message, getCurrentCommandId());
+    }
+
+    private void prepareContextAndSendMessageToService(final String message, final String commandId) {
         try {
             final MessageWithContextGenerator messageWithContextGenerator = new MessageWithContextGenerator(message);
             final String messageToSend = messageWithContextGenerator.replacePathsWithContents();
-            sendMessageToService(messageToSend);
+            sendMessageToService(messageToSend, commandId);
         } catch (MessageContextException e) {
             logger.error("Cannot generate context for message '{}', sending original message", message, e);
             handleError(e.getMessage());
-            sendMessageToService(message);
+            sendMessageToService(message, commandId);
         }
     }
 
     private void sendMessageToService(final String message) {
+        sendMessageToService(message, getCurrentCommandId());
+    }
+
+    private void sendMessageToService(final String message, final String commandId) {
         Thread.startVirtualThread(() -> {
             try {
                 Platform.runLater(() -> {
@@ -295,7 +307,7 @@ public class ChatWindow extends BorderPane {
                     chatTextArea.setText(LanguageManager.getLanguageString("chat.message.sending"));
                 });
 
-                final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(message, chatThread.id(), getCurrentCommandId());
+                final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(message, chatThread.id(), commandId);
                 
                 BackendApi.sendChatMessagesStream(chatMessageSendModel);
                 

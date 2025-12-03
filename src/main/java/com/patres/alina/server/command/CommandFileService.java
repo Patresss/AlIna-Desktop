@@ -89,7 +89,8 @@ public class CommandFileService {
                 request.description(),
                 request.systemPrompt(),
                 request.icon(),
-                State.ENABLED
+                State.ENABLED,
+                request.globalShortcut() != null ? request.globalShortcut() : new com.patres.alina.uidesktop.shortcuts.key.ShortcutKeys()
         );
 
         final Path commandFile = commandsDirectory.resolve(filename + ".md");
@@ -161,7 +162,8 @@ public class CommandFileService {
                 existing.get().description(),
                 existing.get().systemPrompt(),
                 existing.get().icon(),
-                updateStateRequest.state()
+                updateStateRequest.state(),
+                existing.get().globalShortcut()
         );
 
         update(updated);
@@ -180,7 +182,8 @@ public class CommandFileService {
                     parsed.metadata().description(),
                     parsed.content(),
                     parsed.metadata().icon(),
-                    parsed.metadata().state()
+                    parsed.metadata().state(),
+                    parsed.metadata().globalShortcut()
             );
 
             return Optional.of(command);

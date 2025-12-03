@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Optional;
 import com.patres.alina.server.message.exception.CannotConvertSpeechToTextException;
 
 
@@ -32,6 +33,10 @@ public class BackendApi {
         return AppLauncher.getBean(ChatMessageController.class).getMessagesByThreadId(chatThreadId);
     }
 
+
+    public static Optional<ChatThread> getChatThread(String chatThreadId) {
+        return AppLauncher.getBean(ChatThreadController.class).getChatThread(chatThreadId);
+    }
 
     public static List<ChatThread> getChatThreads() {
         return AppLauncher.getBean(ChatThreadController.class).getChatThreads();

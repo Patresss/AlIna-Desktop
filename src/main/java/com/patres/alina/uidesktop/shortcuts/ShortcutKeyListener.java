@@ -83,7 +83,7 @@ public class ShortcutKeyListener extends Listener implements NativeKeyListener {
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent keyEvent) {
-        if (List.of(KeyboardKey.CONTROL.getKeyValue(), KeyboardKey.ALT.getKeyValue()).contains(getKeyEvent(keyEvent))) {
+        if (List.of(KeyboardKey.CONTROL.getKeyValue(), KeyboardKey.ALT.getKeyValue(), KeyboardKey.META.getKeyValue()).contains(getKeyEvent(keyEvent))) {
             pressedKeys.clear();
         } else {
             getKeyEventAsKeyboardKey(keyEvent).ifPresent(pressedKeys::remove);

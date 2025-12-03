@@ -4,6 +4,8 @@ import com.github.kwhat.jnativehook.NativeHookException;
 import com.patres.alina.uidesktop.DefaultExceptionHandler;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.shortcuts.ShortcutKeyListener;
+import com.patres.alina.uidesktop.ui.contextmenu.AppGlobalContextMenu;
+import com.patres.alina.uidesktop.ui.contextmenu.CommandShortcutListener;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
@@ -26,7 +28,6 @@ public class AssistantAppLauncher {
 
     public void start(Stage stage) throws NativeHookException {
         Thread.currentThread().setUncaughtExceptionHandler(new DefaultExceptionHandler(stage));
-
 
         var root = new ApplicationWindow();
 
@@ -61,8 +62,12 @@ public class AssistantAppLauncher {
         Platform.runLater(() -> {
             stage.show();
             stage.requestFocus();
+
+
         });
 
+        AppGlobalContextMenu.init(root);
+        CommandShortcutListener.init(root);
         ShortcutKeyListener.init();
     }
 

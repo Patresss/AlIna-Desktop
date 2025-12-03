@@ -1,6 +1,7 @@
 package com.patres.alina.server.command;
 
 import com.patres.alina.common.card.State;
+import com.patres.alina.uidesktop.shortcuts.key.ShortcutKeys;
 
 public record Command(
         String id,
@@ -8,7 +9,8 @@ public record Command(
         String description,
         String systemPrompt,
         String icon,
-        State state
+        State state,
+        ShortcutKeys globalShortcut
 ) {
 
     public Command(String name,
@@ -21,7 +23,8 @@ public record Command(
                 description,
                 systemPrompt,
                 icon != null && !icon.isBlank() ? icon : "bi-slash",
-                State.ENABLED
+                State.ENABLED,
+                new ShortcutKeys()
         );
     }
 
