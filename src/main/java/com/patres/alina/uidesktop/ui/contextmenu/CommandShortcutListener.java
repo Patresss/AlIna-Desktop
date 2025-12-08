@@ -3,12 +3,10 @@ package com.patres.alina.uidesktop.ui.contextmenu;
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
-import com.patres.alina.common.event.ChatMessageStreamEvent;
-import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.message.ChatMessageSendModel;
+import com.patres.alina.common.message.OnMessageCompleteCallback;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.backend.BackendApi;
-import com.patres.alina.uidesktop.common.event.CommandShortcutExecutedEvent;
 import com.patres.alina.uidesktop.shortcuts.key.KeyboardKey;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.uidesktop.ui.listner.Listener;
@@ -27,11 +25,10 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
 
     private static final Logger logger = LoggerFactory.getLogger(CommandShortcutListener.class);
 
-    private ApplicationWindow applicationWindow;
+    private final ApplicationWindow applicationWindow;
     private final Set<KeyboardKey> pressedKeys;
     private final Map<Set<KeyboardKey>, Command> shortcutToCommandMap;
-    private final StringBuilder responseBuilder = new StringBuilder();
-    private String currentThreadId;
+    private final OnMessageCompleteCallback pasteResponseCallback;
 
     public static void init(ApplicationWindow applicationWindow) {
         final CommandShortcutListener listener = new CommandShortcutListener(applicationWindow);
@@ -40,11 +37,35 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
     }
 
     private CommandShortcutListener(ApplicationWindow applicationWindow) {
+        this.applicationWindow = applicationWindow;
         this.pressedKeys = new HashSet<>();
         this.shortcutToCommandMap = new HashMap<>();
-        this.applicationWindow = applicationWindow;
+        this.pasteResponseCallback = this::pasteAiResponse;
         loadCommandShortcuts();
-        subscribeToMessageCompletion();
+    }
+
+    private void pasteAiResponse(String aiResponse) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                logger.info("AI response received (length: {}), pasting...", aiResponse.length());
+
+                // Copy AI response to clipboard
+                SystemClipboard.copy(aiResponse);
+
+                // Wait for clipboard to update
+                Thread.sleep(200);
+
+                // Paste (Command+V on macOS, Ctrl+V on others)
+                SystemClipboard.paste();
+
+                logger.info("AI response pasted successfully");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error("Interrupted while waiting for clipboard update", e);
+            } catch (Exception e) {
+                logger.error("Failed to paste AI response", e);
+            }
+        });
     }
 
     private void loadCommandShortcuts() {
@@ -77,6 +98,7 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
 
     @Override
     public void nativeKeyPressed(NativeKeyEvent keyEvent) {
+        logger.info("Key event: {}, current pressed keys: {}", keyEvent, pressedKeys);
         getKeyEventAsKeyboardKey(keyEvent).ifPresent(key -> {
             pressedKeys.add(key);
             logger.info("Key pressed: {}, current pressed keys: {}", key, pressedKeys);
@@ -110,72 +132,17 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
                 Thread.currentThread().interrupt();
                 return;
             }
+
             String selectedText = SystemClipboard.copySelectedValue();
             logger.info("Executing command '{}' with selected text: '{}'", command.name(), selectedText);
 
             Platform.runLater(() -> {
-                applicationWindow.getChatWindow().sendMessage(selectedText, command.id());
+                // Send to existing chat window with paste callback
+                applicationWindow.getChatWindow().sendMessage(selectedText, command.id(), pasteResponseCallback);
             });
         });
     }
 
-    private void subscribeToMessageCompletion() {
-        DefaultEventBus.getInstance().subscribe(ChatMessageStreamEvent.class, event -> {
-            logger.debug("Received ChatMessageStreamEvent: type={}, threadId={}, currentThreadId={}",
-                    event.getEventType(), event.getThreadId(), currentThreadId);
-
-            // Only process events for the current thread
-            if (currentThreadId == null || !event.getThreadId().equals(currentThreadId)) {
-                logger.debug("Ignoring event - not for current thread");
-                return;
-            }
-
-            if (event.getEventType() == ChatMessageStreamEvent.StreamEventType.TOKEN) {
-                // Accumulate tokens
-                logger.trace("Received token: {}", event.getToken());
-                responseBuilder.append(event.getToken());
-            } else if (event.getEventType() == ChatMessageStreamEvent.StreamEventType.COMPLETE) {
-                // Stream complete, paste the result
-                String finalResponse = responseBuilder.toString();
-                logger.info("Command completed, response length: {}, pasting response", finalResponse.length());
-                pasteResponse(finalResponse);
-
-                // Reset for next command
-                responseBuilder.setLength(0);
-                currentThreadId = null;
-            } else if (event.getEventType() == ChatMessageStreamEvent.StreamEventType.ERROR) {
-                logger.error("Error during command execution: {}", event.getErrorMessage());
-                responseBuilder.setLength(0);
-                currentThreadId = null;
-            }
-        });
-    }
-
-    private void pasteResponse(String response) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                logger.info("Starting paste operation...");
-
-                // Copy response to clipboard
-                SystemClipboard.copy(response);
-                logger.debug("Response copied to clipboard");
-
-                // Wait a bit for clipboard to update
-                Thread.sleep(200);
-
-                // Paste it
-                SystemClipboard.paste();
-                logger.info("Paste command sent");
-
-                // Wait for paste to complete
-                Thread.sleep(100);
-
-                logger.info("Response pasted successfully");
-            } catch (Exception e) {
-                logger.error("Failed to paste response", e);
-            }
-        });
-    }
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent keyEvent) {

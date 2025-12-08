@@ -7,6 +7,7 @@ import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.message.ChatMessageStyleType;
+import com.patres.alina.common.message.OnMessageCompleteCallback;
 import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.messagecontext.MessageContextException;
@@ -268,6 +269,11 @@ public class ChatWindow extends BorderPane {
         prepareContextAndSendMessageToService(message, commandId);
     }
 
+    public void sendMessage(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
+        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
+        prepareContextAndSendMessageToService(message, commandId, onComplete);
+    }
+
     private void displayMessage(final ChatMessageResponseModel message) {
         displayMessage(message.content(), message.seder(), message.styleType());
     }
@@ -283,14 +289,18 @@ public class ChatWindow extends BorderPane {
     }
 
     private void prepareContextAndSendMessageToService(final String message, final String commandId) {
+        prepareContextAndSendMessageToService(message, commandId, null);
+    }
+
+    private void prepareContextAndSendMessageToService(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
         try {
             final MessageWithContextGenerator messageWithContextGenerator = new MessageWithContextGenerator(message);
             final String messageToSend = messageWithContextGenerator.replacePathsWithContents();
-            sendMessageToService(messageToSend, commandId);
+            sendMessageToService(messageToSend, commandId, onComplete);
         } catch (MessageContextException e) {
             logger.error("Cannot generate context for message '{}', sending original message", message, e);
             handleError(e.getMessage());
-            sendMessageToService(message, commandId);
+            sendMessageToService(message, commandId, onComplete);
         }
     }
 
@@ -299,6 +309,10 @@ public class ChatWindow extends BorderPane {
     }
 
     private void sendMessageToService(final String message, final String commandId) {
+        sendMessageToService(message, commandId, null);
+    }
+
+    private void sendMessageToService(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
         Thread.startVirtualThread(() -> {
             try {
                 Platform.runLater(() -> {
@@ -307,8 +321,8 @@ public class ChatWindow extends BorderPane {
                     chatTextArea.setText(LanguageManager.getLanguageString("chat.message.sending"));
                 });
 
-                final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(message, chatThread.id(), commandId);
-                
+                final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(message, chatThread.id(), commandId, onComplete);
+
                 BackendApi.sendChatMessagesStream(chatMessageSendModel);
                 
                 // Note: UI updates will be handled by the stream event handler
