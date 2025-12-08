@@ -123,29 +123,8 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
 
     private void executeCommand(Command command) {
         String selectedText = SystemClipboard.copySelectedValue();
-
         logger.info("Executing command '{}' with selected text", command.name());
-
         applicationWindow.getChatWindow().sendMessage(selectedText, command.id());
-//
-//        // jak masz na imie?
-//        // Reset response builder for new command
-//        responseBuilder.setLength(0);
-//
-//        // Create a new thread for this command execution
-//        currentThreadId = BackendApi.createChatThread().id();
-//
-//        // Prepare the message with the selected text
-//        String messageContent = selectedText;
-//
-//        // Send the message with the command
-//        ChatMessageSendModel sendModel = new ChatMessageSendModel(
-//                messageContent,
-//                currentThreadId,
-//                command.id()
-//        );
-//
-//        BackendApi.sendChatMessagesStream(sendModel);
     }
 
     private void subscribeToMessageCompletion() {

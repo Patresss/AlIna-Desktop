@@ -38,7 +38,7 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
 
     private CommandShortcutListener(ApplicationWindow applicationWindow) {
         this.applicationWindow = applicationWindow;
-        this.pressedKeys = new HashSet<>();
+        this.pressedKeys = Collections.synchronizedSet(new HashSet<>());
         this.shortcutToCommandMap = new HashMap<>();
         this.pasteResponseCallback = this::pasteAiResponse;
         loadCommandShortcuts();
@@ -49,19 +49,10 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
             try {
                 logger.info("AI response received (length: {}), pasting...", aiResponse.length());
 
-                // Copy AI response to clipboard
-                SystemClipboard.copy(aiResponse);
-
-                // Wait for clipboard to update
-                Thread.sleep(200);
-
-                // Paste (Command+V on macOS, Ctrl+V on others)
-                SystemClipboard.paste();
+                // Copy to clipboard and paste using a single, locked operation
+                SystemClipboard.copyAndPaste(aiResponse);
 
                 logger.info("AI response pasted successfully");
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                logger.error("Interrupted while waiting for clipboard update", e);
             } catch (Exception e) {
                 logger.error("Failed to paste AI response", e);
             }
@@ -98,11 +89,7 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
 
     @Override
     public void nativeKeyPressed(NativeKeyEvent keyEvent) {
-        logger.info("Key event: {}, current pressed keys: {}", keyEvent, pressedKeys);
-        getKeyEventAsKeyboardKey(keyEvent).ifPresent(key -> {
-            pressedKeys.add(key);
-            logger.info("Key pressed: {}, current pressed keys: {}", key, pressedKeys);
-        });
+        getKeyEventAsKeyboardKey(keyEvent).ifPresent(pressedKeys::add);
         checkKeys();
     }
 
@@ -125,14 +112,6 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
 
     private void executeCommandWithSelectedText(Command command) {
         CompletableFuture.runAsync(() -> {
-            try {
-                // Wait for user to release shortcut keys (200ms is enough for natural key release)
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            }
-
             String selectedText = SystemClipboard.copySelectedValue();
             logger.info("Executing command '{}' with selected text: '{}'", command.name(), selectedText);
 
@@ -142,7 +121,6 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
             });
         });
     }
-
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent keyEvent) {
