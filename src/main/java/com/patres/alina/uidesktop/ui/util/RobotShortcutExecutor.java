@@ -5,7 +5,12 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 
-import static java.awt.event.KeyEvent.*;
+import static java.awt.event.KeyEvent.VK_ALT;
+import static java.awt.event.KeyEvent.VK_CONTROL;
+import static java.awt.event.KeyEvent.VK_C;
+import static java.awt.event.KeyEvent.VK_META;
+import static java.awt.event.KeyEvent.VK_SHIFT;
+import static java.awt.event.KeyEvent.VK_V;
 
 public class RobotShortcutExecutor implements ShortcutExecutor {
 
@@ -29,7 +34,7 @@ public class RobotShortcutExecutor implements ShortcutExecutor {
             Robot robot = createRobot();
             normalizeModifiers(robot);
 
-            int controlKey = isMacOS() ? VK_META : VK_CONTROL;
+            int controlKey = OsUtils.isMacOS() ? VK_META : VK_CONTROL;
             robot.keyPress(controlKey);
             robot.delay(PRE_KEY_DELAY_MS);
             robot.keyPress(keyCode);
@@ -68,8 +73,4 @@ public class RobotShortcutExecutor implements ShortcutExecutor {
         }
     }
 
-    private boolean isMacOS() {
-        String os = System.getProperty("os.name").toLowerCase();
-        return os.contains("mac");
-    }
 }

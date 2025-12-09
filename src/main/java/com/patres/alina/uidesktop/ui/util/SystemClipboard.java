@@ -20,7 +20,7 @@ public class SystemClipboard {
     private static final int CLIPBOARD_CHANGE_TIMEOUT_MS = 800;
     private static final int CLIPBOARD_POLL_INTERVAL_MS = 20;
 
-    private static final ShortcutExecutor SHORTCUT_EXECUTOR = isMacOS()
+    private static final ShortcutExecutor SHORTCUT_EXECUTOR = OsUtils.isMacOS()
             ? new MacShortcutExecutor()
             : new RobotShortcutExecutor();
 
@@ -84,11 +84,6 @@ public class SystemClipboard {
 
     public static void paste() {
         SHORTCUT_EXECUTOR.sendPaste(SHORTCUT_HOLD_MS);
-    }
-
-    private static boolean isMacOS() {
-        String os = System.getProperty("os.name").toLowerCase();
-        return os.contains("mac");
     }
 
     public static String get() throws Exception {
