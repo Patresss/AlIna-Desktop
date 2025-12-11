@@ -2,13 +2,10 @@
 package com.patres.alina.uidesktop.ui.contextmenu;
 
 import atlantafx.base.theme.Styles;
-import com.patres.alina.common.event.ChatMessageStreamEvent;
-import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
-import com.patres.alina.uidesktop.ui.util.SystemClipboard;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -29,7 +26,6 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 
 public class AppGlobalContextMenu extends StackPane implements Initializable {
 
@@ -38,12 +34,9 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
     @FXML
     private VBox commandsVBox;
 
-    private ApplicationWindow applicationWindow;
+    private final CommandExecutor commandExecutor;
     private Stage stage;
     private final StackPane stackPane;
-    private String currentThreadId;
-    private final StringBuilder responseBuilder = new StringBuilder();
-    private final CountDownLatch initLatch = new CountDownLatch(1);
 
     public static void init(ApplicationWindow applicationWindow) {
         new AppGlobalContextMenu(applicationWindow);
@@ -51,7 +44,7 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
 
     public AppGlobalContextMenu(ApplicationWindow applicationWindow) {
         super();
-        this.applicationWindow = applicationWindow;
+        this.commandExecutor = new CommandExecutor(applicationWindow);
         ContextMenuKeyListener.init(this);
         try {
             var loader = new FXMLLoader(
@@ -63,16 +56,9 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
 
             // Initialize stage on JavaFX thread
             Platform.runLater(() -> {
-                try {
-                    stage = createStage();
-                    logger.info("Context menu stage initialized");
-                } finally {
-                    initLatch.countDown();
-                }
+                stage = createStage();
+                logger.info("Context menu stage initialized");
             });
-
-            // Subscribe to stream completion events
-            subscribeToMessageCompletion();
         } catch (IOException e) {
             throw new RuntimeException("Unable to load FXML file", e);
         }
@@ -114,104 +100,39 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         button.setOnAction(event -> {
             // Close menu first WITHOUT activating main window
             closeQuietly();
-            // Execute command in background
-            CompletableFuture.runAsync(() -> executeCommand(command));
+            commandExecutor.executeWithSelectedText(command);
         });
 
         return button;
     }
 
-    private void executeCommand(Command command) {
-        String selectedText = SystemClipboard.copySelectedValue();
-        logger.info("Executing command '{}' with selected text", command.name());
-        applicationWindow.getChatWindow().sendMessage(selectedText, command.id());
-    }
-
-    private void subscribeToMessageCompletion() {
-        DefaultEventBus.getInstance().subscribe(ChatMessageStreamEvent.class, event -> {
-            logger.debug("Received ChatMessageStreamEvent: type={}, threadId={}, currentThreadId={}",
-                event.getEventType(), event.getThreadId(), currentThreadId);
-
-            // Only process events for the current thread
-            if (currentThreadId == null || !event.getThreadId().equals(currentThreadId)) {
-                logger.debug("Ignoring event - not for current thread");
+    public void displayContextMenu() {
+        Platform.runLater(() -> {
+            if (stage == null) {
+                logger.error("Stage is null after initialization");
                 return;
             }
 
-            if (event.getEventType() == ChatMessageStreamEvent.StreamEventType.TOKEN) {
-                // Accumulate tokens
-                logger.trace("Received token: {}", event.getToken());
-                responseBuilder.append(event.getToken());
-            } else if (event.getEventType() == ChatMessageStreamEvent.StreamEventType.COMPLETE) {
-                // Stream complete, paste the result
-                String finalResponse = responseBuilder.toString();
-                logger.info("Command completed, response length: {}, pasting response", finalResponse.length());
-                pasteResponse(finalResponse);
+            loadCommands(); // Reload commands in case they changed
 
-                // Reset for next command
-                responseBuilder.setLength(0);
-                currentThreadId = null;
-            } else if (event.getEventType() == ChatMessageStreamEvent.StreamEventType.ERROR) {
-                logger.error("Error during command execution: {}", event.getErrorMessage());
-                responseBuilder.setLength(0);
-                currentThreadId = null;
-            }
-        });
-    }
-
-    private void pasteResponse(String response) {
-        CompletableFuture.runAsync(() -> {
             try {
-                logger.info("Starting paste operation...");
+                final Point mousePosition = MouseInfo.getPointerInfo().getLocation();
+                final double x = mousePosition.getX();
+                final double y = mousePosition.getY();
+                stage.setX(x);
+                stage.setY(y);
 
-                // Copy response to clipboard
-                SystemClipboard.copy(response);
-                logger.debug("Response copied to clipboard");
+                // Show WITHOUT requesting focus to avoid activating main window
+                stage.setAlwaysOnTop(true);
+                stage.show();
 
-                // Wait a bit for clipboard to update
-                Thread.sleep(200);
-
-                // Paste it
-                SystemClipboard.paste();
-                logger.info("Paste command sent");
-
-                // Wait for paste to complete
-                Thread.sleep(100);
-
-                logger.info("Response pasted successfully");
+                logger.debug("Context menu displayed at ({}, {})", x, y);
+            } catch (HeadlessException e) {
+                logger.error("Failed to get mouse position - headless environment", e);
             } catch (Exception e) {
-                logger.error("Failed to paste response", e);
+                logger.error("Failed to display context menu", e);
             }
         });
-    }
-
-    public void displayContextMenu() {
-            Platform.runLater(() -> {
-                if (stage == null) {
-                    logger.error("Stage is null after initialization");
-                    return;
-                }
-
-                loadCommands(); // Reload commands in case they changed
-
-                try {
-                    final Point mousePosition = MouseInfo.getPointerInfo().getLocation();
-                    final double x = mousePosition.getX();
-                    final double y = mousePosition.getY();
-                    stage.setX(x);
-                    stage.setY(y);
-
-                    // Show WITHOUT requesting focus to avoid activating main window
-                    stage.setAlwaysOnTop(true);
-                    stage.show();
-
-                    logger.debug("Context menu displayed at ({}, {})", x, y);
-                } catch (HeadlessException e) {
-                    logger.error("Failed to get mouse position - headless environment", e);
-                } catch (Exception e) {
-                    logger.error("Failed to display context menu", e);
-                }
-            });
     }
 
     private Stage createStage() {

@@ -3,20 +3,15 @@ package com.patres.alina.uidesktop.ui.contextmenu;
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
-import com.patres.alina.common.message.ChatMessageSendModel;
-import com.patres.alina.common.message.OnMessageCompleteCallback;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.shortcuts.key.KeyboardKey;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.uidesktop.ui.listner.Listener;
-import com.patres.alina.uidesktop.ui.util.SystemClipboard;
-import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 import static com.patres.alina.uidesktop.shortcuts.key.KeyboardKey.getKeyEvent;
 import static com.patres.alina.uidesktop.shortcuts.key.KeyboardKey.getKeyEventAsKeyboardKey;
@@ -25,10 +20,9 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
 
     private static final Logger logger = LoggerFactory.getLogger(CommandShortcutListener.class);
 
-    private final ApplicationWindow applicationWindow;
+    private final CommandExecutor commandExecutor;
     private final Set<KeyboardKey> pressedKeys;
     private final Map<Set<KeyboardKey>, Command> shortcutToCommandMap;
-    private final OnMessageCompleteCallback pasteResponseCallback;
 
     public static void init(ApplicationWindow applicationWindow) {
         final CommandShortcutListener listener = new CommandShortcutListener(applicationWindow);
@@ -37,25 +31,10 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
     }
 
     private CommandShortcutListener(ApplicationWindow applicationWindow) {
-        this.applicationWindow = applicationWindow;
+        this.commandExecutor = new CommandExecutor(applicationWindow);
         this.pressedKeys = Collections.synchronizedSet(new HashSet<>());
         this.shortcutToCommandMap = new HashMap<>();
-        this.pasteResponseCallback = this::pasteAiResponse;
         loadCommandShortcuts();
-    }
-
-    private void pasteAiResponse(String aiResponse) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                logger.info("AI response received (length: {}), pasting...", aiResponse.length());
-
-                SystemClipboard.copyAndPaste(aiResponse);
-
-                logger.info("AI response pasted successfully");
-            } catch (Exception e) {
-                logger.error("Failed to paste AI response", e);
-            }
-        });
     }
 
     private void loadCommandShortcuts() {
@@ -100,22 +79,10 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
             if (pressedKeys.equals(entry.getKey())) {
                 Command command = entry.getValue();
                 logger.info("Global shortcut triggered for command: {}", command.name());
-                executeCommandWithSelectedText(command);
+                commandExecutor.executeWithSelectedText(command);
                 break;
             }
         }
-    }
-
-    private void executeCommandWithSelectedText(Command command) {
-        CompletableFuture.runAsync(() -> {
-            String selectedText = SystemClipboard.copySelectedValue();
-            logger.info("Executing command '{}' with selected text: '{}'", command.name(), selectedText);
-
-            Platform.runLater(() -> {
-                // Send to existing chat window with paste callback
-                applicationWindow.getChatWindow().sendMessage(selectedText, command.id(), pasteResponseCallback);
-            });
-        });
     }
 
     @Override
