@@ -15,8 +15,6 @@ import java.util.concurrent.TimeUnit;
 public class SystemClipboard {
 
     private static final Logger logger = LoggerFactory.getLogger(SystemClipboard.class);
-    private static final int SHORTCUT_HOLD_MS = 220;
-    private static final int SHORTCUT_HOLD_MS_STRONG = 350;
     private static final int CLIPBOARD_CHANGE_TIMEOUT_MS = 800;
     private static final int CLIPBOARD_POLL_INTERVAL_MS = 20;
 
@@ -31,8 +29,7 @@ public class SystemClipboard {
             // Try twice to tolerate short OS delays when copying from other apps
             for (int attempt = 1; attempt <= 2; attempt++) {
                 try {
-                    int holdMs = attempt == 1 ? SHORTCUT_HOLD_MS : SHORTCUT_HOLD_MS_STRONG;
-                    String result = tryToCopySelectedValue(holdMs);
+                    String result = tryToCopySelectedValue();
                     if (result != null) {
                         logger.info("Successfully copied selected text: '{}' ({} chars)", result.substring(0, Math.min(100, result.length())), result.length());
                         return result;
@@ -50,13 +47,13 @@ public class SystemClipboard {
         }
     }
 
-    private static String tryToCopySelectedValue(int holdMs) {
+    private static String tryToCopySelectedValue() {
         final Clipboard clipboard = getSystemClipboard();
         final String previousValueFromClipboard = getQuietly(clipboard);
         logger.info("Previous clipboard value: '{}'", preview(previousValueFromClipboard));
 
         logger.info("Sending Command+C to copy selected text...");
-        if (!SHORTCUT_EXECUTOR.sendCopy(holdMs)) {
+        if (!SHORTCUT_EXECUTOR.sendCopy()) {
             logger.error("Cannot send copy shortcut");
             return null;
         }
@@ -71,19 +68,29 @@ public class SystemClipboard {
         clipboard.setContents(new StringSelection(text), null);
     }
 
+    public static void copy() {
+        try {
+            logger.info("Sending copy command (Cmd+C on macOS, Ctrl+C on others)");
+            SHORTCUT_EXECUTOR.sendCopy();
+            logger.info("Copy command sent, waiting for clipboard update");
+        } catch (Exception e) {
+            logger.error("Failed to send copy command", e);
+        }
+    }
+
     public static void copyAndPaste(String text) {
         Clipboard clipboard = getSystemClipboard();
         clipboard.setContents(new StringSelection(text), null);
         waitUntilClipboardEquals(clipboard, text);
         try {
-            SHORTCUT_EXECUTOR.sendPaste(SHORTCUT_HOLD_MS);
+            SHORTCUT_EXECUTOR.sendPaste();
         } catch (Exception e) {
             logger.error("Cannot send paste shortcut", e);
         }
     }
 
     public static void paste() {
-        SHORTCUT_EXECUTOR.sendPaste(SHORTCUT_HOLD_MS);
+        SHORTCUT_EXECUTOR.sendPaste();
     }
 
     public static String get() throws Exception {

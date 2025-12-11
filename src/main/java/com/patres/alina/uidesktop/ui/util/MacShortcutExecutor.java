@@ -11,27 +11,29 @@ public class MacShortcutExecutor implements ShortcutExecutor {
 
     private static final int APPLESCRIPT_SETTLE_MS = 60;
     private static final int APPLESCRIPT_TIMEOUT_MS = 800;
+
     private static final String KEY_COPY = "c";
     private static final String KEY_PASTE = "v";
+
 
     private final ShortcutExecutor fallback = new RobotShortcutExecutor();
 
     @Override
-    public boolean sendCopy(int holdMs) {
+    public boolean sendCopy() {
         if (sendMacShortcut(KEY_COPY)) {
             return true;
         }
         logger.warn("Falling back to Robot for copy");
-        return fallback.sendCopy(holdMs);
+        return fallback.sendCopy();
     }
 
     @Override
-    public boolean sendPaste(int holdMs) {
+    public boolean sendPaste() {
         if (sendMacShortcut(KEY_PASTE)) {
             return true;
         }
         logger.warn("Falling back to Robot for paste");
-        return fallback.sendPaste(holdMs);
+        return fallback.sendPaste();
     }
 
     private boolean sendMacShortcut(String key) {

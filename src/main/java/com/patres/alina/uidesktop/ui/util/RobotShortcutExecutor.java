@@ -16,20 +16,18 @@ public class RobotShortcutExecutor implements ShortcutExecutor {
 
     private static final Logger logger = LoggerFactory.getLogger(RobotShortcutExecutor.class);
 
-    private static final int STEP_DELAY_MS = 60;
-    private static final int PRE_KEY_DELAY_MS = 80;
-
     @Override
-    public boolean sendCopy(int holdMs) {
-        return sendShortcut(VK_C, holdMs);
+    public boolean sendCopy() {
+        return sendShortcut(VK_C);
     }
 
     @Override
-    public boolean sendPaste(int holdMs) {
-        return sendShortcut(VK_V, holdMs);
+    public boolean sendPaste() {
+        return sendShortcut(VK_V);
     }
 
-    private boolean sendShortcut(int keyCode, int holdMs) {
+
+    private boolean sendShortcut(int keyCode) {
         try {
             Robot robot = createRobot();
             normalizeModifiers(robot);
@@ -38,7 +36,7 @@ public class RobotShortcutExecutor implements ShortcutExecutor {
             robot.keyPress(controlKey);
             robot.delay(PRE_KEY_DELAY_MS);
             robot.keyPress(keyCode);
-            robot.delay(holdMs);
+            robot.delay(DEFAULT_HOLD_MS);
             robot.keyRelease(keyCode);
             robot.delay(STEP_DELAY_MS);
             robot.keyRelease(controlKey);
