@@ -1,4 +1,4 @@
-package com.patres.alina.uidesktop.shortcuts;
+package com.patres.alina.uidesktop.shortcuts.listener;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
@@ -17,7 +17,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static com.patres.alina.uidesktop.settings.SettingsMangers.UI_SETTINGS;

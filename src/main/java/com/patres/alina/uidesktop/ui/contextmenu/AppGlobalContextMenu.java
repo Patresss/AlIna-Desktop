@@ -5,6 +5,8 @@ import atlantafx.base.theme.Styles;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.backend.BackendApi;
+import com.patres.alina.uidesktop.shortcuts.CommandExecutor;
+import com.patres.alina.uidesktop.shortcuts.listener.ContextMenuKeyListener;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -98,8 +100,7 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         button.setMaxWidth(Double.MAX_VALUE);
 
         button.setOnAction(event -> {
-            // Close menu first WITHOUT activating main window
-            closeQuietly();
+            close();
             commandExecutor.executeWithSelectedText(command);
         });
 
@@ -166,7 +167,7 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         return newStage;
     }
 
-    private void closeQuietly() {
+    public void close() {
         if (stage != null) {
             Platform.runLater(() -> {
                 if (stage.isShowing()) {
@@ -175,10 +176,6 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
                 }
             });
         }
-    }
-
-    public void close() {
-        closeQuietly();
     }
 
 }
