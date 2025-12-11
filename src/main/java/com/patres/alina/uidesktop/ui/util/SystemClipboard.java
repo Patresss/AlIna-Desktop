@@ -23,10 +23,7 @@ public class SystemClipboard {
             : new RobotShortcutExecutor();
 
     public static String copySelectedValue() {
-
         try {
-
-            // Try twice to tolerate short OS delays when copying from other apps
             for (int attempt = 1; attempt <= 2; attempt++) {
                 try {
                     String result = tryToCopySelectedValue();
@@ -130,7 +127,6 @@ public class SystemClipboard {
 
                 current = getQuietly(clipboard);
                 if (clipboardChanged(previousContent, current)) {
-                    changeDetected = true;
                     return current;
                 }
             }

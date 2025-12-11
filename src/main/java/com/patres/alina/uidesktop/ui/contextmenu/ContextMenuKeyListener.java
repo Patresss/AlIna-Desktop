@@ -37,7 +37,7 @@ public class ContextMenuKeyListener extends Listener implements NativeKeyListene
         // Subscribe to settings updates
         DefaultEventBus.getInstance().subscribe(
                 UiSettingsUpdateEvent.class,
-                event -> updateShortcutKeys()
+                _ -> updateShortcutKeys()
         );
     }
 

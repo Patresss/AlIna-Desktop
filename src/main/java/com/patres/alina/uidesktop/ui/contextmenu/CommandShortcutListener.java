@@ -49,7 +49,6 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
             try {
                 logger.info("AI response received (length: {}), pasting...", aiResponse.length());
 
-                // Copy to clipboard and paste using a single, locked operation
                 SystemClipboard.copyAndPaste(aiResponse);
 
                 logger.info("AI response pasted successfully");
@@ -65,10 +64,7 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
         logger.info("Loading command shortcuts from {} enabled commands", commands.size());
 
         for (Command command : commands) {
-            logger.info("Checking command '{}': hasShortcut={}, shortcut={}",
-                command.name(),
-                command.globalShortcut() != null,
-                command.globalShortcut() != null ? command.globalShortcut().getAllKeys() : "null");
+            logger.info("Checking command '{}': hasShortcut={}, shortcut={}", command.name(), command.globalShortcut() != null, command.globalShortcut() != null ? command.globalShortcut().getAllKeys() : "null");
 
             if (command.globalShortcut() != null && !command.globalShortcut().getAllKeys().isEmpty()) {
                 Set<KeyboardKey> allKeys = command.globalShortcut().getAllKeys();
@@ -130,10 +126,5 @@ public class CommandShortcutListener extends Listener implements NativeKeyListen
         } else {
             getKeyEventAsKeyboardKey(keyEvent).ifPresent(pressedKeys::remove);
         }
-    }
-
-    public void reloadShortcuts() {
-        logger.info("Reloading command shortcuts...");
-        loadCommandShortcuts();
     }
 }
