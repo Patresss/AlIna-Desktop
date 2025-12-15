@@ -40,8 +40,8 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
     private Stage stage;
     private final StackPane stackPane;
 
-    public static void init(ApplicationWindow applicationWindow) {
-        new AppGlobalContextMenu(applicationWindow);
+    public static AppGlobalContextMenu init(ApplicationWindow applicationWindow) {
+        return new AppGlobalContextMenu(applicationWindow);
     }
 
     public AppGlobalContextMenu(ApplicationWindow applicationWindow) {

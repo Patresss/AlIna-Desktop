@@ -3,10 +3,10 @@ package com.patres.alina.uidesktop.ui;
 import com.github.kwhat.jnativehook.NativeHookException;
 import com.patres.alina.uidesktop.DefaultExceptionHandler;
 import com.patres.alina.uidesktop.Resources;
-import com.patres.alina.uidesktop.shortcuts.listener.ContextMenuKeyListener;
 import com.patres.alina.uidesktop.shortcuts.listener.ShortcutKeyListener;
 import com.patres.alina.uidesktop.ui.contextmenu.AppGlobalContextMenu;
 import com.patres.alina.uidesktop.shortcuts.listener.CommandShortcutListener;
+import com.patres.alina.uidesktop.ui.contextmenu.ContextMenuHttpServer;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
@@ -66,7 +66,8 @@ public class AssistantAppLauncher {
 
         });
 
-        AppGlobalContextMenu.init(root);
+        var appGlobalContextMenu = AppGlobalContextMenu.init(root);
+        ContextMenuHttpServer.start(appGlobalContextMenu);
         CommandShortcutListener.init(root);
         ShortcutKeyListener.init();
     }
