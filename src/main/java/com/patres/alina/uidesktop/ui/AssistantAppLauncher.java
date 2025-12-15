@@ -6,7 +6,7 @@ import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.shortcuts.listener.ShortcutKeyListener;
 import com.patres.alina.uidesktop.ui.contextmenu.AppGlobalContextMenu;
 import com.patres.alina.uidesktop.shortcuts.listener.CommandShortcutListener;
-import com.patres.alina.uidesktop.ui.contextmenu.ContextMenuHttpServer;
+import com.patres.alina.uidesktop.ui.contextmenu.AlinaHttpServer;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
@@ -67,7 +67,7 @@ public class AssistantAppLauncher {
         });
 
         var appGlobalContextMenu = AppGlobalContextMenu.init(root);
-        ContextMenuHttpServer.start(appGlobalContextMenu);
+        AlinaHttpServer.start(root, appGlobalContextMenu);
         CommandShortcutListener.init(root);
         ShortcutKeyListener.init();
     }

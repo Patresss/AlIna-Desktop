@@ -48,8 +48,8 @@ public class MarkdownParser {
         String frontmatterYaml = content.substring(3, endIndex).trim();
         String markdownContent = content.substring(endIndex + 3).trim();
         
-        CommandMetadata metadata = parseYaml(frontmatterYaml, id);
-        return new ParsedCommand(id, metadata, markdownContent);
+        ParsedFrontmatter parsedFrontmatter = parseYaml(frontmatterYaml, id);
+        return new ParsedCommand(parsedFrontmatter.id(), parsedFrontmatter.metadata(), markdownContent);
     }
     
     public String generateMarkdownWithFrontmatter(Command command) {
@@ -57,6 +57,7 @@ public class MarkdownParser {
         
         // Add frontmatter
         sb.append(FRONTMATTER_DELIMITER).append("\n");
+        sb.append("id: ").append(command.id()).append("\n");
         sb.append("name: \"").append(escapeYamlString(command.name())).append("\"\n");
         sb.append("description: \"").append(escapeYamlString(command.description())).append("\"\n");
         sb.append("icon: ").append(command.icon()).append("\n");
@@ -89,22 +90,23 @@ public class MarkdownParser {
         return sb.toString();
     }
     
-    private CommandMetadata parseYaml(String frontmatterYaml, String id) {
+    private ParsedFrontmatter parseYaml(String frontmatterYaml, String id) {
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> yamlMap = yamlMapper.readValue(frontmatterYaml, Map.class);
 
-            String name = getStringValue(yamlMap, "name", id);
+            String resolvedId = getStringValue(yamlMap, "id", id);
+            String name = getStringValue(yamlMap, "name", resolvedId);
             String description = getStringValue(yamlMap, "description", "");
             String icon = getStringValue(yamlMap, "icon", "bi-slash");
             State state = parseState(getStringValue(yamlMap, "state", "ENABLED"));
             ShortcutKeys globalShortcut = parseGlobalShortcut(yamlMap);
 
-            return new CommandMetadata(name, description, icon, state, globalShortcut);
+            return new ParsedFrontmatter(resolvedId, new CommandMetadata(name, description, icon, state, globalShortcut));
 
         } catch (Exception e) {
             logger.warn("Failed to parse YAML frontmatter for command id: {}, using defaults. Error: {}", id, e.getMessage());
-            return getDefaultMetadata(id);
+            return new ParsedFrontmatter(id, getDefaultMetadata(id));
         }
     }
 
@@ -193,6 +195,11 @@ public class MarkdownParser {
             String id,
             CommandMetadata metadata,
             String content
+    ) {}
+
+    private record ParsedFrontmatter(
+            String id,
+            CommandMetadata metadata
     ) {}
     
     public record CommandMetadata(

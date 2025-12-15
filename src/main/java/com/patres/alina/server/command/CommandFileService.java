@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import java.util.UUID;
 
 @Service
 public class CommandFileService {
@@ -82,9 +83,9 @@ public class CommandFileService {
 
     public String create(final Command request) {
         logger.info("Creating new command: {}", request);
-        final String filename = generateUniqueFilename(request.name());
+        final String generatedId = UUID.randomUUID().toString();
         final Command command = new Command(
-                filename,
+                generatedId,
                 request.name(),
                 request.description(),
                 request.systemPrompt(),
@@ -93,7 +94,7 @@ public class CommandFileService {
                 request.globalShortcut() != null ? request.globalShortcut() : new com.patres.alina.uidesktop.shortcuts.key.ShortcutKeys()
         );
 
-        final Path commandFile = commandsDirectory.resolve(filename + ".md");
+        final Path commandFile = commandsDirectory.resolve(generatedId + ".md");
 
         try {
             final String content = markdownParser.generateMarkdownWithFrontmatter(command);
