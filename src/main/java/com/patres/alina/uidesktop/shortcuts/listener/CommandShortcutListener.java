@@ -2,6 +2,7 @@ package com.patres.alina.uidesktop.shortcuts.listener;
 
 import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.backend.BackendApi;
+import com.patres.alina.uidesktop.common.event.CommandUpdateEvent;
 import com.patres.alina.uidesktop.shortcuts.CommandExecutor;
 import com.patres.alina.uidesktop.shortcuts.GlobalKeyManager;
 import com.patres.alina.uidesktop.shortcuts.ShortcutAction;
@@ -9,9 +10,12 @@ import com.patres.alina.uidesktop.shortcuts.key.KeyboardKey;
 import com.patres.alina.uidesktop.shortcuts.key.ShortcutKeys;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.uidesktop.ui.listner.Listener;
+import com.patres.alina.common.event.bus.DefaultEventBus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -23,6 +27,7 @@ public class CommandShortcutListener extends Listener {
 
     private final CommandExecutor commandExecutor;
     private final GlobalKeyManager keyManager;
+    private final List<ShortcutAction> registeredShortcuts = new ArrayList<>();
 
     public static void init(ApplicationWindow applicationWindow) {
         new CommandShortcutListener(applicationWindow).registerShortcuts();
@@ -31,9 +36,13 @@ public class CommandShortcutListener extends Listener {
     private CommandShortcutListener(ApplicationWindow applicationWindow) {
         this.commandExecutor = new CommandExecutor(applicationWindow);
         this.keyManager = GlobalKeyManager.getInstance();
+        DefaultEventBus.getInstance().subscribe(CommandUpdateEvent.class, _ -> registerShortcuts());
     }
 
     private void registerShortcuts() {
+        keyManager.unregisterShortcuts(registeredShortcuts);
+        registeredShortcuts.clear();
+
         BackendApi.getEnabledCommands().stream()
                 .forEach(command -> {
                     registerShortcut(command, command.copyAndPasteShortcut(), "copy & paste", () -> commandExecutor.executeWithSelectedText(command));
@@ -64,6 +73,8 @@ public class CommandShortcutListener extends Listener {
         }
         final Set<KeyboardKey> keys = shortcut.getAllKeys();
         logger.info("Registering {} shortcut {} for command '{}'", shortcutLabel, keys, command.name());
-        keyManager.registerShortcut(new ShortcutAction(keys, action));
+        ShortcutAction shortcutAction = new ShortcutAction(keys, action);
+        keyManager.registerShortcut(shortcutAction);
+        registeredShortcuts.add(shortcutAction);
     }
 }

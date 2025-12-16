@@ -43,6 +43,16 @@ public final class GlobalKeyManager extends Listener implements NativeKeyListene
         }
     }
 
+    public void unregisterShortcuts(Collection<ShortcutAction> shortcuts) {
+        if (shortcuts == null || shortcuts.isEmpty()) {
+            return;
+        }
+        shortcutActions.removeAll(shortcuts);
+        shortcuts.stream()
+                .map(ShortcutAction::keys)
+                .forEach(triggeredCombos::remove);
+    }
+
     @Override
     public void nativeKeyTyped(NativeKeyEvent keyEvent) {
     }
@@ -57,12 +67,15 @@ public final class GlobalKeyManager extends Listener implements NativeKeyListene
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent keyEvent) {
-        getKeyEventAsKeyboardKey(keyEvent).ifPresent(pressedKeys::remove);
+        getKeyEventAsKeyboardKey(keyEvent).ifPresent(key -> {
+            pressedKeys.remove(key);
+            triggeredCombos.removeIf(combo -> combo.contains(key));
+        });
     }
 
     private void dispatchHandlers() {
         for (ShortcutAction shortcut : shortcutActions) {
-            if (pressedKeys.containsAll(shortcut.keys())) {
+            if (pressedKeys.containsAll(shortcut.keys()) && triggeredCombos.add(shortcut.keys())) {
                 runAction(shortcut.action());
             }
         }
