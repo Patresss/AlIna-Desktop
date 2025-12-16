@@ -27,6 +27,10 @@ public class CommandExecutor {
     public void executeWithSelectedText(Command command) {
         CompletableFuture.runAsync(() -> {
             String selectedText = SystemClipboard.copySelectedValue();
+            if (selectedText.isBlank()) {
+                logger.warn("Skipping command '{}' because no text is selected", command.name());
+                return;
+            }
             logger.info("Executing command '{}' with selected text: '{}'", command.name(), selectedText);
 
             Platform.runLater(() ->

@@ -8,6 +8,7 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.FlavorListener;
 import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +47,7 @@ public class SystemClipboard {
 
     private static String tryToCopySelectedValue() {
         final Clipboard clipboard = getSystemClipboard();
+        final Transferable previousContent = clipboard.getContents(null);
         final String previousValueFromClipboard = getQuietly(clipboard);
         logger.info("Previous clipboard value: '{}'", preview(previousValueFromClipboard));
 
@@ -56,6 +58,9 @@ public class SystemClipboard {
         }
 
         final String selectedText = waitForClipboardChange(clipboard, previousValueFromClipboard);
+        if (previousContent != null) {
+            clipboard.setContents(previousContent, null);
+        }
         logger.info("Selected text after copy: '{}'", preview(selectedText));
         return selectedText;
     }

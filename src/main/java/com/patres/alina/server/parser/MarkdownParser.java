@@ -49,7 +49,10 @@ public class MarkdownParser {
         String markdownContent = content.substring(endIndex + 3).trim();
         
         ParsedFrontmatter parsedFrontmatter = parseYaml(frontmatterYaml, id);
-        return new ParsedCommand(parsedFrontmatter.id(), parsedFrontmatter.metadata(), markdownContent);
+        if (!id.equals(parsedFrontmatter.id())) {
+            logger.warn("Frontmatter id '{}' does not match filename '{}', using filename", parsedFrontmatter.id(), id);
+        }
+        return new ParsedCommand(id, parsedFrontmatter.metadata(), markdownContent);
     }
     
     public String generateMarkdownWithFrontmatter(Command command) {

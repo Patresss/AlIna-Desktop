@@ -55,12 +55,7 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
             loader.setController(AppGlobalContextMenu.this);
             loader.setRoot(this);
             this.stackPane = loader.load();
-
-            // Initialize stage on JavaFX thread
-            Platform.runLater(() -> {
-                stage = createStage();
-                logger.info("Context menu stage initialized");
-            });
+            initStage();
         } catch (IOException e) {
             throw new RuntimeException("Unable to load FXML file", e);
         }
@@ -105,6 +100,13 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         });
 
         return button;
+    }
+
+    private void initStage() {
+        Platform.runLater(() -> {
+            stage = createStage();
+            logger.info("Context menu stage initialized");
+        });
     }
 
     public void displayContextMenu() {
