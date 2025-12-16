@@ -1,10 +1,12 @@
 package com.patres.alina.uidesktop.shortcuts.listener;
 
+import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.shortcuts.CommandExecutor;
 import com.patres.alina.uidesktop.shortcuts.GlobalKeyManager;
 import com.patres.alina.uidesktop.shortcuts.ShortcutAction;
 import com.patres.alina.uidesktop.shortcuts.key.KeyboardKey;
+import com.patres.alina.uidesktop.shortcuts.key.ShortcutKeys;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.uidesktop.ui.listner.Listener;
 import org.slf4j.Logger;
@@ -33,11 +35,35 @@ public class CommandShortcutListener extends Listener {
 
     private void registerShortcuts() {
         BackendApi.getEnabledCommands().stream()
-                .filter(command -> command.globalShortcut() != null && !command.globalShortcut().getAllKeys().isEmpty())
                 .forEach(command -> {
-                    final Set<KeyboardKey> keys = command.globalShortcut().getAllKeys();
-                    logger.info("Registering global shortcut {} for command '{}'", keys, command.name());
-                    keyManager.registerShortcut(new ShortcutAction(keys, () -> commandExecutor.executeWithSelectedText(command)));
+                    registerShortcut(command, command.globalShortcut(), "copy & paste", () -> commandExecutor.executeWithSelectedText(command));
+                    registerDisplayShortcut(command);
                 });
+    }
+
+    private void registerDisplayShortcut(Command command) {
+        final ShortcutKeys displayShortcut = command.displayShortcut();
+        if (displayShortcut == null || displayShortcut.getAllKeys().isEmpty()) {
+            return;
+        }
+
+        final Set<KeyboardKey> displayKeys = displayShortcut.getAllKeys();
+        final Set<KeyboardKey> pasteKeys = command.globalShortcut() != null ? command.globalShortcut().getAllKeys() : Set.of();
+
+        if (!pasteKeys.isEmpty() && pasteKeys.equals(displayKeys)) {
+            logger.warn("Display shortcut {} for command '{}' matches copy & paste shortcut, skipping duplicate registration", displayKeys, command.name());
+            return;
+        }
+
+        registerShortcut(command, displayShortcut, "copy & display", () -> commandExecutor.executeWithSelectedTextAndDisplay(command));
+    }
+
+    private void registerShortcut(Command command, ShortcutKeys shortcut, String shortcutLabel, Runnable action) {
+        if (shortcut == null || shortcut.getAllKeys().isEmpty()) {
+            return;
+        }
+        final Set<KeyboardKey> keys = shortcut.getAllKeys();
+        logger.info("Registering {} shortcut {} for command '{}'", shortcutLabel, keys, command.name());
+        keyManager.registerShortcut(new ShortcutAction(keys, action));
     }
 }

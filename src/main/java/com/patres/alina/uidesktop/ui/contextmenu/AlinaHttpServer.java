@@ -17,11 +17,13 @@ import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +40,7 @@ public final class AlinaHttpServer {
     private static final String COMMANDS_CONTEXT_PATH = "/commands";
     private static final String COMMANDS_SEGMENT = "commands";
     private static final String COPY_AND_PASTE_SEGMENT = "copy-and-paste";
+    private static final String COPY_AND_DISPLAY_SEGMENT = "copy-and-display";
     private static final String CONTENT_TYPE_TEXT = "text/plain; charset=utf-8";
     private static final Set<HttpMethod> DEFAULT_ALLOWED_METHODS = Set.of(HttpMethod.GET, HttpMethod.POST, HttpMethod.HEAD);
     private static final String UNKNOWN_ERROR = "unknown error";
@@ -59,7 +62,7 @@ public final class AlinaHttpServer {
     private static HttpServer createServer(ApplicationWindow applicationWindow, AppGlobalContextMenu contextMenu, int port) throws IOException {
         final HttpServer server = HttpServer.create(new InetSocketAddress(HOST_NAME, port), 0);
         server.createContext(CONTEXT_MENU_PATH, new DisplayMenuHandler(contextMenu));
-        server.createContext(COMMANDS_CONTEXT_PATH, new CommandCopyAndPasteHandler(new CommandExecutor(applicationWindow)));
+        server.createContext(COMMANDS_CONTEXT_PATH, new CommandActionHandler(new CommandExecutor(applicationWindow)));
         server.setExecutor(createExecutor());
         return server;
     }
@@ -87,6 +90,7 @@ public final class AlinaHttpServer {
     private static void logEndpoints(int port) {
         logger.info("Context menu HTTP endpoint listening on http://{}:{}{}", HOST_NAME, port, CONTEXT_MENU_PATH);
         logger.info("Command trigger HTTP endpoint listening on http://{}:{}/commands/{id}/{}", HOST_NAME, port, COPY_AND_PASTE_SEGMENT);
+        logger.info("Command display HTTP endpoint listening on http://{}:{}/commands/{id}/{}", HOST_NAME, port, COPY_AND_DISPLAY_SEGMENT);
     }
 
     private static boolean isMethodAllowedOrRespond(HttpExchange exchange, Set<HttpMethod> allowedMethods) throws IOException {
@@ -163,7 +167,7 @@ public final class AlinaHttpServer {
         }
     }
 
-    private record CommandCopyAndPasteHandler(CommandExecutor commandExecutor) implements HttpHandler {
+    private record CommandActionHandler(CommandExecutor commandExecutor) implements HttpHandler {
 
         private static final Set<HttpMethod> ALLOWED_METHODS = DEFAULT_ALLOWED_METHODS;
 
@@ -173,13 +177,14 @@ public final class AlinaHttpServer {
                 return;
             }
 
-            final Optional<String> commandIdOptional = extractCommandId(exchange.getRequestURI().getPath());
-            if (commandIdOptional.isEmpty()) {
+            final Optional<ParsedCommandRequest> commandRequestOptional = extractCommandRequest(exchange.getRequestURI().getPath());
+            if (commandRequestOptional.isEmpty()) {
                 sendStatusOnly(exchange, HttpURLConnection.HTTP_NOT_FOUND);
                 return;
             }
 
-            final String commandId = commandIdOptional.get();
+            final ParsedCommandRequest commandRequest = commandRequestOptional.get();
+            final String commandId = commandRequest.commandId();
             final Optional<Command> commandOpt = BackendApi.getEnabledCommands().stream()
                     .filter(cmd -> cmd.id().equals(commandId))
                     .findFirst();
@@ -196,8 +201,8 @@ public final class AlinaHttpServer {
             }
 
             try {
-                commandExecutor.executeWithSelectedText(commandOpt.get());
-                sendPlainTextResponse(exchange, HttpURLConnection.HTTP_OK, "Command triggered: " + commandId);
+                commandRequest.trigger().action().accept(commandExecutor, commandOpt.get());
+                sendPlainTextResponse(exchange, HttpURLConnection.HTTP_OK, "Command triggered: " + commandId + "/" + commandRequest.trigger().segment());
             } catch (Exception e) {
                 logger.error("Failed to execute command {}", commandId, e);
                 final String response = "Failed to execute command: " + Optional.ofNullable(e.getMessage()).orElse(UNKNOWN_ERROR);
@@ -205,22 +210,28 @@ public final class AlinaHttpServer {
             }
         }
 
-        private Optional<String> extractCommandId(String path) {
+        private Optional<ParsedCommandRequest> extractCommandRequest(String path) {
             if (path == null) {
                 logger.warn("Received null path for command endpoint");
                 return Optional.empty();
             }
             final String normalizedPath = normalizePath(path);
             final String[] parts = normalizedPath.split("/");
-            if (parts.length != 3 || !COMMANDS_SEGMENT.equals(parts[0]) || !COPY_AND_PASTE_SEGMENT.equals(parts[2])) {
+            if (parts.length != 3 || !COMMANDS_SEGMENT.equals(parts[0])) {
                 return Optional.empty();
             }
             if (parts[1].isBlank()) {
                 return Optional.empty();
             }
 
+            final Optional<CommandTrigger> triggerOpt = CommandTrigger.fromSegment(parts[2]);
+            if (triggerOpt.isEmpty()) {
+                return Optional.empty();
+            }
+
             try {
-                return Optional.of(URLDecoder.decode(parts[1], StandardCharsets.UTF_8));
+                final String commandId = URLDecoder.decode(parts[1], StandardCharsets.UTF_8);
+                return Optional.of(new ParsedCommandRequest(commandId, triggerOpt.get()));
             } catch (IllegalArgumentException e) {
                 logger.warn("Invalid command id encoding in path {}", path, e);
                 return Optional.empty();
@@ -236,6 +247,36 @@ public final class AlinaHttpServer {
                 normalized = normalized.substring(0, normalized.length() - 1);
             }
             return normalized;
+        }
+    }
+
+    private record ParsedCommandRequest(String commandId, CommandTrigger trigger) {
+    }
+
+    private enum CommandTrigger {
+        COPY_AND_PASTE(COPY_AND_PASTE_SEGMENT, CommandExecutor::executeWithSelectedText),
+        COPY_AND_DISPLAY(COPY_AND_DISPLAY_SEGMENT, CommandExecutor::executeWithSelectedTextAndDisplay);
+
+        private final String segment;
+        private final BiConsumer<CommandExecutor, Command> action;
+
+        CommandTrigger(String segment, BiConsumer<CommandExecutor, Command> action) {
+            this.segment = segment;
+            this.action = action;
+        }
+
+        public String segment() {
+            return segment;
+        }
+
+        public BiConsumer<CommandExecutor, Command> action() {
+            return action;
+        }
+
+        public static Optional<CommandTrigger> fromSegment(String segment) {
+            return Arrays.stream(values())
+                    .filter(trigger -> trigger.segment.equals(segment))
+                    .findFirst();
         }
     }
 }

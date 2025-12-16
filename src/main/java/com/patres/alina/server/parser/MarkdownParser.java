@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.patres.alina.common.card.State;
 import com.patres.alina.server.command.Command;
+import com.patres.alina.server.command.CommandVisibility;
 import com.patres.alina.uidesktop.shortcuts.key.KeyboardKey;
 import com.patres.alina.uidesktop.shortcuts.key.ShortcutKeys;
 import org.slf4j.Logger;
@@ -65,22 +66,12 @@ public class MarkdownParser {
         sb.append("description: \"").append(escapeYamlString(command.description())).append("\"\n");
         sb.append("icon: ").append(command.icon()).append("\n");
         sb.append("state: ").append(command.state().name()).append("\n");
+        sb.append("showInChat: ").append(command.visibility().showInChat()).append("\n");
+        sb.append("showInContextMenuPaste: ").append(command.visibility().showInContextMenuPaste()).append("\n");
+        sb.append("showInContextMenuDisplay: ").append(command.visibility().showInContextMenuDisplay()).append("\n");
 
-        // Add globalShortcut if present (using ShortcutKeys structure)
-        if (command.globalShortcut() != null && !command.globalShortcut().getAllKeys().isEmpty()) {
-            sb.append("globalShortcut:\n");
-            sb.append("  modeKeys:\n");
-            for (KeyboardKey key : command.globalShortcut().getModeKeys()) {
-                if (key != null) {
-                    sb.append("    - ").append(key.name()).append("\n");
-                } else {
-                    sb.append("    - null\n");
-                }
-            }
-            if (command.globalShortcut().getExecuteKey() != null) {
-                sb.append("  executeKey: ").append(command.globalShortcut().getExecuteKey().name()).append("\n");
-            }
-        }
+        appendShortcut(sb, "globalShortcut", command.globalShortcut());
+        appendShortcut(sb, "displayShortcut", command.displayShortcut());
 
         sb.append(FRONTMATTER_DELIMITER).append("\n");
         sb.append("\n");
@@ -100,23 +91,25 @@ public class MarkdownParser {
 
             String resolvedId = getStringValue(yamlMap, "id", id);
             String name = getStringValue(yamlMap, "name", resolvedId);
-            String description = getStringValue(yamlMap, "description", "");
-            String icon = getStringValue(yamlMap, "icon", "bi-slash");
-            State state = parseState(getStringValue(yamlMap, "state", "ENABLED"));
-            ShortcutKeys globalShortcut = parseGlobalShortcut(yamlMap);
+        String description = getStringValue(yamlMap, "description", "");
+        String icon = getStringValue(yamlMap, "icon", "bi-slash");
+        State state = parseState(getStringValue(yamlMap, "state", "ENABLED"));
+        ShortcutKeys globalShortcut = parseShortcut(yamlMap, "globalShortcut");
+        ShortcutKeys displayShortcut = parseShortcut(yamlMap, "displayShortcut");
+        CommandVisibility visibility = parseVisibility(yamlMap);
 
-            return new ParsedFrontmatter(resolvedId, new CommandMetadata(name, description, icon, state, globalShortcut));
+        return new ParsedFrontmatter(resolvedId, new CommandMetadata(name, description, icon, state, globalShortcut, displayShortcut, visibility));
 
-        } catch (Exception e) {
-            logger.warn("Failed to parse YAML frontmatter for command id: {}, using defaults. Error: {}", id, e.getMessage());
-            return new ParsedFrontmatter(id, getDefaultMetadata(id));
-        }
+    } catch (Exception e) {
+        logger.warn("Failed to parse YAML frontmatter for command id: {}, using defaults. Error: {}", id, e.getMessage());
+        return new ParsedFrontmatter(id, getDefaultMetadata(id));
     }
+}
 
     @SuppressWarnings("unchecked")
-    private ShortcutKeys parseGlobalShortcut(Map<String, Object> yamlMap) {
+    private ShortcutKeys parseShortcut(Map<String, Object> yamlMap, String rootKey) {
         try {
-            Object shortcutObj = yamlMap.get("globalShortcut");
+            Object shortcutObj = yamlMap.get(rootKey);
             if (shortcutObj == null) {
                 return new ShortcutKeys();
             }
@@ -160,7 +153,7 @@ public class MarkdownParser {
 
             return new ShortcutKeys();
         } catch (Exception e) {
-            logger.warn("Failed to parse globalShortcut: {}", e.getMessage());
+            logger.warn("Failed to parse {}: {}", rootKey, e.getMessage());
             return new ShortcutKeys();
         }
     }
@@ -178,6 +171,29 @@ public class MarkdownParser {
             return State.ENABLED;
         }
     }
+
+    private CommandVisibility parseVisibility(Map<String, Object> yamlMap) {
+        try {
+            boolean showInChat = getBooleanValue(yamlMap, "showInChat", true);
+            boolean showInContextMenuPaste = getBooleanValue(yamlMap, "showInContextMenuPaste", true);
+            boolean showInContextMenuDisplay = getBooleanValue(yamlMap, "showInContextMenuDisplay", true);
+            return new CommandVisibility(showInChat, showInContextMenuPaste, showInContextMenuDisplay);
+        } catch (Exception e) {
+            logger.warn("Failed to parse visibility flags: {}", e.getMessage());
+            return new CommandVisibility();
+        }
+    }
+
+    private boolean getBooleanValue(Map<String, Object> map, String key, boolean defaultValue) {
+        Object value = map.get(key);
+        if (value == null) {
+            return defaultValue;
+        }
+        if (value instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+        return Boolean.parseBoolean(value.toString());
+    }
     
     private CommandMetadata getDefaultMetadata(String id) {
         return new CommandMetadata(
@@ -185,13 +201,33 @@ public class MarkdownParser {
                 "",
                 "bi-slash",
                 State.ENABLED,
-                new ShortcutKeys()
+                new ShortcutKeys(),
+                new ShortcutKeys(),
+                new CommandVisibility()
         );
     }
     
     private String escapeYamlString(String str) {
         if (str == null) return "";
         return str.replace("\"", "\\\"").replace("\n", "\\n");
+    }
+
+    private void appendShortcut(StringBuilder sb, String key, ShortcutKeys shortcut) {
+        if (shortcut == null || shortcut.getAllKeys().isEmpty()) {
+            return;
+        }
+        sb.append(key).append(":\n");
+        sb.append("  modeKeys:\n");
+        for (KeyboardKey modeKey : shortcut.getModeKeys()) {
+            if (modeKey != null) {
+                sb.append("    - ").append(modeKey.name()).append("\n");
+            } else {
+                sb.append("    - null\n");
+            }
+        }
+        if (shortcut.getExecuteKey() != null) {
+            sb.append("  executeKey: ").append(shortcut.getExecuteKey().name()).append("\n");
+        }
     }
     
     public record ParsedCommand(
@@ -210,6 +246,8 @@ public class MarkdownParser {
             String description,
             String icon,
             State state,
-            ShortcutKeys globalShortcut
+            ShortcutKeys globalShortcut,
+            ShortcutKeys displayShortcut,
+            CommandVisibility visibility
     ) {}
 }

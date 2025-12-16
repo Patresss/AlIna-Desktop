@@ -35,3 +35,10 @@
 .context-menu-button:pressed {
     -fx-background-color: -color-accent-muted;
 }
+
+.command-result-text {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 6px;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}

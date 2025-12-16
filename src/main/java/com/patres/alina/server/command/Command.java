@@ -10,8 +10,18 @@ public record Command(
         String systemPrompt,
         String icon,
         State state,
-        ShortcutKeys globalShortcut
+        ShortcutKeys globalShortcut,
+        ShortcutKeys displayShortcut,
+        CommandVisibility visibility
 ) {
+
+    public Command {
+        icon = icon != null && !icon.isBlank() ? icon : "bi-slash";
+        state = state == null ? State.ENABLED : state;
+        globalShortcut = globalShortcut == null ? new ShortcutKeys() : globalShortcut;
+        displayShortcut = displayShortcut == null ? new ShortcutKeys() : displayShortcut;
+        visibility = CommandVisibility.defaults(visibility);
+    }
 
     public Command(String name,
                    String description,
@@ -22,9 +32,31 @@ public record Command(
                 name,
                 description,
                 systemPrompt,
-                icon != null && !icon.isBlank() ? icon : "bi-slash",
+                icon,
                 State.ENABLED,
-                new ShortcutKeys()
+                new ShortcutKeys(),
+                new ShortcutKeys(),
+                new CommandVisibility()
+        );
+    }
+
+    public Command(String name,
+                   String description,
+                   String systemPrompt,
+                   String icon,
+                   ShortcutKeys globalShortcut,
+                   ShortcutKeys displayShortcut,
+                   CommandVisibility visibility) {
+        this(
+                generateIdFromName(name),
+                name,
+                description,
+                systemPrompt,
+                icon,
+                State.ENABLED,
+                globalShortcut,
+                displayShortcut,
+                visibility
         );
     }
 

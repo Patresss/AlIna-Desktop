@@ -8,6 +8,7 @@ import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.shortcuts.CommandExecutor;
 import com.patres.alina.uidesktop.shortcuts.listener.ContextMenuKeyListener;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
+import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -15,6 +16,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -28,6 +30,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 public class AppGlobalContextMenu extends StackPane implements Initializable {
 
@@ -70,33 +73,65 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         commandsVBox.getChildren().clear();
 
         // Add title
-        Label titleLabel = new Label("Wybierz komendę:");
+        Label titleLabel = new Label(LanguageManager.getLanguageString("context.menu.title"));
         titleLabel.getStyleClass().add("context-menu-title");
         commandsVBox.getChildren().add(titleLabel);
 
-        // Load enabled commands from backend
+        // Load enabled commands from backend with visibility flags
         List<Command> commands = BackendApi.getEnabledCommands();
+        List<Command> pasteCommands = commands.stream()
+                .filter(cmd -> cmd.visibility().showInContextMenuPaste())
+                .toList();
+        List<Command> displayCommands = commands.stream()
+                .filter(cmd -> cmd.visibility().showInContextMenuDisplay())
+                .toList();
 
-        if (commands.isEmpty()) {
-            Label noCommandsLabel = new Label("Brak dostępnych komend");
+        boolean hasPaste = addCommandGroup(
+                LanguageManager.getLanguageString("context.menu.section.paste"),
+                pasteCommands,
+                commandExecutor::executeWithSelectedText
+        );
+
+        if (hasPaste && !displayCommands.isEmpty()) {
+            commandsVBox.getChildren().add(new Separator());
+        }
+
+        boolean hasDisplay = addCommandGroup(
+                LanguageManager.getLanguageString("context.menu.section.display"),
+                displayCommands,
+                commandExecutor::executeWithSelectedTextAndDisplay
+        );
+
+        if (!hasPaste && !hasDisplay) {
+            Label noCommandsLabel = new Label(LanguageManager.getLanguageString("context.menu.empty"));
             noCommandsLabel.getStyleClass().add("context-menu-title");
             commandsVBox.getChildren().add(noCommandsLabel);
         }
-
-        for (Command command : commands) {
-            Button commandButton = createCommandButton(command);
-            commandsVBox.getChildren().add(commandButton);
-        }
     }
 
-    private Button createCommandButton(Command command) {
+    private boolean addCommandGroup(String groupName, List<Command> commands, Consumer<Command> action) {
+        if (commands.isEmpty()) {
+            return false;
+        }
+        Label groupLabel = new Label(groupName);
+        groupLabel.getStyleClass().add("context-menu-title");
+        commandsVBox.getChildren().add(groupLabel);
+
+        for (Command command : commands) {
+            Button commandButton = createCommandButton(command, action);
+            commandsVBox.getChildren().add(commandButton);
+        }
+        return true;
+    }
+
+    private Button createCommandButton(Command command, Consumer<Command> action) {
         Button button = new Button(command.name());
         button.getStyleClass().addAll(Styles.FLAT, "context-menu-button");
         button.setMaxWidth(Double.MAX_VALUE);
 
         button.setOnAction(event -> {
             close();
-            commandExecutor.executeWithSelectedText(command);
+            action.accept(command);
         });
 
         return button;

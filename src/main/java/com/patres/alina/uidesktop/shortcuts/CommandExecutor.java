@@ -3,6 +3,7 @@ package com.patres.alina.uidesktop.shortcuts;
 import com.patres.alina.common.message.OnMessageCompleteCallback;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
+import com.patres.alina.uidesktop.ui.contextmenu.CommandResultPopup;
 import com.patres.alina.uidesktop.ui.util.SystemClipboard;
 import javafx.application.Platform;
 import org.slf4j.Logger;
@@ -11,11 +12,12 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Executes commands triggered from different UI entry points and pastes AI responses.
+ * Executes commands triggered from different UI entry points and handles AI responses.
  */
 public class CommandExecutor {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandExecutor.class);
+    private static final CommandResultPopup RESULT_POPUP = new CommandResultPopup();
 
     private final ApplicationWindow applicationWindow;
     private final OnMessageCompleteCallback pasteResponseCallback = this::pasteAiResponse;
@@ -25,6 +27,14 @@ public class CommandExecutor {
     }
 
     public void executeWithSelectedText(Command command) {
+        execute(command, pasteResponseCallback);
+    }
+
+    public void executeWithSelectedTextAndDisplay(Command command) {
+        execute(command, aiResponse -> displayAiResponse(command, aiResponse));
+    }
+
+    private void execute(Command command, OnMessageCompleteCallback onComplete) {
         CompletableFuture.runAsync(() -> {
             String selectedText = SystemClipboard.copySelectedValue();
             if (selectedText.isBlank()) {
@@ -34,7 +44,7 @@ public class CommandExecutor {
             logger.info("Executing command '{}' with selected text: '{}'", command.name(), selectedText);
 
             Platform.runLater(() ->
-                    applicationWindow.getChatWindow().sendMessage(selectedText, command.id(), pasteResponseCallback)
+                    applicationWindow.getChatWindow().sendMessage(selectedText, command.id(), onComplete)
             );
         });
     }
@@ -49,6 +59,17 @@ public class CommandExecutor {
                 logger.info("AI response pasted successfully");
             } catch (Exception e) {
                 logger.error("Failed to paste AI response", e);
+            }
+        });
+    }
+
+    private void displayAiResponse(Command command, String aiResponse) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                logger.info("AI response received (length: {}), displaying popup...", aiResponse.length());
+                RESULT_POPUP.display(command.name(), aiResponse);
+            } catch (Exception e) {
+                logger.error("Failed to display AI response", e);
             }
         });
     }
