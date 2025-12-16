@@ -6,7 +6,8 @@ public record ChatMessageSendModel(
         String content,
         String chatThreadId,
         String commandId,
-        ChatMessageStyleType styleType
+        ChatMessageStyleType styleType,
+        OnMessageCompleteCallback onComplete
 ) {
 
     public ChatMessageSendModel(
@@ -14,6 +15,15 @@ public record ChatMessageSendModel(
             String chatThreadId,
             String commandId
     ) {
-        this(content, chatThreadId, commandId, NONE);
+        this(content, chatThreadId, commandId, NONE, null);
+    }
+
+    public ChatMessageSendModel(
+            String content,
+            String chatThreadId,
+            String commandId,
+            OnMessageCompleteCallback onComplete
+    ) {
+        this(content, chatThreadId, commandId, NONE, onComplete);
     }
 }

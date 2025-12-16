@@ -1,6 +1,7 @@
 package com.patres.alina.server.command;
 
 import com.patres.alina.common.card.State;
+import com.patres.alina.uidesktop.shortcuts.key.ShortcutKeys;
 
 public record Command(
         String id,
@@ -8,8 +9,19 @@ public record Command(
         String description,
         String systemPrompt,
         String icon,
-        State state
+        State state,
+        ShortcutKeys copyAndPasteShortcut,
+        ShortcutKeys displayShortcut,
+        CommandVisibility visibility
 ) {
+
+    public Command {
+        icon = icon != null && !icon.isBlank() ? icon : "bi-slash";
+        state = state == null ? State.ENABLED : state;
+        copyAndPasteShortcut = copyAndPasteShortcut == null ? new ShortcutKeys() : copyAndPasteShortcut;
+        displayShortcut = displayShortcut == null ? new ShortcutKeys() : displayShortcut;
+        visibility = CommandVisibility.defaults(visibility);
+    }
 
     public Command(String name,
                    String description,
@@ -20,8 +32,31 @@ public record Command(
                 name,
                 description,
                 systemPrompt,
-                icon != null && !icon.isBlank() ? icon : "bi-slash",
-                State.ENABLED
+                icon,
+                State.ENABLED,
+                new ShortcutKeys(),
+                new ShortcutKeys(),
+                new CommandVisibility()
+        );
+    }
+
+    public Command(String name,
+                   String description,
+                   String systemPrompt,
+                   String icon,
+                   ShortcutKeys copyAndPasteShortcut,
+                   ShortcutKeys displayShortcut,
+                   CommandVisibility visibility) {
+        this(
+                generateIdFromName(name),
+                name,
+                description,
+                systemPrompt,
+                icon,
+                State.ENABLED,
+                copyAndPasteShortcut,
+                displayShortcut,
+                visibility
         );
     }
 

@@ -121,7 +121,7 @@ public enum KeyboardKey {
     PRINTSCREEN(KeyEvent.VK_PRINTSCREEN),
     INSERT(KeyEvent.VK_INSERT),
     HELP(KeyEvent.VK_HELP),
-    META(KeyEvent.VK_META),
+    META(KeyEvent.VK_META, KeyboardKeyType.MODE_TYPE),
     BACK_QUOTE(KeyEvent.VK_BACK_QUOTE),
     QUOTE(KeyEvent.VK_QUOTE),
 
@@ -131,17 +131,20 @@ public enum KeyboardKey {
     private static final KeyAdapter keyAdapter = new KeyAdapter();
     private final Integer keyValue;
     private final String keyName;
+    private final String macKeyName;
     private final KeyboardKeyType keyType;
 
     KeyboardKey(Integer keyValue) {
         this.keyValue = keyValue;
         this.keyName = KeyEvent.getKeyText(keyValue);
+        this.macKeyName = null;
         this.keyType = KeyboardKeyType.EXECUTE_TYPE;
     }
 
     KeyboardKey(Integer keyValue, KeyboardKeyType keyType) {
         this.keyValue = keyValue;
         this.keyName = KeyEvent.getKeyText(keyValue);
+        this.macKeyName = getMacOSKeyName(this);
         this.keyType = keyType;
     }
 
@@ -150,7 +153,26 @@ public enum KeyboardKey {
     }
 
     public String getKeyName() {
+        if (isMacOS() && macKeyName != null) {
+            return macKeyName;
+        }
         return keyName;
+    }
+
+    private static boolean isMacOS() {
+        String os = System.getProperty("os.name").toLowerCase();
+        return os.contains("mac");
+    }
+
+    private static String getMacOSKeyName(KeyboardKey key) {
+        return switch (key.name()) {
+            case "META" -> "Command (⌘)";
+            case "WINDOWS" -> "Command (⌘)";
+            case "ALT" -> "Option (⌥)";
+            case "CONTROL" -> "Control (^)";
+            case "SHIFT" -> "Shift (⇧)";
+            default -> null;
+        };
     }
 
     public static Integer getKeyEvent(NativeKeyEvent nativeEvent) {

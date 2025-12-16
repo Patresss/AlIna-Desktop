@@ -62,7 +62,8 @@ public class ChatMessageService {
                     chatMessageSendModel.content(),
                     newChatThread.id(),
                     chatMessageSendModel.commandId(),
-                    chatMessageSendModel.styleType()
+                    chatMessageSendModel.styleType(),
+                    chatMessageSendModel.onComplete()
             );
             sendMessageStreamWithChatThread(withNewThread);
             return;
@@ -121,8 +122,9 @@ public class ChatMessageService {
                     () -> {
                         logger.info("Streaming completed for threadId: {}", chatMessageSendModel.chatThreadId());
 
-                        final AbstractMessage assistantMessage = new AssistantMessage(fullResponse.toString());
-                        storeMessageManager.storeMessage(assistantMessage, chatMessageSendModel, fullResponse.toString());
+                        final String aiResponse = fullResponse.toString();
+                        final AbstractMessage assistantMessage = new AssistantMessage(aiResponse);
+                        storeMessageManager.storeMessage(assistantMessage, chatMessageSendModel, aiResponse);
 
                         DefaultEventBus.getInstance().publish(
                                 new ChatMessageStreamEvent(
@@ -130,6 +132,12 @@ public class ChatMessageService {
                                         ChatMessageStreamEvent.StreamEventType.COMPLETE
                                 )
                         );
+
+                        // Execute callback if provided
+                        if (chatMessageSendModel.onComplete() != null) {
+                            logger.info("Executing onComplete callback for threadId: {}", chatMessageSendModel.chatThreadId());
+                            chatMessageSendModel.onComplete().onComplete(aiResponse);
+                        }
                     }
             );
 
@@ -172,7 +180,7 @@ public class ChatMessageService {
         }
 
         if (commandContent.contains(CommandConstants.ARGUMENTS_PLACEHOLDER)) {
-            return commandContent.replaceAll(java.util.regex.Pattern.quote(CommandConstants.ARGUMENTS_PLACEHOLDER), content);
+            return commandContent.replace(CommandConstants.ARGUMENTS_PLACEHOLDER, content);
         }
         return commandContent + System.lineSeparator() + content;
     }

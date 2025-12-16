@@ -3,7 +3,10 @@ package com.patres.alina.uidesktop.ui;
 import com.github.kwhat.jnativehook.NativeHookException;
 import com.patres.alina.uidesktop.DefaultExceptionHandler;
 import com.patres.alina.uidesktop.Resources;
-import com.patres.alina.uidesktop.shortcuts.ShortcutKeyListener;
+import com.patres.alina.uidesktop.shortcuts.listener.ShortcutKeyListener;
+import com.patres.alina.uidesktop.ui.contextmenu.AppGlobalContextMenu;
+import com.patres.alina.uidesktop.shortcuts.listener.CommandShortcutListener;
+import com.patres.alina.uidesktop.ui.contextmenu.AlinaHttpServer;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
@@ -11,7 +14,6 @@ import javafx.scene.Scene;
 import javafx.scene.SceneAntialiasing;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
@@ -26,7 +28,6 @@ public class AssistantAppLauncher {
 
     public void start(Stage stage) throws NativeHookException {
         Thread.currentThread().setUncaughtExceptionHandler(new DefaultExceptionHandler(stage));
-
 
         var root = new ApplicationWindow();
 
@@ -61,8 +62,13 @@ public class AssistantAppLauncher {
         Platform.runLater(() -> {
             stage.show();
             stage.requestFocus();
+
+
         });
 
+        var appGlobalContextMenu = AppGlobalContextMenu.init(root);
+        AlinaHttpServer.start(root, appGlobalContextMenu);
+        CommandShortcutListener.init(root);
         ShortcutKeyListener.init();
     }
 

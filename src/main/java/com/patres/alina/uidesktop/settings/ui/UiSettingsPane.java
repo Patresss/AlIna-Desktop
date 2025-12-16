@@ -33,7 +33,7 @@ public class UiSettingsPane extends SettingsModalPaneContent {
 
     private ShortcutKeyPane speechShortcutKeyPane;
     private ShortcutKeyPane focusShortcutKeyPane;
-
+    private ShortcutKeyPane contextMenuShortcutKeyPane;
 
     private UiSettings uiSettings;
 
@@ -48,6 +48,8 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         applicationLanguageSelector.setValue(ApplicationLanguage.getApplicationLanguage(uiSettings.language()));
         TM.setTheme(uiSettings.theme());
         speechShortcutKeyPane.setValues(uiSettings.shortcutKeysSettings().speechShortcutKeys());
+        focusShortcutKeyPane.setValues(uiSettings.shortcutKeysSettings().focusShortcutKeys());
+        contextMenuShortcutKeyPane.setValues(uiSettings.shortcutKeysSettings().contextMenuShortcutKeys());
         LanguageManager.setLanguage(uiSettings.language());
     }
 
@@ -65,7 +67,8 @@ public class UiSettingsPane extends SettingsModalPaneContent {
 
         final ShortcutKeys speechShortcutKeys = speechShortcutKeyPane.getShortcutKeys();
         final ShortcutKeys focusShortcutKeys = focusShortcutKeyPane.getShortcutKeys();
-        final ShortcutKeysSettings shortcutKeysSettings = new ShortcutKeysSettings(speechShortcutKeys, focusShortcutKeys);
+        final ShortcutKeys contextMenuShortcutKeys = contextMenuShortcutKeyPane.getShortcutKeys();
+        final ShortcutKeysSettings shortcutKeysSettings = new ShortcutKeysSettings(speechShortcutKeys, focusShortcutKeys, contextMenuShortcutKeys);
         UI_SETTINGS.saveDocument(new UiSettings(theme, language, shortcutKeysSettings));
     }
 
@@ -105,12 +108,19 @@ public class UiSettingsPane extends SettingsModalPaneContent {
                 "settings.shortcut.focus.title",
                 "settings.shortcut.focus.description"
         );
-
         focusShortcut.setAction(focusShortcutKeyPane.createPane());
+
+        contextMenuShortcutKeyPane = new ShortcutKeyPane();
+        var contextMenuShortcut = createTile(
+                "settings.shortcut.contextmenu.title",
+                "settings.shortcut.contextmenu.description"
+        );
+        contextMenuShortcut.setAction(contextMenuShortcutKeyPane.createPane());
+
         return List.of(
                 header, theme, language,
                 new Separator(),
-                speechShortcut, focusShortcut
+                speechShortcut, focusShortcut, contextMenuShortcut
         );
     }
 

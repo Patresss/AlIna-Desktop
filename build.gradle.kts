@@ -70,7 +70,8 @@ tasks.withType<Test> {
 }
 
 val runArgsValue = listOf(
-    "-Djavafx.enablePreview=true"
+    "-Djavafx.enablePreview=true",
+    "-Djava.awt.headless=false"
 )
 
 val title = "AlIna"

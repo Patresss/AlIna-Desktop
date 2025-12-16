@@ -51,7 +51,9 @@ public class SearchCommandPopup extends Popup {
     }
 
     private void fetchAllCommands() {
-        allCommands = BackendApi.getEnabledCommands();
+        allCommands = BackendApi.getEnabledCommands().stream()
+                .filter(command -> command.visibility().showInChat())
+                .toList();
 
         updateCommands("");
     }

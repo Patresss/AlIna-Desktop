@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import java.util.UUID;
 
 @Service
 public class CommandFileService {
@@ -82,17 +83,20 @@ public class CommandFileService {
 
     public String create(final Command request) {
         logger.info("Creating new command: {}", request);
-        final String filename = generateUniqueFilename(request.name());
+        final String generatedId = UUID.randomUUID().toString();
         final Command command = new Command(
-                filename,
+                generatedId,
                 request.name(),
                 request.description(),
                 request.systemPrompt(),
                 request.icon(),
-                State.ENABLED
+                State.ENABLED,
+                request.copyAndPasteShortcut(),
+                request.displayShortcut(),
+                CommandVisibility.defaults(request.visibility())
         );
 
-        final Path commandFile = commandsDirectory.resolve(filename + ".md");
+        final Path commandFile = commandsDirectory.resolve(generatedId + ".md");
 
         try {
             final String content = markdownParser.generateMarkdownWithFrontmatter(command);
@@ -161,7 +165,10 @@ public class CommandFileService {
                 existing.get().description(),
                 existing.get().systemPrompt(),
                 existing.get().icon(),
-                updateStateRequest.state()
+                updateStateRequest.state(),
+                existing.get().copyAndPasteShortcut(),
+                existing.get().displayShortcut(),
+                existing.get().visibility()
         );
 
         update(updated);
@@ -180,7 +187,10 @@ public class CommandFileService {
                     parsed.metadata().description(),
                     parsed.content(),
                     parsed.metadata().icon(),
-                    parsed.metadata().state()
+                    parsed.metadata().state(),
+                    parsed.metadata().copyAndPasteShortcut(),
+                    parsed.metadata().displayShortcut(),
+                    parsed.metadata().visibility()
             );
 
             return Optional.of(command);

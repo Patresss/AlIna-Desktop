@@ -1,15 +1,18 @@
 package com.patres.alina.uidesktop.ui;
 
+import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.chat.thread.ui.ChatThreadHistoryPane;
 import com.patres.alina.uidesktop.command.settings.CommandPane;
+import com.patres.alina.uidesktop.common.event.CommandShortcutExecutedEvent;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.settings.ui.AssistantSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.UiSettingsPane;
 import com.patres.alina.uidesktop.ui.chat.ChatWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -61,6 +64,23 @@ public class ApplicationWindow extends BorderPane {
         rootCenterContainer.getChildren()
                 .add(appModalPane);
 
+        // Subscribe to command shortcut executed event
+        DefaultEventBus.getInstance().subscribe(
+                CommandShortcutExecutedEvent.class,
+                this::handleCommandShortcutExecuted
+        );
+    }
+
+    private void handleCommandShortcutExecuted(CommandShortcutExecutedEvent event) {
+        // Load the thread on JavaFX thread WITHOUT activating the application
+        Platform.runLater(() -> {
+            ChatThread thread = BackendApi.getChatThread(event.getThreadId()).orElse(null);
+            if (thread != null) {
+                loadChatThread(thread);
+                // Close any modal panes
+                appModalPane.hide(false);
+            }
+        });
     }
 
     public void openThreadHistories() {
@@ -123,5 +143,9 @@ public class ApplicationWindow extends BorderPane {
 
     public AppModalPane getAppModalPane() {
         return appModalPane;
+    }
+
+    public ChatWindow getChatWindow() {
+        return chatWindow;
     }
 }

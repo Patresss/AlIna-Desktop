@@ -5,6 +5,7 @@ import com.patres.alina.common.thread.ChatThreadRenameRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class ChatThreadController {
@@ -13,6 +14,10 @@ public class ChatThreadController {
 
     public ChatThreadController(final ChatThreadService chatThreadService) {
         this.chatThreadService = chatThreadService;
+    }
+
+    public Optional<ChatThread> getChatThread(final String chatThreadId) {
+        return chatThreadService.getChatThread(chatThreadId);
     }
 
     public List<ChatThread> getChatThreads() {

@@ -1,11 +1,12 @@
 package com.patres.alina.uidesktop.command.settings;
 
 import atlantafx.base.controls.ToggleSwitch;
-import com.patres.alina.server.command.Command;
 import com.patres.alina.common.card.State;
+import com.patres.alina.common.event.bus.DefaultEventBus;
+import com.patres.alina.server.command.Command;
+import com.patres.alina.server.command.CommandVisibility;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.common.event.CommandUpdateEvent;
-import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.uidesktop.ui.atlantafx.CustomTile;
 import javafx.scene.Node;
 import javafx.scene.control.Separator;
@@ -37,13 +38,22 @@ public class CommandEditPane extends CommandSavePane {
     }
 
     private void editCommand() {
+        final CommandVisibility visibility = new CommandVisibility(
+                showInChatToggleSwitch.isSelected(),
+                showInContextMenuPasteToggleSwitch.isSelected(),
+                showInContextMenuDisplayToggleSwitch.isSelected()
+        );
+
         final Command commandEditRequest = new Command(
                 command.id(),
                 commandNameTextField.getText(),
                 commandDescriptionTextArea.getText(),
                 commandSystemPromptTextArea.getText(),
                 iconComboBox.getValue().getObject().name(),
-                stateToggleSwitch.isSelected() ? State.ENABLED : State.DISABLED
+                stateToggleSwitch.isSelected() ? State.ENABLED : State.DISABLED,
+                pasteShortcutKeyPane.getShortcutKeys(),
+                displayShortcutKeyPane.getShortcutKeys(),
+                visibility
         );
         BackendApi.updateCommand(commandEditRequest);
         backFunction.run();
@@ -69,7 +79,6 @@ public class CommandEditPane extends CommandSavePane {
         stateTile.setAction(stateToggleSwitch);
         stateTile.setActionHandler(stateToggleSwitch::fire);
 
-
         final List<Node> commandContent = super.generateContent();
         final List<Node> editCommandContent = List.of(commandIdTile, stateTile, new Separator());
         return Stream.concat(editCommandContent.stream(), commandContent.stream()).toList();
@@ -79,6 +88,11 @@ public class CommandEditPane extends CommandSavePane {
     public void reload() {
         commandIdTextField.setText(command.id());
         stateToggleSwitch.setSelected(command.state() == State.ENABLED);
+        pasteShortcutKeyPane.setValues(command.copyAndPasteShortcut());
+        displayShortcutKeyPane.setValues(command.displayShortcut());
+        showInChatToggleSwitch.setSelected(command.visibility().showInChat());
+        showInContextMenuPasteToggleSwitch.setSelected(command.visibility().showInContextMenuPaste());
+        showInContextMenuDisplayToggleSwitch.setSelected(command.visibility().showInContextMenuDisplay());
         commandNameTextField.setText(command.name());
         commandDescriptionTextArea.setText(command.description());
         commandSystemPromptTextArea.setText(command.systemPrompt());

@@ -1,6 +1,7 @@
 package com.patres.alina.uidesktop.command.settings;
 
 import com.patres.alina.server.command.Command;
+import com.patres.alina.server.command.CommandVisibility;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.common.event.CommandUpdateEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
@@ -20,6 +21,7 @@ public class CommandCreatePane extends CommandSavePane {
         commandDescriptionTextArea.clear();
         commandSystemPromptTextArea.clear();
         iconComboBox.getSelectionModel().select(CONVERTER.fromString(BootstrapIcons.PLUG.getDescription()));
+        resetVisibilityAndShortcuts();
     }
 
     @Override
@@ -32,7 +34,14 @@ public class CommandCreatePane extends CommandSavePane {
                 commandNameTextField.getText(),
                 commandDescriptionTextArea.getText(),
                 commandSystemPromptTextArea.getText(),
-                iconComboBox.getValue().getObject().name()
+                iconComboBox.getValue().getObject().name(),
+                pasteShortcutKeyPane.getShortcutKeys(),
+                displayShortcutKeyPane.getShortcutKeys(),
+                new CommandVisibility(
+                        showInChatToggleSwitch.isSelected(),
+                        showInContextMenuPasteToggleSwitch.isSelected(),
+                        showInContextMenuDisplayToggleSwitch.isSelected()
+                )
         );
 
         BackendApi.createCommand(command);

@@ -2,152 +2,217 @@
 package com.patres.alina.uidesktop.ui.contextmenu;
 
 import atlantafx.base.theme.Styles;
+import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.Resources;
-import com.patres.alina.uidesktop.ui.util.SystemClipboard;
+import com.patres.alina.uidesktop.backend.BackendApi;
+import com.patres.alina.uidesktop.shortcuts.CommandExecutor;
+import com.patres.alina.uidesktop.shortcuts.listener.ContextMenuKeyListener;
+import com.patres.alina.uidesktop.ui.ApplicationWindow;
+import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.geometry.Side;
 import javafx.scene.Scene;
-import javafx.scene.control.MenuButton;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.TextField;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
-
-import static com.patres.alina.uidesktop.RetryLogic.runWithRetry;
-import static javafx.scene.input.MouseEvent.MOUSE_ENTERED;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 public class AppGlobalContextMenu extends StackPane implements Initializable {
 
-    private MenuButton selectedMenuButton = null;
+    private static final Logger logger = LoggerFactory.getLogger(AppGlobalContextMenu.class);
 
     @FXML
-    private TextField promptValueTextField;
+    private VBox commandsVBox;
 
-    @FXML
-    private VBox vBox;
-
-    private final Stage stage;
+    private final CommandExecutor commandExecutor;
+    private Stage stage;
     private final StackPane stackPane;
 
-    public static void init() {
-        new AppGlobalContextMenu();
+    public static AppGlobalContextMenu init(ApplicationWindow applicationWindow) {
+        return new AppGlobalContextMenu(applicationWindow);
     }
 
-
-    public AppGlobalContextMenu() {
+    public AppGlobalContextMenu(ApplicationWindow applicationWindow) {
         super();
+        this.commandExecutor = new CommandExecutor(applicationWindow);
         ContextMenuKeyListener.init(this);
         try {
             var loader = new FXMLLoader(
-                    Resources.getResource("fxml/systemPrompt-menu.fxml").toURL()
+                    Resources.getResource("fxml/context-menu.fxml").toURL()
             );
             loader.setController(AppGlobalContextMenu.this);
             loader.setRoot(this);
             this.stackPane = loader.load();
-            this.stage = createStage();
+            initStage();
         } catch (IOException e) {
             throw new RuntimeException("Unable to load FXML file", e);
         }
     }
 
-    public void setPromptValue(final String promptValue) {
-        promptValueTextField.setText(promptValue);
-    }
-
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        // Initial load will happen when menu is displayed
+    }
 
-        vBox.getChildren().addAll(
-                createMenuButton("Zapytaj ChatGPT"),
-                createMenuButton("Przetłumacz na angielski"),
-                createMenuButton("Przetłumacz na polski"),
-                createMenuButton("Sparafrazuj")
+    private void loadCommands() {
+        commandsVBox.getChildren().clear();
+
+        // Add title
+        Label titleLabel = new Label(LanguageManager.getLanguageString("context.menu.title"));
+        titleLabel.getStyleClass().add("context-menu-title");
+        commandsVBox.getChildren().add(titleLabel);
+
+        // Load enabled commands from backend with visibility flags
+        List<Command> commands = BackendApi.getEnabledCommands();
+        List<Command> pasteCommands = commands.stream()
+                .filter(cmd -> cmd.visibility().showInContextMenuPaste())
+                .toList();
+        List<Command> displayCommands = commands.stream()
+                .filter(cmd -> cmd.visibility().showInContextMenuDisplay())
+                .toList();
+
+        boolean hasPaste = addCommandGroup(
+                LanguageManager.getLanguageString("context.menu.section.paste"),
+                pasteCommands,
+                commandExecutor::executeWithSelectedText
         );
 
-        addHidingMenuButtonsStrategy();
-
-    }
-
-    private void addHidingMenuButtonsStrategy() {
-        promptValueTextField.addEventHandler(MOUSE_ENTERED, e -> updateMenuButton(null));
-        vBox.getChildren().stream()
-                .filter(node -> node instanceof MenuButton)
-                .map(node -> (MenuButton) node)
-                .forEach(menuButton -> {
-                    menuButton.addEventHandler(MOUSE_ENTERED, e -> updateMenuButton(menuButton));
-                });
-    }
-
-    private void updateMenuButton(final MenuButton newSelectedMenuButton) {
-        if (selectedMenuButton != null) {
-            selectedMenuButton.hide();
+        if (hasPaste && !displayCommands.isEmpty()) {
+            commandsVBox.getChildren().add(new Separator());
         }
-        selectedMenuButton = newSelectedMenuButton;
-        if (selectedMenuButton != null) {
-            selectedMenuButton.show();
-        }
-    }
 
-    @NotNull
-    private MenuButton createMenuButton(final String text) {
-        var rightMenuBtn = new MenuButton(text);
-        rightMenuBtn.getItems().addAll(createItems());
-        rightMenuBtn.setPopupSide(Side.RIGHT);
-        rightMenuBtn.getStyleClass().add(Styles.FLAT);
-        return rightMenuBtn;
-    }
-
-    private List<MenuItem> createItems() {
-        return List.of(
-                new MenuItem("Skopiuj do schowka"),
-                new MenuItem("Zastąp (wklej)"),
-                new MenuItem("Wklej poniżej"),
-                new MenuItem("Wyświetl")
+        boolean hasDisplay = addCommandGroup(
+                LanguageManager.getLanguageString("context.menu.section.display"),
+                displayCommands,
+                commandExecutor::executeWithSelectedTextAndDisplay
         );
+
+        if (!hasPaste && !hasDisplay) {
+            Label noCommandsLabel = new Label(LanguageManager.getLanguageString("context.menu.empty"));
+            noCommandsLabel.getStyleClass().add("context-menu-title");
+            commandsVBox.getChildren().add(noCommandsLabel);
+        }
     }
 
+    private boolean addCommandGroup(String groupName, List<Command> commands, Consumer<Command> action) {
+        if (commands.isEmpty()) {
+            return false;
+        }
+        Label groupLabel = new Label(groupName);
+        groupLabel.getStyleClass().add("context-menu-title");
+        commandsVBox.getChildren().add(groupLabel);
 
-    public void displayContextMenu() {
-        calculatePromptValue();
+        for (Command command : commands) {
+            Button commandButton = createCommandButton(command, action);
+            commandsVBox.getChildren().add(commandButton);
+        }
+        return true;
+    }
+
+    private Button createCommandButton(Command command, Consumer<Command> action) {
+        Button button = new Button(command.name());
+        button.getStyleClass().addAll(Styles.FLAT, "context-menu-button");
+        button.setMaxWidth(Double.MAX_VALUE);
+
+        button.setOnAction(event -> {
+            close();
+            action.accept(command);
+        });
+
+        return button;
+    }
+
+    private void initStage() {
         Platform.runLater(() -> {
-            final Point mousePosition = MouseInfo.getPointerInfo().getLocation();
-            final double x = mousePosition.getX();
-            final double y = mousePosition.getY();
-            stage.setX(x);
-            stage.setY(y);
-            stage.show();
+            stage = createStage();
+            logger.info("Context menu stage initialized");
         });
     }
 
-    private void calculatePromptValue() {
-        final String selectedText = SystemClipboard.copySelectedValue();
-        Platform.runLater(() -> runWithRetry(() -> promptValueTextField.setText(selectedText), 3));
+    public void displayContextMenu() {
+        Platform.runLater(() -> {
+            if (stage == null) {
+                logger.error("Stage is null after initialization");
+                return;
+            }
+
+            loadCommands(); // Reload commands in case they changed
+
+            try {
+                final Point mousePosition = MouseInfo.getPointerInfo().getLocation();
+                final double x = mousePosition.getX();
+                final double y = mousePosition.getY();
+                stage.setX(x);
+                stage.setY(y);
+
+                // Show WITHOUT requesting focus to avoid activating main window
+                stage.setAlwaysOnTop(true);
+                stage.show();
+
+                logger.debug("Context menu displayed at ({}, {})", x, y);
+            } catch (HeadlessException e) {
+                logger.error("Failed to get mouse position - headless environment", e);
+            } catch (Exception e) {
+                logger.error("Failed to display context menu", e);
+            }
+        });
     }
 
     private Stage createStage() {
-        Stage stage = new Stage();
-        stage.setAlwaysOnTop(true);
+        Stage newStage = new Stage();
+        newStage.setAlwaysOnTop(true);
+
         Scene scene = new Scene(stackPane);
+        scene.setFill(javafx.scene.paint.Color.TRANSPARENT); // Make scene background transparent
         scene.getStylesheets().add("context-menu.css");
-        stage.setScene(scene);
-        stage.initStyle(StageStyle.TRANSPARENT);
-        return stage;
+        newStage.setScene(scene);
+        newStage.initStyle(StageStyle.UTILITY); // UTILITY properly releases focus, TRANSPARENT has issues on macOS
+
+        newStage.setResizable(false);
+
+        // Close when losing focus (but don't use focusedProperty as it activates main window)
+        scene.setOnMouseExited(e -> {
+            // Close if mouse leaves the window bounds
+            if (e.getSceneY() < 0 || e.getSceneY() > scene.getHeight() || e.getSceneX() < 0 || e.getSceneX() > scene.getWidth()) {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        Thread.sleep(500); // Give time to move mouse back
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
+                    close();
+                });
+            }
+        });
+
+
+        return newStage;
     }
 
     public void close() {
-        Platform.runLater(stage::close);
+        if (stage != null) {
+            Platform.runLater(() -> {
+                if (stage.isShowing()) {
+                    stage.hide();
+                    logger.info("Context menu closed quietly");
+                }
+            });
+        }
     }
 
 }

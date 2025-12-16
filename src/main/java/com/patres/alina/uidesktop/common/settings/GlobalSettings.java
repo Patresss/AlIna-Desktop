@@ -7,7 +7,6 @@ import java.util.Map;
 
 public class GlobalSettings {
 
-    private List<KeyboardKey> contextMenuKeys = List.of(KeyboardKey.CONTROL, KeyboardKey.BACK_QUOTE);
     private List<ChatGptAction> chatGptActions = List.of(
             new ChatGptAction("Zapytaj ChatPGT", "", Map.of(), true),
             new ChatGptAction("Przetłumacz na język polski", "Przetłumacz na język polski", Map.of(ContextMenuResultType.COPY, List.of(KeyboardKey.ALT, KeyboardKey.Q)), true),
@@ -15,14 +14,6 @@ public class GlobalSettings {
             new ChatGptAction("Sparafrazuj tekst", "Sparafrazuj tekst", Map.of(), true),
             new ChatGptAction("Test", "Test 123", Map.of(), false)
     );
-
-    public List<KeyboardKey> getContextMenuKeys() {
-        return contextMenuKeys;
-    }
-
-    public void setContextMenuKeys(List<KeyboardKey> contextMenuKeys) {
-        this.contextMenuKeys = contextMenuKeys;
-    }
 
     public List<ChatGptAction> getChatGptActions() {
         return chatGptActions;
