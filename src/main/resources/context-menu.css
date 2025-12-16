@@ -10,8 +10,6 @@
     -fx-border-width: 1px;
     -fx-border-radius: 8px;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0, 0, 2);
-    -fx-min-width: 200px;
-    -fx-max-width: 300px;
 }
 
 .context-menu-title {
@@ -41,4 +39,5 @@
     -fx-background-radius: 6px;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
+    -fx-pref-width: 400px;
 }

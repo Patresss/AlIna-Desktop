@@ -1,12 +1,9 @@
 package com.patres.alina.uidesktop.ui.contextmenu;
 
-import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -55,16 +52,11 @@ public class CommandLoadingIndicator {
 
     private Stage createStage() {
         ProgressIndicator indicator = new ProgressIndicator();
-        indicator.setPrefSize(32, 32);
+        indicator.setPrefSize(22, 22);
 
-        Label label = new Label(LanguageManager.getLanguageString("command.loading.title"));
-        label.getStyleClass().add("context-menu-title");
-
-        HBox row = new HBox(10, indicator, label);
-        row.setAlignment(Pos.CENTER_LEFT);
-
-        VBox container = new VBox(row);
+        VBox container = new VBox(indicator);
         container.getStyleClass().add("context-menu-container");
+        container.setAlignment(Pos.CENTER);
 
         Scene scene = new Scene(container);
         scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
@@ -72,7 +64,7 @@ public class CommandLoadingIndicator {
 
         Stage newStage = new Stage();
         newStage.setScene(scene);
-        newStage.initStyle(StageStyle.UTILITY);
+        newStage.initStyle(StageStyle.TRANSPARENT);
         newStage.setAlwaysOnTop(true);
         newStage.setResizable(false);
         return newStage;

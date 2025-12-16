@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 
 <fx:root type="javafx.scene.layout.StackPane" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" styleClass="context-menu-root">
-    <VBox spacing="8.0" styleClass="context-menu-container">
+    <VBox spacing="8.0" styleClass="context-menu-container" VBox.vgrow="ALWAYS">
         <padding>
             <Insets top="10.0" right="12.0" bottom="10.0" left="12.0"/>
         </padding>
@@ -16,6 +16,8 @@
                   editable="false"
                   wrapText="true"
                   prefRowCount="8"
+                  VBox.vgrow="ALWAYS"
+                  HBox.hgrow="ALWAYS"
                   styleClass="command-result-text"/>
 
         <HBox spacing="8.0" alignment="CENTER_RIGHT">

@@ -86,7 +86,9 @@ public class CommandResultPopup extends StackPane implements Initializable {
         newStage.setScene(scene);
         newStage.initStyle(StageStyle.UTILITY);
         newStage.setAlwaysOnTop(true);
-        newStage.setResizable(false);
+        newStage.setResizable(true);
+        newStage.setMinWidth(350);
+        newStage.setMinHeight(200);
 
         scene.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ESCAPE) {
