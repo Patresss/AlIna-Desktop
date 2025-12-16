@@ -36,7 +36,7 @@ public class CommandShortcutListener extends Listener {
     private void registerShortcuts() {
         BackendApi.getEnabledCommands().stream()
                 .forEach(command -> {
-                    registerShortcut(command, command.globalShortcut(), "copy & paste", () -> commandExecutor.executeWithSelectedText(command));
+                    registerShortcut(command, command.copyAndPasteShortcut(), "copy & paste", () -> commandExecutor.executeWithSelectedText(command));
                     registerDisplayShortcut(command);
                 });
     }
@@ -48,7 +48,7 @@ public class CommandShortcutListener extends Listener {
         }
 
         final Set<KeyboardKey> displayKeys = displayShortcut.getAllKeys();
-        final Set<KeyboardKey> pasteKeys = command.globalShortcut() != null ? command.globalShortcut().getAllKeys() : Set.of();
+        final Set<KeyboardKey> pasteKeys = command.copyAndPasteShortcut() != null ? command.copyAndPasteShortcut().getAllKeys() : Set.of();
 
         if (!pasteKeys.isEmpty() && pasteKeys.equals(displayKeys)) {
             logger.warn("Display shortcut {} for command '{}' matches copy & paste shortcut, skipping duplicate registration", displayKeys, command.name());

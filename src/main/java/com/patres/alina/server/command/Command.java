@@ -10,7 +10,7 @@ public record Command(
         String systemPrompt,
         String icon,
         State state,
-        ShortcutKeys globalShortcut,
+        ShortcutKeys copyAndPasteShortcut,
         ShortcutKeys displayShortcut,
         CommandVisibility visibility
 ) {
@@ -18,7 +18,7 @@ public record Command(
     public Command {
         icon = icon != null && !icon.isBlank() ? icon : "bi-slash";
         state = state == null ? State.ENABLED : state;
-        globalShortcut = globalShortcut == null ? new ShortcutKeys() : globalShortcut;
+        copyAndPasteShortcut = copyAndPasteShortcut == null ? new ShortcutKeys() : copyAndPasteShortcut;
         displayShortcut = displayShortcut == null ? new ShortcutKeys() : displayShortcut;
         visibility = CommandVisibility.defaults(visibility);
     }
@@ -44,7 +44,7 @@ public record Command(
                    String description,
                    String systemPrompt,
                    String icon,
-                   ShortcutKeys globalShortcut,
+                   ShortcutKeys copyAndPasteShortcut,
                    ShortcutKeys displayShortcut,
                    CommandVisibility visibility) {
         this(
@@ -54,7 +54,7 @@ public record Command(
                 systemPrompt,
                 icon,
                 State.ENABLED,
-                globalShortcut,
+                copyAndPasteShortcut,
                 displayShortcut,
                 visibility
         );

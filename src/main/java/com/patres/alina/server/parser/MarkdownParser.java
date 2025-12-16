@@ -70,7 +70,7 @@ public class MarkdownParser {
         sb.append("showInContextMenuPaste: ").append(command.visibility().showInContextMenuPaste()).append("\n");
         sb.append("showInContextMenuDisplay: ").append(command.visibility().showInContextMenuDisplay()).append("\n");
 
-        appendShortcut(sb, "globalShortcut", command.globalShortcut());
+        appendShortcut(sb, "copyAndPasteShortcut", command.copyAndPasteShortcut());
         appendShortcut(sb, "displayShortcut", command.displayShortcut());
 
         sb.append(FRONTMATTER_DELIMITER).append("\n");
@@ -94,11 +94,11 @@ public class MarkdownParser {
         String description = getStringValue(yamlMap, "description", "");
         String icon = getStringValue(yamlMap, "icon", "bi-slash");
         State state = parseState(getStringValue(yamlMap, "state", "ENABLED"));
-        ShortcutKeys globalShortcut = parseShortcut(yamlMap, "globalShortcut");
+        ShortcutKeys copyAndPasteShortcut = parseCopyAndPasteShortcut(yamlMap);
         ShortcutKeys displayShortcut = parseShortcut(yamlMap, "displayShortcut");
         CommandVisibility visibility = parseVisibility(yamlMap);
 
-        return new ParsedFrontmatter(resolvedId, new CommandMetadata(name, description, icon, state, globalShortcut, displayShortcut, visibility));
+        return new ParsedFrontmatter(resolvedId, new CommandMetadata(name, description, icon, state, copyAndPasteShortcut, displayShortcut, visibility));
 
     } catch (Exception e) {
         logger.warn("Failed to parse YAML frontmatter for command id: {}, using defaults. Error: {}", id, e.getMessage());
@@ -156,6 +156,15 @@ public class MarkdownParser {
             logger.warn("Failed to parse {}: {}", rootKey, e.getMessage());
             return new ShortcutKeys();
         }
+    }
+
+    private ShortcutKeys parseCopyAndPasteShortcut(Map<String, Object> yamlMap) {
+        ShortcutKeys pasteShortcut = parseShortcut(yamlMap, "copyAndPasteShortcut");
+        if (pasteShortcut.getAllKeys().isEmpty()) {
+            // backward compatibility with old key
+            pasteShortcut = parseShortcut(yamlMap, "globalShortcut");
+        }
+        return pasteShortcut;
     }
     
     private String getStringValue(Map<String, Object> map, String key, String defaultValue) {
@@ -246,7 +255,7 @@ public class MarkdownParser {
             String description,
             String icon,
             State state,
-            ShortcutKeys globalShortcut,
+            ShortcutKeys copyAndPasteShortcut,
             ShortcutKeys displayShortcut,
             CommandVisibility visibility
     ) {}

@@ -88,7 +88,7 @@ public class CommandEditPane extends CommandSavePane {
     public void reload() {
         commandIdTextField.setText(command.id());
         stateToggleSwitch.setSelected(command.state() == State.ENABLED);
-        pasteShortcutKeyPane.setValues(command.globalShortcut());
+        pasteShortcutKeyPane.setValues(command.copyAndPasteShortcut());
         displayShortcutKeyPane.setValues(command.displayShortcut());
         showInChatToggleSwitch.setSelected(command.visibility().showInChat());
         showInContextMenuPasteToggleSwitch.setSelected(command.visibility().showInContextMenuPaste());

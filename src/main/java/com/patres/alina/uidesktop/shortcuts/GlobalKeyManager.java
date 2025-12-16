@@ -22,6 +22,7 @@ public final class GlobalKeyManager extends Listener implements NativeKeyListene
 
     private final Set<KeyboardKey> pressedKeys = new HashSet<>();
     private final List<ShortcutAction> shortcutActions = new ArrayList<>();
+    private final Set<Set<KeyboardKey>> triggeredCombos = new HashSet<>();
 
     public static GlobalKeyManager getInstance() {
         return INSTANCE;
