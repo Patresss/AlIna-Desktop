@@ -23,7 +23,7 @@
                   <TextArea fx:id="chatTextArea" maxWidth="1.7976931348623157E308" onKeyPressed="#chatTextAreaOnKeyPressed" prefHeight="50.0" prefWidth="10000.0" wrapText="true" />
                   <VBox>
                      <children>
-                        <Button fx:id="sendButton" alignment="CENTER" styleClass="primary-button"  mnemonicParsing="false" onAction="#sendMessage" text="Button">
+                        <Button fx:id="sendButton" alignment="CENTER" styleClass="primary-button"  mnemonicParsing="false" onAction="#sendMessageFromUi" text="Button">
                            <graphic>
                               <FontIcon iconLiteral="fth-send" styleClass="primary-button" />
                            </graphic>

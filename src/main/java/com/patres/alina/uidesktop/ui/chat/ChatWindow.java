@@ -251,22 +251,17 @@ public class ChatWindow extends BorderPane {
             if (event.isShiftDown()) {
                 chatTextArea.insertText(chatTextArea.getCaretPosition(), System.lineSeparator());
             } else if (!chatTextArea.getText().isBlank()) {
-                sendMessage();
+                sendMessageFromUi();
             }
         }
     }
 
     @FXML
-    public void sendMessage() { // send message from UI TODO zmien nazwe
+    public void sendMessageFromUi() {
         final String message = chatTextArea.getText().trim();
         chatTextArea.clear();
         displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
         prepareContextAndSendMessageToService(message);
-    }
-
-    public void sendMessage(final String message, final String commandId) {
-        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
-        prepareContextAndSendMessageToService(message, commandId);
     }
 
     public void sendMessage(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
