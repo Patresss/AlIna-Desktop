@@ -7,6 +7,7 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.animation.AnimationTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,19 +22,15 @@ public class CommandLoadingIndicator {
     private static final Logger logger = LoggerFactory.getLogger(CommandLoadingIndicator.class);
 
     private Stage stage;
+    private AnimationTimer followMouseTimer;
 
     public void show() {
         Platform.runLater(() -> {
             if (stage == null) {
                 stage = createStage();
             }
-            try {
-                final Point mousePosition = MouseInfo.getPointerInfo().getLocation();
-                stage.setX(mousePosition.getX());
-                stage.setY(mousePosition.getY());
-            } catch (Exception e) {
-                logger.debug("Cannot resolve mouse position for loading indicator, showing at default location", e);
-            }
+            updatePosition();
+            startFollowingCursor();
             stage.show();
             stage.toFront();
         });
@@ -47,7 +44,41 @@ public class CommandLoadingIndicator {
             if (stage.isShowing()) {
                 stage.hide();
             }
+            stopFollowingCursor();
         });
+    }
+
+    private void startFollowingCursor() {
+        if (followMouseTimer != null) {
+            followMouseTimer.stop();
+        }
+        followMouseTimer = new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                updatePosition();
+            }
+        };
+        followMouseTimer.start();
+    }
+
+    private void stopFollowingCursor() {
+        if (followMouseTimer != null) {
+            followMouseTimer.stop();
+            followMouseTimer = null;
+        }
+    }
+
+    private void updatePosition() {
+        if (stage == null) {
+            return;
+        }
+        try {
+            final Point mousePosition = MouseInfo.getPointerInfo().getLocation();
+            stage.setX(mousePosition.getX());
+            stage.setY(mousePosition.getY());
+        } catch (Exception e) {
+            logger.debug("Cannot resolve mouse position for loading indicator", e);
+        }
     }
 
     private Stage createStage() {
