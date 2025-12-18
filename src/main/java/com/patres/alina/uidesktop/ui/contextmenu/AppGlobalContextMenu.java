@@ -72,11 +72,6 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
     private void loadCommands() {
         commandsVBox.getChildren().clear();
 
-        // Add title
-        Label titleLabel = new Label(LanguageManager.getLanguageString("context.menu.title"));
-        titleLabel.getStyleClass().add("context-menu-title");
-        commandsVBox.getChildren().add(titleLabel);
-
         // Load enabled commands from backend with visibility flags
         List<Command> commands = BackendApi.getEnabledCommands();
         List<Command> pasteCommands = commands.stream()
@@ -129,7 +124,7 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         button.getStyleClass().addAll(Styles.FLAT, "context-menu-button");
         button.setMaxWidth(Double.MAX_VALUE);
 
-        button.setOnAction(event -> {
+        button.setOnAction(_ -> {
             close();
             action.accept(command);
         });

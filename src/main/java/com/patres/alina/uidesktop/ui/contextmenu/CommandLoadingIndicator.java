@@ -86,7 +86,7 @@ public class CommandLoadingIndicator {
         indicator.setPrefSize(22, 22);
 
         VBox container = new VBox(indicator);
-        container.getStyleClass().add("context-menu-container");
+        container.getStyleClass().add("context-menu-loader");
         container.setAlignment(Pos.CENTER);
 
         Scene scene = new Scene(container);

@@ -1,5 +1,5 @@
 {
-  "theme" : "Allegro Dark",
+  "theme" : "Nord Light",
   "language" : "pl",
   "shortcutKeysSettings" : {
     "speechShortcutKeys" : {
@@ -11,6 +11,11 @@
       "modeKeys" : [ null, null, null ],
       "executeKey" : null,
       "allKeys" : [ ]
+    },
+    "contextMenuShortcutKeys" : {
+      "modeKeys" : [ "CONTROL", null, null ],
+      "executeKey" : "Q",
+      "allKeys" : [ "CONTROL", "Q" ]
     }
   }
 }
