@@ -41,6 +41,8 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static com.patres.alina.common.message.ChatMessageRole.ASSISTANT;
@@ -49,6 +51,8 @@ import static com.patres.alina.common.message.ChatMessageRole.ASSISTANT;
 public class ChatWindow extends BorderPane {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatWindow.class);
+    private static final String ICON_STOP = "fth-square";
+    private static final String ICON_REGENERATE = "fth-refresh-cw";
 
     private final ChatThread chatThread;
     private final List<ChatMessageResponseModel> messages;
@@ -58,8 +62,19 @@ public class ChatWindow extends BorderPane {
     private final Consumer<FocusShortcutTriggeredEvent> focusShortcutTriggeredEventConsumer = event -> triggerFocusAction();
     private final Consumer<ChatMessageStreamEvent> chatMessageStreamEventConsumer = event -> handleChatMessageStreamEvent(event);
 
-    private StringBuilder currentStreamingMessage = new StringBuilder();
-    private boolean isCurrentlyStreaming = false;
+    private boolean streamingStarted;
+    private boolean ignoreIncomingTokens;
+    private StreamControlMode streamControlMode = StreamControlMode.REGENERATE;
+    private boolean regenerating;
+    private boolean replaceExistingAssistantMessageOnStart;
+
+    private String basePromptText = "";
+    private boolean showingStatusPrompt;
+
+    private enum StreamControlMode {
+        STOP,
+        REGENERATE
+    }
 
 
 
@@ -79,13 +94,16 @@ public class ChatWindow extends BorderPane {
     private Button recordButton;
 
     @FXML
+    private Button streamControlButton;
+
+    @FXML
     private TextArea chatTextArea;
 
     @FXML
-    private Label commandLabel;
+    private VBox inputButtonsBox;
 
     @FXML
-    private Label chatInfoLabel;
+    private Label commandLabel;
 
     private Browser browser;
     private RecordMode recordMode = RecordMode.PREPARE_TO_START_RECORDING;
@@ -93,6 +111,7 @@ public class ChatWindow extends BorderPane {
 
     private final List<Node> actionNodes;
     private final List<Node> nomRecordingActionNodes;
+    private boolean hasAnyUserMessages;
 
     public ChatWindow(ChatThread chatThread, ApplicationWindow applicationWindow) {
         super();
@@ -160,10 +179,25 @@ public class ChatWindow extends BorderPane {
         chatAnswersPane.getChildren().add(browser);
 
         messages.forEach(this::displayMessage);
+        hasAnyUserMessages = messages.stream().anyMatch(m -> m.seder() == ChatMessageRole.USER);
         initializeInputHandler();
         setCurrentCommand(null);
 
+        configureStreamingControls();
+        bindInputHeightToButtonsBox();
         configureRecordingButton();
+    }
+
+    private void bindInputHeightToButtonsBox() {
+        if (inputButtonsBox == null) {
+            return;
+        }
+        chatTextArea.minHeightProperty().bind(inputButtonsBox.heightProperty());
+        chatTextArea.prefHeightProperty().bind(inputButtonsBox.heightProperty());
+    }
+
+    private void configureStreamingControls() {
+        setStreamControlMode(StreamControlMode.REGENERATE);
     }
 
     private void configureRecordingButton() {
@@ -261,11 +295,13 @@ public class ChatWindow extends BorderPane {
         final String message = chatTextArea.getText().trim();
         chatTextArea.clear();
         displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
+        hasAnyUserMessages = true;
         prepareContextAndSendMessageToService(message);
     }
 
     public void sendMessage(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
         displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
+        hasAnyUserMessages = true;
         prepareContextAndSendMessageToService(message, commandId, onComplete);
     }
 
@@ -310,10 +346,9 @@ public class ChatWindow extends BorderPane {
     private void sendMessageToService(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
         Thread.startVirtualThread(() -> {
             try {
-                Platform.runLater(() -> {
+                runOnFxThreadAndWait(() -> {
+                    beginStreamingUiState(false);
                     browser.showLoader();
-                    actionNodes.forEach(node -> node.setDisable(true));
-                    chatTextArea.setText(LanguageManager.getLanguageString("chat.message.sending"));
                 });
 
                 final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(message, chatThread.id(), commandId, onComplete);
@@ -329,9 +364,10 @@ public class ChatWindow extends BorderPane {
                 final ChatMessageResponseModel errorResponse = handelExceptionAsMessage(message, e, e.getMessage());
                 displayMessage(errorResponse);
                 
-                Platform.runLater(() -> {
+                runOnFxThread(() -> {
                     browser.hideLoader(); // Hide loader on error
-                    actionNodes.forEach(node -> node.setDisable(false));
+                    endStreamingUiState();
+                    showStatusPrompt(LanguageManager.getLanguageString("chat.stream.error"));
                     chatTextArea.clear();
                     chatTextArea.requestFocus();
                 });
@@ -339,6 +375,95 @@ public class ChatWindow extends BorderPane {
         });
     }
 
+    private void beginStreamingUiState(final boolean isRegeneration) {
+        ignoreIncomingTokens = false;
+        streamingStarted = false;
+        regenerating = isRegeneration;
+        replaceExistingAssistantMessageOnStart = isRegeneration && browser.prepareRegenerationTarget();
+        setStreamControlMode(StreamControlMode.STOP);
+        actionNodes.forEach(node -> node.setDisable(true));
+        showStatusPrompt(LanguageManager.getLanguageString("chat.stream.connecting"));
+    }
+
+    private void endStreamingUiState() {
+        setStreamControlMode(StreamControlMode.REGENERATE);
+
+        actionNodes.forEach(node -> node.setDisable(false));
+        clearStatusPrompt();
+        ignoreIncomingTokens = false;
+        streamingStarted = false;
+        regenerating = false;
+        replaceExistingAssistantMessageOnStart = false;
+    }
+
+    @FXML
+    public void streamControlFromUi() {
+        if (streamControlMode == StreamControlMode.STOP) {
+            stopStreaming();
+            return;
+        }
+        regenerateLastResponse();
+    }
+
+    private void stopStreaming() {
+        ignoreIncomingTokens = true;
+        streamControlButton.setDisable(true);
+        showStatusPrompt(LanguageManager.getLanguageString("chat.stream.cancelling"));
+        Thread.startVirtualThread(() -> BackendApi.cancelChatMessagesStream(chatThread.id()));
+    }
+
+    private void regenerateLastResponse() {
+        Thread.startVirtualThread(() -> {
+            try {
+                runOnFxThreadAndWait(() -> {
+                    beginStreamingUiState(true);
+                    browser.showLoader();
+                });
+                BackendApi.regenerateLastAssistantResponse(chatThread.id());
+            } catch (Exception e) {
+                logger.error("Error starting regenerate streaming", e);
+                runOnFxThread(() -> {
+                    browser.hideLoader();
+                    endStreamingUiState();
+                    showStatusPrompt(LanguageManager.getLanguageString("chat.stream.error"));
+                    displayMessage("Error: " + e.getMessage(), ASSISTANT, ChatMessageStyleType.DANGER);
+                    chatTextArea.clear();
+                    chatTextArea.requestFocus();
+                });
+            }
+        });
+    }
+
+    private void runOnFxThread(final Runnable action) {
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+            return;
+        }
+        Platform.runLater(action);
+    }
+
+    private void runOnFxThreadAndWait(final Runnable action) {
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+            return;
+        }
+        final CountDownLatch latch = new CountDownLatch(1);
+        Platform.runLater(() -> {
+            try {
+                action.run();
+            } finally {
+                latch.countDown();
+            }
+        });
+        try {
+            // Avoid deadlocks: this is only used from background/virtual threads.
+            if (!latch.await(5, TimeUnit.SECONDS)) {
+                logger.warn("Timed out waiting for JavaFX thread to apply UI state");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
     private void handleChatMessageStreamEvent(ChatMessageStreamEvent event) {
         if (!event.getThreadId().equals(chatThread.id())) {
@@ -347,38 +472,60 @@ public class ChatWindow extends BorderPane {
 
         switch (event.getEventType()) {
             case TOKEN -> {
-                if (!isCurrentlyStreaming) {
+                if (ignoreIncomingTokens) {
+                    return;
+                }
+                if (!streamingStarted) {
                     // First token arrived - hide loader and start streaming display
-                    isCurrentlyStreaming = true;
-                    currentStreamingMessage = new StringBuilder();
+                    streamingStarted = true;
                     Platform.runLater(() -> {
                         browser.hideLoader(); // Hide loader on first token
-                        browser.startStreamingAssistantMessage();
+                        browser.startStreamingAssistantMessage(replaceExistingAssistantMessageOnStart);
+                        showStatusPrompt(LanguageManager.getLanguageString("chat.stream.streaming"));
                     });
                 }
-                // Continue with existing token handling...
-                currentStreamingMessage.append(event.getToken());
                 Platform.runLater(() -> browser.appendToStreamingMessage(event.getToken()));
             }
             case COMPLETE -> {
-                isCurrentlyStreaming = false;
                 Platform.runLater(() -> {
+                    browser.hideLoader();
+                    if (regenerating) {
+                        browser.discardRegenerationBackup();
+                    }
                     browser.finishStreamingMessage();
-                    actionNodes.forEach(node -> node.setDisable(false));
+                    endStreamingUiState();
+                    chatTextArea.clear();
+                    chatTextArea.requestFocus();
+                });
+            }
+            case CANCELLED -> {
+                Platform.runLater(() -> {
+                    browser.hideLoader();
+                    if (regenerating) {
+                        browser.restoreRegenerationTarget();
+                    } else {
+                        browser.finishStreamingMessage();
+                    }
+                    endStreamingUiState();
+                    showStatusPrompt(LanguageManager.getLanguageString("chat.stream.cancelled"));
                     chatTextArea.clear();
                     chatTextArea.requestFocus();
                 });
             }
             case ERROR -> {
-                isCurrentlyStreaming = false;
                 logger.error("Streaming error: {}", event.getErrorMessage());
                 Platform.runLater(() -> {
                     browser.hideLoader(); // Ensure loader is hidden on error
-                    browser.finishStreamingMessage();
+                    if (regenerating) {
+                        browser.restoreRegenerationTarget();
+                    } else {
+                        browser.finishStreamingMessage();
+                    }
                     displayMessage("Error: " + event.getErrorMessage(), ASSISTANT, ChatMessageStyleType.DANGER);
-                    actionNodes.forEach(node -> node.setDisable(false));
+                    endStreamingUiState();
                     chatTextArea.clear();
                     chatTextArea.requestFocus();
+                    showStatusPrompt(LanguageManager.getLanguageString("chat.stream.error"));
                 });
             }
         }
@@ -401,15 +548,51 @@ public class ChatWindow extends BorderPane {
     private void setCurrentCommand(final CardListItem currentCommand) {
         this.currentCommand = currentCommand;
         if (currentCommand == null) {
-            chatTextArea.setPromptText(LanguageManager.getLanguageString("chat.message.type.noCommand"));
+            setBasePromptText(LanguageManager.getLanguageString("chat.message.type.noCommand"));
             commandLabel.setText(LanguageManager.getLanguageString("chat.command.noCommand"));
             commandLabel.setGraphic(null);
         } else {
-            chatTextArea.setPromptText(LanguageManager.getLanguageString("chat.message.type.command", currentCommand.description()));
+            setBasePromptText(LanguageManager.getLanguageString("chat.message.type.command", currentCommand.description()));
             commandLabel.setText(LanguageManager.getLanguageString("chat.command.current", currentCommand.name()));
             commandLabel.setGraphic(new FontIcon(currentCommand.icon()));
         }
 
+    }
+
+    private void setBasePromptText(final String text) {
+        basePromptText = text == null ? "" : text;
+        if (!showingStatusPrompt) {
+            chatTextArea.setPromptText(basePromptText);
+        }
+    }
+
+    private void showStatusPrompt(final String text) {
+        showingStatusPrompt = true;
+        chatTextArea.clear();
+        chatTextArea.setPromptText(text == null ? "" : text);
+    }
+
+    private void clearStatusPrompt() {
+        showingStatusPrompt = false;
+        chatTextArea.setPromptText(basePromptText);
+    }
+
+    private void setStreamControlMode(final StreamControlMode mode) {
+        this.streamControlMode = mode;
+
+        if (streamControlButton == null) {
+            return;
+        }
+
+        if (mode == StreamControlMode.STOP) {
+            streamControlButton.setDisable(false);
+            streamControlButton.setGraphic(new FontIcon(ICON_STOP));
+            return;
+        }
+
+        // REGENERATE
+        streamControlButton.setGraphic(new FontIcon(ICON_REGENERATE));
+        streamControlButton.setDisable(!hasAnyUserMessages);
     }
 
 }

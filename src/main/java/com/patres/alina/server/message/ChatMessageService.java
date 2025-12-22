@@ -5,6 +5,7 @@ import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
+import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
 import com.patres.alina.common.thread.ChatThread;
@@ -20,16 +21,43 @@ import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.stereotype.Service;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
 public class ChatMessageService {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatMessageService.class);
+
+    private enum StreamPurpose {
+        NORMAL,
+        REGENERATE
+    }
+
+    private static final class StreamSession {
+        private final ChatMessageSendModel chatMessageSendModel;
+        private final StreamPurpose purpose;
+        private final List<String> messageIdsToDeleteOnComplete;
+        private final StringBuilder fullResponse = new StringBuilder();
+        private Disposable disposable;
+        private volatile boolean cancelled = false;
+
+        private StreamSession(final ChatMessageSendModel chatMessageSendModel,
+                              final StreamPurpose purpose,
+                              final List<String> messageIdsToDeleteOnComplete) {
+            this.chatMessageSendModel = chatMessageSendModel;
+            this.purpose = purpose;
+            this.messageIdsToDeleteOnComplete = messageIdsToDeleteOnComplete;
+        }
+    }
 
     private final ChatMessageStorageRepository chatMessageRepository;
     private final CommandFileService commandFileService;
@@ -38,6 +66,8 @@ public class ChatMessageService {
     private final ChatThreadFacade chatThreadFacade;
     private final FileManager<AssistantSettings> assistantSettingsManager;
     private final McpChatIntegrationService mcpChatIntegrationService;
+
+    private final ConcurrentHashMap<String, StreamSession> activeStreams = new ConcurrentHashMap<>();
 
     public ChatMessageService(final ChatMessageStorageRepository chatMessageRepository,
                               final CommandFileService commandFileService,
@@ -71,9 +101,75 @@ public class ChatMessageService {
         sendMessageStreamWithChatThread(chatMessageSendModel);
     }
 
+    public synchronized void cancelStreaming(final String chatThreadId) {
+        final StreamSession session = activeStreams.remove(chatThreadId);
+        if (session == null) {
+            DefaultEventBus.getInstance().publish(
+                    new ChatMessageStreamEvent(chatThreadId, ChatMessageStreamEvent.StreamEventType.CANCELLED)
+            );
+            return;
+        }
+        session.cancelled = true;
+        disposeQuietly(session.disposable);
+
+        if (session.purpose == StreamPurpose.NORMAL) {
+            final String partial = session.fullResponse.toString();
+            if (!partial.isBlank()) {
+                final ChatMessageSendModel warnModel = new ChatMessageSendModel(
+                        session.chatMessageSendModel.content(),
+                        chatThreadId,
+                        session.chatMessageSendModel.commandId(),
+                        ChatMessageStyleType.WARNING,
+                        null
+                );
+                storeMessageManager.storeMessage(new AssistantMessage(partial), warnModel, partial);
+            }
+        }
+
+        DefaultEventBus.getInstance().publish(
+                new ChatMessageStreamEvent(chatThreadId, ChatMessageStreamEvent.StreamEventType.CANCELLED)
+        );
+    }
+
+    public synchronized void regenerateLastAssistantResponse(final String chatThreadId) {
+        cancelStreamingSilently(chatThreadId);
+
+        final List<ChatMessage> allMessages = chatMessageRepository.findAllByThreadId(chatThreadId);
+        final int lastUserIndex = findLastIndexByRole(allMessages, MessageType.USER);
+        if (lastUserIndex < 0) {
+            DefaultEventBus.getInstance().publish(
+                    new ChatMessageStreamEvent(
+                            chatThreadId,
+                            ChatMessageStreamEvent.StreamEventType.ERROR,
+                            "No user message to regenerate"
+                    )
+            );
+            return;
+        }
+
+        final List<String> messageIdsToDeleteOnComplete = allMessages.subList(lastUserIndex + 1, allMessages.size())
+                .stream()
+                .filter(msg -> msg.role() == MessageType.ASSISTANT)
+                .map(ChatMessage::id)
+                .toList();
+
+        final List<AbstractMessage> contextMessages = loadMessagesForRegeneration(allMessages, lastUserIndex);
+
+        final ChatMessage lastUser = allMessages.get(lastUserIndex);
+        final ChatMessageSendModel regenerateModel = new ChatMessageSendModel(
+                lastUser.content(),
+                chatThreadId,
+                lastUser.commandId()
+        );
+
+        sendStreamingAssistantResponse(contextMessages, regenerateModel, StreamPurpose.REGENERATE, messageIdsToDeleteOnComplete);
+    }
+
     public synchronized void sendMessageStreamWithChatThread(final ChatMessageSendModel chatMessageSendModel) {
         final String chatThreadId = chatMessageSendModel.chatThreadId();
         logger.info("Sending streaming '{}' content, threadId={} ...", chatMessageSendModel.content(), chatThreadId);
+
+        cancelStreamingSilently(chatThreadId);
 
         final List<AbstractMessage> contextMessages = loadMessages(chatThreadId);
         final String chatContent = calculateContentWithCommandPrompt(chatMessageSendModel.content(), chatMessageSendModel.commandId());
@@ -89,6 +185,14 @@ public class ChatMessageService {
                                       final AbstractMessage message,
                                       final ChatMessageSendModel chatMessageSendModel) {
         contextMessages.add(message);
+        sendStreamingAssistantResponse(contextMessages, chatMessageSendModel, StreamPurpose.NORMAL, List.of());
+    }
+
+    private void sendStreamingAssistantResponse(final List<AbstractMessage> contextMessages,
+                                                final ChatMessageSendModel chatMessageSendModel,
+                                                final StreamPurpose purpose,
+                                                final List<String> messageIdsToDeleteOnComplete) {
+        final String chatThreadId = chatMessageSendModel.chatThreadId();
 
         // Enhance messages with MCP tools if available
         final List<AbstractMessage> enhancedMessages = mcpChatIntegrationService.enhanceMessagesWithMcpTools(contextMessages);
@@ -97,38 +201,55 @@ public class ChatMessageService {
             logger.debug("Enhanced chat messages with {} MCP tools", mcpChatIntegrationService.getAvailableToolCount());
         }
 
-        final StringBuilder fullResponse = new StringBuilder();
+        final StreamSession session = new StreamSession(chatMessageSendModel, purpose, messageIdsToDeleteOnComplete);
+        activeStreams.put(chatThreadId, session);
 
         try {
-            final reactor.core.publisher.Flux<String> stream = openAiApi.sendMessageStream(enhancedMessages);
+            final Flux<String> stream = openAiApi.sendMessageStream(enhancedMessages);
 
-            stream.subscribe(
+            final Disposable disposable = stream.subscribe(
                     token -> {
-                        fullResponse.append(token);
+                        if (session.cancelled) {
+                            return;
+                        }
+                        session.fullResponse.append(token);
                         DefaultEventBus.getInstance().publish(
-                                new ChatMessageStreamEvent(chatMessageSendModel.chatThreadId(), token)
+                                new ChatMessageStreamEvent(chatThreadId, token)
                         );
                     },
                     error -> {
+                        activeStreams.remove(chatThreadId, session);
+                        if (session.cancelled) {
+                            return;
+                        }
                         logger.error("Error in streaming response", error);
                         DefaultEventBus.getInstance().publish(
                                 new ChatMessageStreamEvent(
-                                        chatMessageSendModel.chatThreadId(),
+                                        chatThreadId,
                                         ChatMessageStreamEvent.StreamEventType.ERROR,
                                         error.getMessage()
                                 )
                         );
                     },
                     () -> {
+                        activeStreams.remove(chatThreadId, session);
+                        if (session.cancelled) {
+                            return;
+                        }
                         logger.info("Streaming completed for threadId: {}", chatMessageSendModel.chatThreadId());
 
-                        final String aiResponse = fullResponse.toString();
+                        final String aiResponse = session.fullResponse.toString();
                         final AbstractMessage assistantMessage = new AssistantMessage(aiResponse);
+                        if (session.purpose == StreamPurpose.REGENERATE) {
+                            for (final String messageId : session.messageIdsToDeleteOnComplete) {
+                                chatMessageRepository.deleteMessage(chatThreadId, messageId);
+                            }
+                        }
                         storeMessageManager.storeMessage(assistantMessage, chatMessageSendModel, aiResponse);
 
                         DefaultEventBus.getInstance().publish(
                                 new ChatMessageStreamEvent(
-                                        chatMessageSendModel.chatThreadId(),
+                                        chatThreadId,
                                         ChatMessageStreamEvent.StreamEventType.COMPLETE
                                 )
                         );
@@ -140,12 +261,17 @@ public class ChatMessageService {
                         }
                     }
             );
+            session.disposable = disposable;
 
         } catch (Exception e) {
+            activeStreams.remove(chatThreadId, session);
+            if (session.cancelled) {
+                return;
+            }
             logger.error("Error starting streaming", e);
             DefaultEventBus.getInstance().publish(
                     new ChatMessageStreamEvent(
-                            chatMessageSendModel.chatThreadId(),
+                            chatThreadId,
                             ChatMessageStreamEvent.StreamEventType.ERROR,
                             e.getMessage()
                     )
@@ -187,8 +313,35 @@ public class ChatMessageService {
 
     private List<AbstractMessage> loadMessages(final String chatThreadId) {
         final int numberOfMessagesInContext = assistantSettingsManager.getSettings().numberOfMessagesInContext();
-        final List<ChatMessage> messages = chatMessageRepository.findLastMessagesForContext(chatThreadId, numberOfMessagesInContext);
-        return messages.stream().map(this::toAbstractMessage).collect(Collectors.toList());
+        final List<ChatMessage> messages = chatMessageRepository.findLastMessagesForContext(
+                chatThreadId,
+                Set.of(ChatMessageRole.USER, ChatMessageRole.ASSISTANT, ChatMessageRole.SYSTEM),
+                numberOfMessagesInContext
+        );
+        return messages.stream()
+                .map(this::toAbstractMessage)
+                .collect(Collectors.toList());
+    }
+
+    private List<AbstractMessage> loadMessagesForRegeneration(final List<ChatMessage> allMessages,
+                                                             final int lastUserIndex) {
+        final int numberOfMessagesInContext = Math.max(0, assistantSettingsManager.getSettings().numberOfMessagesInContext());
+        final List<ChatMessage> prefix = allMessages.subList(0, lastUserIndex + 1).stream()
+                .filter(msg -> msg.role() == MessageType.USER || msg.role() == MessageType.ASSISTANT || msg.role() == MessageType.SYSTEM)
+                .toList();
+
+        final int from = Math.max(0, prefix.size() - numberOfMessagesInContext);
+        final List<ChatMessage> window = prefix.subList(from, prefix.size());
+        final List<AbstractMessage> context = window.stream().map(this::toAbstractMessage).collect(Collectors.toList());
+
+        if (!context.isEmpty() && context.getLast().getMessageType() == MessageType.USER) {
+            return context;
+        }
+
+        // Safety net: ensure the last user prompt is included and last.
+        final ChatMessage lastUser = allMessages.get(lastUserIndex);
+        context.add(new UserMessage(lastUser.contentWithContext()));
+        return context;
     }
 
     private AbstractMessage toAbstractMessage(final ChatMessage message) {
@@ -198,5 +351,34 @@ public class ChatMessageService {
             case SYSTEM -> new SystemMessage(message.contentWithContext());
             default -> throw new IllegalArgumentException("Unsupported message role: " + message.role());
         };
+    }
+
+    private void cancelStreamingSilently(final String chatThreadId) {
+        final StreamSession session = activeStreams.remove(chatThreadId);
+        if (session == null) {
+            return;
+        }
+        session.cancelled = true;
+        disposeQuietly(session.disposable);
+    }
+
+    private static void disposeQuietly(final Disposable disposable) {
+        if (disposable == null) {
+            return;
+        }
+        try {
+            disposable.dispose();
+        } catch (Exception ignored) {
+            // ignore
+        }
+    }
+
+    private static int findLastIndexByRole(final List<ChatMessage> messages, final MessageType role) {
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            if (messages.get(i).role() == role) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

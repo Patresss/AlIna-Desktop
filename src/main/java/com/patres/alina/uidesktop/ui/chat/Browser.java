@@ -49,11 +49,17 @@ public class Browser extends StackPane {
      */
     @SuppressWarnings("removal")
     private void safeJavaScriptCall(final String functionName, final Object... parameters) {
+        safeJavaScriptCallResult(functionName, parameters);
+    }
+
+    @SuppressWarnings("removal")
+    private Object safeJavaScriptCallResult(final String functionName, final Object... parameters) {
         try {
             final var window = (netscape.javascript.JSObject) webEngine.executeScript("window");
-            window.call(functionName, parameters);
+            return window.call(functionName, parameters);
         } catch (final Exception e) {
             logger.warn("Failed to execute JavaScript function: {} with {} parameters", functionName, parameters.length, e);
+            return null;
         }
     }
 
@@ -120,8 +126,12 @@ public class Browser extends StackPane {
      * Clears the content buffer and sets up the UI for streaming.
      */
     public void startStreamingAssistantMessage() {
+        startStreamingAssistantMessage(false);
+    }
+
+    public void startStreamingAssistantMessage(final boolean replaceExistingAssistantMessage) {
         streamingContent.setLength(0);
-        executeJavaScript("startStreamingAssistantMessage()");
+        safeJavaScriptCall("startStreamingAssistantMessage", replaceExistingAssistantMessage);
     }
 
     /**
@@ -216,6 +226,19 @@ public class Browser extends StackPane {
      */
     public void hideLoader() {
         executeJavaScript("hideLoader()");
+    }
+
+    public boolean prepareRegenerationTarget() {
+        final Object result = safeJavaScriptCallResult("prepareRegenerationTarget");
+        return result instanceof Boolean b && b;
+    }
+
+    public void restoreRegenerationTarget() {
+        safeJavaScriptCall("restoreRegenerationTarget");
+    }
+
+    public void discardRegenerationBackup() {
+        safeJavaScriptCall("discardRegenerationBackup");
     }
 
     private String initHtml() {
@@ -355,13 +378,24 @@ public class Browser extends StackPane {
                     }
 
                     function startStreamingAssistantMessage() {
-                        var streamingDiv = document.createElement('div');
+                        var chatContainer = document.getElementById('chat-container');
+                        var streamingDiv = null;
+
+                        if (arguments.length > 0 && arguments[0] === true) {
+                            var target = document.getElementById('regenerate-target');
+                            if (target) {
+                                streamingDiv = target;
+                            }
+                        }
+
+                        if (!streamingDiv) {
+                            streamingDiv = document.createElement('div');
+                            chatContainer.appendChild(streamingDiv);
+                        }
+
                         streamingDiv.className = 'chat-message assistant';
                         streamingDiv.id = 'streaming-message';
                         streamingDiv.innerHTML = '';
-
-                        var chatContainer = document.getElementById('chat-container');
-                        chatContainer.appendChild(streamingDiv);
 
                         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                     }
@@ -412,6 +446,58 @@ public class Browser extends StackPane {
 
                     function scrollToBottom() {
                         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }
+
+                    function prepareRegenerationTarget() {
+                        var chatContainer = document.getElementById('chat-container');
+                        if (!chatContainer || !chatContainer.children) {
+                            return false;
+                        }
+
+                        for (var i = chatContainer.children.length - 1; i >= 0; i--) {
+                            var node = chatContainer.children[i];
+                            if (!node || !node.classList) {
+                                continue;
+                            }
+                            if (node.classList.contains('chat-message') && node.classList.contains('assistant')) {
+                                if (node.dataset) {
+                                    node.dataset.prevHtml = node.innerHTML;
+                                }
+                                node.id = 'regenerate-target';
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+
+                    function restoreRegenerationTarget() {
+                        var node = document.getElementById('streaming-message');
+                        if (!node) {
+                            node = document.getElementById('regenerate-target');
+                        }
+                        if (!node) {
+                            return;
+                        }
+
+                        if (node.dataset && node.dataset.prevHtml !== undefined) {
+                            node.innerHTML = node.dataset.prevHtml;
+                            delete node.dataset.prevHtml;
+                        }
+                        node.removeAttribute('id');
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }
+
+                    function discardRegenerationBackup() {
+                        var node = document.getElementById('streaming-message');
+                        if (!node) {
+                            node = document.getElementById('regenerate-target');
+                        }
+                        if (!node) {
+                            return;
+                        }
+                        if (node.dataset && node.dataset.prevHtml !== undefined) {
+                            delete node.dataset.prevHtml;
+                        }
                     }
                 </script>
                 """;

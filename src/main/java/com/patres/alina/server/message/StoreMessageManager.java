@@ -40,12 +40,13 @@ public class StoreMessageManager {
                       final MessageType messageType,
                       final ChatMessageSendModel chatMessageSendModel,
                       final String contentToDisplay) {
+        final ChatMessageStyleType styleType = chatMessageSendModel.styleType() == null ? ChatMessageStyleType.NONE : chatMessageSendModel.styleType();
         final ChatMessage message = new ChatMessage(
                 UUID.randomUUID().toString(),
                 chatMessageSendModel.chatThreadId(),
                 contentToDisplay,
                 messageType,
-                ChatMessageStyleType.NONE,
+                styleType,
                 LocalDateTime.now(),
                 contentWithContext,
                 chatMessageSendModel.commandId(),

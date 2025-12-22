@@ -20,8 +20,8 @@
          <children>
             <HBox alignment="CENTER" maxWidth="1.7976931348623157E308">
                <children>
-                  <TextArea fx:id="chatTextArea" maxWidth="1.7976931348623157E308" onKeyPressed="#chatTextAreaOnKeyPressed" prefHeight="50.0" prefWidth="10000.0" wrapText="true" />
-                  <VBox>
+                  <TextArea fx:id="chatTextArea" maxWidth="1.7976931348623157E308" onKeyPressed="#chatTextAreaOnKeyPressed" prefWidth="10000.0" wrapText="true" />
+                  <VBox fx:id="inputButtonsBox">
                      <children>
                         <Button fx:id="sendButton" alignment="CENTER" styleClass="primary-button"  mnemonicParsing="false" onAction="#sendMessageFromUi" text="Button">
                            <graphic>
@@ -41,6 +41,12 @@
                               <String fx:value="flat" />
                            </styleClass>
                         </Button>
+                        <Button fx:id="streamControlButton" alignment="CENTER" mnemonicParsing="false" onAction="#streamControlFromUi" text="Button">
+                           <styleClass>
+                              <String fx:value="button-circle" />
+                              <String fx:value="flat" />
+                           </styleClass>
+                        </Button>
                      </children>
                   </VBox>
                </children>
@@ -51,14 +57,12 @@
             <GridPane>
               <columnConstraints>
                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
               </columnConstraints>
               <rowConstraints>
                 <RowConstraints vgrow="SOMETIMES" />
               </rowConstraints>
                <children>
                   <Label fx:id="commandLabel" styleClass="text-subtle" />
-                  <Label fx:id="chatInfoLabel" styleClass="text-subtle" GridPane.columnIndex="1" />
                </children>
             </GridPane>
          </children>

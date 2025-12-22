@@ -29,6 +29,14 @@ public class BackendApi {
         AppLauncher.getBean(ChatMessageController.class).sendChatMessagesStream(chatMessageSendModel);
     }
 
+    public static void cancelChatMessagesStream(String chatThreadId) {
+        AppLauncher.getBean(ChatMessageController.class).cancelChatMessagesStream(chatThreadId);
+    }
+
+    public static void regenerateLastAssistantResponse(String chatThreadId) {
+        AppLauncher.getBean(ChatMessageController.class).regenerateLastAssistantResponse(chatThreadId);
+    }
+
     public static List<ChatMessageResponseModel> getMessagesByThreadId(String chatThreadId) {
         return AppLauncher.getBean(ChatMessageController.class).getMessagesByThreadId(chatThreadId);
     }

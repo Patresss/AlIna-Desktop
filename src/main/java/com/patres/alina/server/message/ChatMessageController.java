@@ -23,4 +23,12 @@ public class ChatMessageController {
         chatMessageService.sendMessageStream(chatMessageSendModel);
     }
 
+    public void cancelChatMessagesStream(final String chatThreadId) {
+        chatMessageService.cancelStreaming(chatThreadId);
+    }
+
+    public void regenerateLastAssistantResponse(final String chatThreadId) {
+        chatMessageService.regenerateLastAssistantResponse(chatThreadId);
+    }
+
 }

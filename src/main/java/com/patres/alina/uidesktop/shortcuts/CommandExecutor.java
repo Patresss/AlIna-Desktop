@@ -103,6 +103,7 @@ public class CommandExecutor {
                     return;
                 }
                 if (event.getEventType() == ChatMessageStreamEvent.StreamEventType.COMPLETE
+                        || event.getEventType() == ChatMessageStreamEvent.StreamEventType.CANCELLED
                         || event.getEventType() == ChatMessageStreamEvent.StreamEventType.ERROR) {
                     LOADING_INDICATOR.hide();
                     DefaultEventBus.getInstance().unsubscribe(ChatMessageStreamEvent.class, this);

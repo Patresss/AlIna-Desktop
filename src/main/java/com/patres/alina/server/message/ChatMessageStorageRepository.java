@@ -15,6 +15,16 @@ public interface ChatMessageStorageRepository {
     void save(ChatMessage message);
 
     /**
+     * Returns all messages for a conversation thread (raw storage order).
+     */
+    List<ChatMessage> findAllByThreadId(String chatThreadId);
+
+    /**
+     * Delete a single message by id inside a thread.
+     */
+    void deleteMessage(String chatThreadId, String messageId);
+
+    /**
      * Find messages with content by thread ID and roles
      */
     List<ChatMessage> findMessagesWithContent(String chatThreadId, Set<ChatMessageRole> roles);

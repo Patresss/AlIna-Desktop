@@ -7,6 +7,7 @@ public final class ChatMessageStreamEvent extends Event {
     public enum StreamEventType {
         TOKEN,      // A new token has arrived
         COMPLETE,   // The stream is complete
+        CANCELLED,  // The stream was cancelled by the user
         ERROR       // An error occurred
     }
 

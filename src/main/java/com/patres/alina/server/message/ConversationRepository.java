@@ -35,6 +35,11 @@ public class ConversationRepository implements ChatMessageStorageRepository {
     }
 
     @Override
+    public List<ChatMessage> findAllByThreadId(final String chatThreadId) {
+        return getConversationMessages(chatThreadId);
+    }
+
+    @Override
     public List<ChatMessage> findMessagesWithContent(final String chatThreadId, final Set<ChatMessageRole> roles) {
         return getConversationMessages(chatThreadId).stream()
                 .filter(this::hasContent)
@@ -59,6 +64,12 @@ public class ConversationRepository implements ChatMessageStorageRepository {
     public void deleteByThreadId(final String chatThreadId) {
         final JsonLinesRepository<ChatMessage, String> repo = getConversationRepository(chatThreadId);
         repo.deleteAll();
+    }
+
+    @Override
+    public void deleteMessage(final String chatThreadId, final String messageId) {
+        final JsonLinesRepository<ChatMessage, String> repo = getConversationRepository(chatThreadId);
+        repo.deleteById(messageId);
     }
 
     @Override

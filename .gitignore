@@ -161,3 +161,9 @@ config/application.yml
 # AI festure descriptions
 ######################
 /festures/
+
+# Local conversation history
+/data/conversations/**/*.jsonl
+
+# Local patch artifacts (repo root)
+/*.patch
