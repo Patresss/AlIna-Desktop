@@ -21,6 +21,7 @@ public class AudioRecorder {
     private ByteArrayOutputStream byteArrayOutputStream;
     private TargetDataLine targetDataLine;
     private AudioFormat audioFormat;
+    private Thread recordingThread;
 
     public AudioRecorder() {
         recording = false;
@@ -40,7 +41,7 @@ public class AudioRecorder {
         }
         targetDataLine = line;
 
-        Thread recordingThread = new Thread(() -> {
+        recordingThread = new Thread(() -> {
             byte[] buffer = new byte[4096];
             while (recording) {
                 try {
@@ -58,7 +59,7 @@ public class AudioRecorder {
             } catch (IOException e) {
                 logger.error("Cannot record speech", e);
             }
-        });
+        }, "audio-recorder");
         recording = true;
         recordingThread.setDaemon(true);
         recordingThread.start();
@@ -81,6 +82,16 @@ public class AudioRecorder {
             logger.debug("Cannot close audio line", e);
         }
         targetDataLine = null;
+
+        Thread threadToJoin = recordingThread;
+        recordingThread = null;
+        if (threadToJoin != null) {
+            try {
+                threadToJoin.join(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
 
         try {
             byte[] audioData = byteArrayOutputStream.toByteArray();
@@ -151,12 +162,20 @@ public class AudioRecorder {
         if (!AudioSystem.isLineSupported(info)) {
             return null;
         }
+        TargetDataLine line = null;
         try {
-            TargetDataLine line = (TargetDataLine) AudioSystem.getLine(info);
+            line = (TargetDataLine) AudioSystem.getLine(info);
             line.open(format);
             line.start();
             return line;
         } catch (LineUnavailableException | IllegalArgumentException | SecurityException e) {
+            if (line != null) {
+                try {
+                    line.close();
+                } catch (Exception closeException) {
+                    logger.debug("Cannot close failed audio line", closeException);
+                }
+            }
             logger.debug("Cannot open audio line using system default", e);
             return null;
         }
@@ -166,12 +185,20 @@ public class AudioRecorder {
         if (!mixer.isLineSupported(info)) {
             return null;
         }
+        TargetDataLine line = null;
         try {
-            TargetDataLine line = (TargetDataLine) mixer.getLine(info);
+            line = (TargetDataLine) mixer.getLine(info);
             line.open(format);
             line.start();
             return line;
         } catch (LineUnavailableException | IllegalArgumentException | SecurityException e) {
+            if (line != null) {
+                try {
+                    line.close();
+                } catch (Exception closeException) {
+                    logger.debug("Cannot close failed audio line from mixer", closeException);
+                }
+            }
             logger.debug("Cannot open audio line from mixer {}", mixer.getMixerInfo().getName(), e);
             return null;
         }

@@ -8,20 +8,18 @@ import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.common.message.OnMessageCompleteCallback;
-import com.patres.alina.common.message.SpeechToTextErrorType;
 import com.patres.alina.common.thread.ChatThread;
-import com.patres.alina.server.message.exception.CannotConvertSpeechToTextException;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.messagecontext.MessageContextException;
 import com.patres.alina.uidesktop.messagecontext.MessageWithContextGenerator;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.common.event.shortcut.FocusShortcutTriggeredEvent;
 import com.patres.alina.uidesktop.common.event.shortcut.SpeechShortcutTriggeredEvent;
-import com.patres.alina.uidesktop.microphone.AudioRecorder;
 import com.patres.alina.uidesktop.command.SearchCommandPopup;
+import com.patres.alina.uidesktop.microphone.AudioRecorder;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
-import javafx.application.Platform;
+import com.patres.alina.uidesktop.ui.util.FxThreadRunner;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -39,12 +37,9 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static com.patres.alina.common.message.ChatMessageRole.ASSISTANT;
@@ -53,33 +48,13 @@ import static com.patres.alina.common.message.ChatMessageRole.ASSISTANT;
 public class ChatWindow extends BorderPane {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatWindow.class);
-    private static final String ICON_STOP = "fth-square";
-    private static final String ICON_REGENERATE = "fth-refresh-cw";
-    private static final String RECORDING_STYLE_CLASS = "recording-active";
-
     private final ChatThread chatThread;
     private final List<ChatMessageResponseModel> messages;
     private final ApplicationWindow applicationWindow;
 
-    private final Consumer<SpeechShortcutTriggeredEvent> speechShortcutTriggeredEventConsumer = event -> triggerSpeechAction();
+    private Consumer<SpeechShortcutTriggeredEvent> speechShortcutTriggeredEventConsumer;
     private final Consumer<FocusShortcutTriggeredEvent> focusShortcutTriggeredEventConsumer = event -> triggerFocusAction();
-    private final Consumer<ChatMessageStreamEvent> chatMessageStreamEventConsumer = event -> handleChatMessageStreamEvent(event);
-
-    private boolean streamingStarted;
-    private boolean ignoreIncomingTokens;
-    private StreamControlMode streamControlMode = StreamControlMode.REGENERATE;
-    private boolean regenerating;
-    private boolean replaceExistingAssistantMessageOnStart;
-
-    private String basePromptText = "";
-    private boolean showingStatusPrompt;
-
-    private enum StreamControlMode {
-        STOP,
-        REGENERATE
-    }
-
-
+    private Consumer<ChatMessageStreamEvent> chatMessageStreamEventConsumer;
 
     private SearchCommandPopup popup;
     private CardListItem currentCommand;
@@ -109,12 +84,12 @@ public class ChatWindow extends BorderPane {
     private Label commandLabel;
 
     private Browser browser;
-    private RecordMode recordMode = RecordMode.PREPARE_TO_START_RECORDING;
-    private final AudioRecorder audioRecorder = new AudioRecorder();
+    private ChatStatusPrompt statusPrompt;
+    private ChatRecordingController recordingController;
+    private ChatStreamingController streamingController;
 
-    private final List<Node> actionNodes;
-    private final List<Node> nomRecordingActionNodes;
-    private boolean hasAnyUserMessages;
+    private List<Node> actionNodes;
+    private List<Node> nonRecordingActionNodes;
 
     public ChatWindow(ChatThread chatThread, ApplicationWindow applicationWindow) {
         super();
@@ -130,65 +105,97 @@ public class ChatWindow extends BorderPane {
             loader.setRoot(this);
             loader.load();
             setMaxWidth(Double.MAX_VALUE);
-            actionNodes = List.of(sendButton, recordButton, chatTextArea);
-            nomRecordingActionNodes = actionNodes.stream()
-                    .filter(it -> it != recordButton)
-                    .toList();
-
         } catch (IOException e) {
             throw new RuntimeException("Unable to load FXML file", e);
         }
-
-        initEventsSubscriptions();
     }
 
     private void initEventsSubscriptions() {
-        DefaultEventBus.getInstance().subscribe(
-                SpeechShortcutTriggeredEvent.class,
-                speechShortcutTriggeredEventConsumer
-        );
+        if (speechShortcutTriggeredEventConsumer != null) {
+            DefaultEventBus.getInstance().subscribe(
+                    SpeechShortcutTriggeredEvent.class,
+                    speechShortcutTriggeredEventConsumer
+            );
+        }
 
         DefaultEventBus.getInstance().subscribe(
                 FocusShortcutTriggeredEvent.class,
                 focusShortcutTriggeredEventConsumer
         );
 
-        DefaultEventBus.getInstance().subscribe(
-                ChatMessageStreamEvent.class,
-                chatMessageStreamEventConsumer
-        );
+        if (chatMessageStreamEventConsumer != null) {
+            DefaultEventBus.getInstance().subscribe(
+                    ChatMessageStreamEvent.class,
+                    chatMessageStreamEventConsumer
+            );
+        }
     }
 
     public void unsubscribeEvents() {
-        DefaultEventBus.getInstance().unsubscribe(
-                SpeechShortcutTriggeredEvent.class,
-                speechShortcutTriggeredEventConsumer
-        );
+        if (speechShortcutTriggeredEventConsumer != null) {
+            DefaultEventBus.getInstance().unsubscribe(
+                    SpeechShortcutTriggeredEvent.class,
+                    speechShortcutTriggeredEventConsumer
+            );
+        }
 
         DefaultEventBus.getInstance().unsubscribe(
                 FocusShortcutTriggeredEvent.class,
                 focusShortcutTriggeredEventConsumer
         );
 
-        DefaultEventBus.getInstance().unsubscribe(
-                ChatMessageStreamEvent.class,
-                chatMessageStreamEventConsumer
-        );
+        if (chatMessageStreamEventConsumer != null) {
+            DefaultEventBus.getInstance().unsubscribe(
+                    ChatMessageStreamEvent.class,
+                    chatMessageStreamEventConsumer
+            );
+        }
     }
 
     @FXML
     public void initialize() {
+        statusPrompt = new ChatStatusPrompt(chatTextArea);
         browser = new Browser();
         chatAnswersPane.getChildren().add(browser);
 
+        actionNodes = List.of(sendButton, recordButton, chatTextArea);
+        nonRecordingActionNodes = actionNodes.stream()
+                .filter(it -> it != recordButton)
+                .toList();
+
         messages.forEach(this::displayMessage);
-        hasAnyUserMessages = messages.stream().anyMatch(m -> m.seder() == ChatMessageRole.USER);
+        boolean hasAnyUserMessages = messages.stream().anyMatch(m -> m.seder() == ChatMessageRole.USER);
+
+        streamingController = new ChatStreamingController(
+                browser,
+                streamControlButton,
+                actionNodes,
+                chatTextArea,
+                statusPrompt,
+                chatThread.id(),
+                hasAnyUserMessages
+        );
+        streamingController.initialize();
+
+        recordingController = new ChatRecordingController(
+                recordButton,
+                chatTextArea,
+                actionNodes,
+                nonRecordingActionNodes,
+                new AudioRecorder(),
+                statusPrompt,
+                this::handleTranscriptionReady,
+                this::displaySpeechError
+        );
+        recordingController.bind();
+
         initializeInputHandler();
         setCurrentCommand(null);
-
-        configureStreamingControls();
         bindInputHeightToButtonsBox();
-        configureRecordingButton();
+
+        speechShortcutTriggeredEventConsumer = event -> triggerSpeechAction();
+        chatMessageStreamEventConsumer = streamingController::handleStreamEvent;
+        initEventsSubscriptions();
     }
 
     private void bindInputHeightToButtonsBox() {
@@ -199,31 +206,16 @@ public class ChatWindow extends BorderPane {
         chatTextArea.prefHeightProperty().bind(inputButtonsBox.heightProperty());
     }
 
-    private void configureStreamingControls() {
-        setStreamControlMode(StreamControlMode.REGENERATE);
-    }
-
-    private void configureRecordingButton() {
-        recordButton.setOnAction(event -> triggerSpeechAction());
-    }
-
     private void triggerSpeechAction() {
-        runOnFxThread(() -> {
-            if (recordButton != null && recordButton.isDisable()) {
-                return;
-            }
-            if (recordMode == RecordMode.PREPARE_TO_START_RECORDING) {
-                startRecording();
-            } else {
-                stopAndSendRecording();
-            }
-        });
+        if (recordingController != null) {
+            recordingController.toggleRecording();
+        }
     }
 
     private void triggerFocusAction() {
         final Window window = chatTextArea.getScene().getWindow();
         if (window instanceof Stage stage) {
-            Platform.runLater(() -> {
+            FxThreadRunner.run(() -> {
                 if (chatTextArea.isFocused()) {
                     stage.toBack();
                 } else {
@@ -236,96 +228,20 @@ public class ChatWindow extends BorderPane {
         }
     }
 
-    private void startRecording() {
-        if (recordMode != RecordMode.PREPARE_TO_START_RECORDING) {
-            return;
-        }
-        if (!audioRecorder.startRecording()) {
-            handleSpeechError(LanguageManager.getLanguageString("chat.speech.error.microphone"));
-            return;
-        }
-        recordMode = RecordMode.PREPARE_TO_STOP_RECORDING;
-        updateRecordingState(true);
-        nomRecordingActionNodes.forEach(node -> node.setDisable(true));
-        showStatusPrompt(LanguageManager.getLanguageString("chat.speech.recording"));
-    }
-
-    private void stopAndSendRecording() {
-        if (recordMode != RecordMode.PREPARE_TO_STOP_RECORDING) {
-            return;
-        }
-        recordMode = RecordMode.PREPARE_TO_START_RECORDING;
-        updateRecordingState(false);
-        actionNodes.forEach(node -> node.setDisable(true));
-        showStatusPrompt(LanguageManager.getLanguageString("chat.speech.processing"));
-        Thread.startVirtualThread(() -> {
-            audioRecorder.stopRecording()
-                    .ifPresentOrElse(
-                            this::stopAndSendRecording,
-                            () -> handleSpeechError(LanguageManager.getLanguageString("chat.speech.error.empty")));
-        });
-    }
-
     private void handleError(String message) {
         logger.error(message);
         displayMessage(message, ASSISTANT, ChatMessageStyleType.DANGER);
-        actionNodes.forEach(node -> node.setDisable(false));
+        FxThreadRunner.run(() -> actionNodes.forEach(node -> node.setDisable(false)));
     }
 
-    private void handleSpeechError(String message) {
-        logger.error(message);
+    private void handleTranscriptionReady(String message) {
+        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
+        streamingController.markUserMessageSent();
+        sendMessageToService(message);
+    }
+
+    private void displaySpeechError(String message) {
         displayMessage(message, ASSISTANT, ChatMessageStyleType.DANGER);
-        runOnFxThread(() -> {
-            actionNodes.forEach(node -> node.setDisable(false));
-            clearStatusPrompt();
-            recordMode = RecordMode.PREPARE_TO_START_RECORDING;
-            updateRecordingState(false);
-            chatTextArea.clear();
-            chatTextArea.requestFocus();
-        });
-    }
-
-    private void stopAndSendRecording(File audio) {
-        try {
-            String message = BackendApi.sendChatMessagesAsAudio(audio).content();
-            if (message == null || message.isBlank()) {
-                handleSpeechError(LanguageManager.getLanguageString("chat.speech.error.empty"));
-                return;
-            }
-            displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
-            hasAnyUserMessages = true;
-            sendMessageToService(message);
-        } catch (CannotConvertSpeechToTextException e) {
-            handleSpeechError(resolveSpeechErrorMessage(e));
-        } catch (Exception e) {
-            logger.error("Cannot send speech message", e);
-            handleSpeechError(LanguageManager.getLanguageString("chat.speech.error.unknown"));
-        } finally {
-            if (audio != null) {
-                audio.delete();
-            }
-        }
-    }
-
-    private void updateRecordingState(boolean recording) {
-        if (recordButton == null) {
-            return;
-        }
-        if (recording) {
-            if (!recordButton.getStyleClass().contains(RECORDING_STYLE_CLASS)) {
-                recordButton.getStyleClass().add(RECORDING_STYLE_CLASS);
-            }
-        } else {
-            recordButton.getStyleClass().remove(RECORDING_STYLE_CLASS);
-        }
-        recordButton.setGraphic(recordMode.getFontIcon());
-    }
-
-    private String resolveSpeechErrorMessage(CannotConvertSpeechToTextException exception) {
-        SpeechToTextErrorType errorType = exception.getErrorType() == null
-                ? SpeechToTextErrorType.UNKNOWN
-                : exception.getErrorType();
-        return LanguageManager.getLanguageString(errorType.getI18nKey());
     }
 
     private void initializeInputHandler() {
@@ -353,15 +269,18 @@ public class ChatWindow extends BorderPane {
     @FXML
     public void sendMessageFromUi() {
         final String message = chatTextArea.getText().trim();
+        if (message.isBlank()) {
+            return;
+        }
         chatTextArea.clear();
         displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
-        hasAnyUserMessages = true;
+        streamingController.markUserMessageSent();
         prepareContextAndSendMessageToService(message);
     }
 
     public void sendMessage(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
         displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
-        hasAnyUserMessages = true;
+        streamingController.markUserMessageSent();
         prepareContextAndSendMessageToService(message, commandId, onComplete);
     }
 
@@ -372,7 +291,7 @@ public class ChatWindow extends BorderPane {
     private void displayMessage(final String text,
                                 final ChatMessageRole chatMessageRole,
                                 final ChatMessageStyleType chatMessageStyleType) {
-        Platform.runLater(() -> browser.addContent(text, chatMessageRole, chatMessageStyleType));
+        FxThreadRunner.run(() -> browser.addContent(text, chatMessageRole, chatMessageStyleType));
     }
 
     private void prepareContextAndSendMessageToService(final String message) {
@@ -406,188 +325,24 @@ public class ChatWindow extends BorderPane {
     private void sendMessageToService(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
         Thread.startVirtualThread(() -> {
             try {
-                runOnFxThreadAndWait(() -> {
-                    beginStreamingUiState(false);
-                    browser.showLoader();
-                });
-
+                streamingController.beginStreaming(false);
                 final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(message, chatThread.id(), commandId, onComplete);
 
                 BackendApi.sendChatMessagesStream(chatMessageSendModel);
-                
-                // Note: UI updates will be handled by the stream event handler
-                // The loader will be hidden and controls re-enabled in the stream completion handler
-                
             } catch (Exception e) {
-                // Handle any immediate errors (e.g., connection issues before streaming starts)
                 logger.error("Error starting streaming message", e);
                 final ChatMessageResponseModel errorResponse = handelExceptionAsMessage(message, e, e.getMessage());
                 displayMessage(errorResponse);
-                
-                runOnFxThread(() -> {
-                    browser.hideLoader(); // Hide loader on error
-                    endStreamingUiState();
-                    showStatusPrompt(LanguageManager.getLanguageString("chat.stream.error"));
-                    chatTextArea.clear();
-                    chatTextArea.requestFocus();
-                });
+
+                streamingController.handleStartError();
             }
         });
-    }
-
-    private void beginStreamingUiState(final boolean isRegeneration) {
-        ignoreIncomingTokens = false;
-        streamingStarted = false;
-        regenerating = isRegeneration;
-        replaceExistingAssistantMessageOnStart = isRegeneration && browser.prepareRegenerationTarget();
-        setStreamControlMode(StreamControlMode.STOP);
-        actionNodes.forEach(node -> node.setDisable(true));
-        showStatusPrompt(LanguageManager.getLanguageString("chat.stream.connecting"));
-    }
-
-    private void endStreamingUiState() {
-        setStreamControlMode(StreamControlMode.REGENERATE);
-
-        actionNodes.forEach(node -> node.setDisable(false));
-        clearStatusPrompt();
-        ignoreIncomingTokens = false;
-        streamingStarted = false;
-        regenerating = false;
-        replaceExistingAssistantMessageOnStart = false;
     }
 
     @FXML
     public void streamControlFromUi() {
-        if (streamControlMode == StreamControlMode.STOP) {
-            stopStreaming();
-            return;
-        }
-        regenerateLastResponse();
-    }
-
-    private void stopStreaming() {
-        ignoreIncomingTokens = true;
-        streamControlButton.setDisable(true);
-        showStatusPrompt(LanguageManager.getLanguageString("chat.stream.cancelling"));
-        Thread.startVirtualThread(() -> BackendApi.cancelChatMessagesStream(chatThread.id()));
-    }
-
-    private void regenerateLastResponse() {
-        Thread.startVirtualThread(() -> {
-            try {
-                runOnFxThreadAndWait(() -> {
-                    beginStreamingUiState(true);
-                    browser.showLoader();
-                });
-                BackendApi.regenerateLastAssistantResponse(chatThread.id());
-            } catch (Exception e) {
-                logger.error("Error starting regenerate streaming", e);
-                runOnFxThread(() -> {
-                    browser.hideLoader();
-                    endStreamingUiState();
-                    showStatusPrompt(LanguageManager.getLanguageString("chat.stream.error"));
-                    displayMessage("Error: " + e.getMessage(), ASSISTANT, ChatMessageStyleType.DANGER);
-                    chatTextArea.clear();
-                    chatTextArea.requestFocus();
-                });
-            }
-        });
-    }
-
-    private void runOnFxThread(final Runnable action) {
-        if (Platform.isFxApplicationThread()) {
-            action.run();
-            return;
-        }
-        Platform.runLater(action);
-    }
-
-    private void runOnFxThreadAndWait(final Runnable action) {
-        if (Platform.isFxApplicationThread()) {
-            action.run();
-            return;
-        }
-        final CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                action.run();
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            // Avoid deadlocks: this is only used from background/virtual threads.
-            if (!latch.await(5, TimeUnit.SECONDS)) {
-                logger.warn("Timed out waiting for JavaFX thread to apply UI state");
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    private void handleChatMessageStreamEvent(ChatMessageStreamEvent event) {
-        if (!event.getThreadId().equals(chatThread.id())) {
-            return;
-        }
-
-        switch (event.getEventType()) {
-            case TOKEN -> {
-                if (ignoreIncomingTokens) {
-                    return;
-                }
-                if (!streamingStarted) {
-                    // First token arrived - hide loader and start streaming display
-                    streamingStarted = true;
-                    Platform.runLater(() -> {
-                        browser.hideLoader(); // Hide loader on first token
-                        browser.startStreamingAssistantMessage(replaceExistingAssistantMessageOnStart);
-                        showStatusPrompt(LanguageManager.getLanguageString("chat.stream.streaming"));
-                    });
-                }
-                Platform.runLater(() -> browser.appendToStreamingMessage(event.getToken()));
-            }
-            case COMPLETE -> {
-                Platform.runLater(() -> {
-                    browser.hideLoader();
-                    if (regenerating) {
-                        browser.discardRegenerationBackup();
-                    }
-                    browser.finishStreamingMessage();
-                    endStreamingUiState();
-                    chatTextArea.clear();
-                    chatTextArea.requestFocus();
-                });
-            }
-            case CANCELLED -> {
-                Platform.runLater(() -> {
-                    browser.hideLoader();
-                    if (regenerating) {
-                        browser.restoreRegenerationTarget();
-                    } else {
-                        browser.finishStreamingMessage();
-                    }
-                    endStreamingUiState();
-                    showStatusPrompt(LanguageManager.getLanguageString("chat.stream.cancelled"));
-                    chatTextArea.clear();
-                    chatTextArea.requestFocus();
-                });
-            }
-            case ERROR -> {
-                logger.error("Streaming error: {}", event.getErrorMessage());
-                Platform.runLater(() -> {
-                    browser.hideLoader(); // Ensure loader is hidden on error
-                    if (regenerating) {
-                        browser.restoreRegenerationTarget();
-                    } else {
-                        browser.finishStreamingMessage();
-                    }
-                    displayMessage("Error: " + event.getErrorMessage(), ASSISTANT, ChatMessageStyleType.DANGER);
-                    endStreamingUiState();
-                    chatTextArea.clear();
-                    chatTextArea.requestFocus();
-                    showStatusPrompt(LanguageManager.getLanguageString("chat.stream.error"));
-                });
-            }
+        if (streamingController != null) {
+            streamingController.streamControlFromUi();
         }
     }
 
@@ -608,51 +363,15 @@ public class ChatWindow extends BorderPane {
     private void setCurrentCommand(final CardListItem currentCommand) {
         this.currentCommand = currentCommand;
         if (currentCommand == null) {
-            setBasePromptText(LanguageManager.getLanguageString("chat.message.type.noCommand"));
+            statusPrompt.setBasePromptText(LanguageManager.getLanguageString("chat.message.type.noCommand"));
             commandLabel.setText(LanguageManager.getLanguageString("chat.command.noCommand"));
             commandLabel.setGraphic(null);
         } else {
-            setBasePromptText(LanguageManager.getLanguageString("chat.message.type.command", currentCommand.description()));
+            statusPrompt.setBasePromptText(LanguageManager.getLanguageString("chat.message.type.command", currentCommand.description()));
             commandLabel.setText(LanguageManager.getLanguageString("chat.command.current", currentCommand.name()));
             commandLabel.setGraphic(new FontIcon(currentCommand.icon()));
         }
 
-    }
-
-    private void setBasePromptText(final String text) {
-        basePromptText = text == null ? "" : text;
-        if (!showingStatusPrompt) {
-            chatTextArea.setPromptText(basePromptText);
-        }
-    }
-
-    private void showStatusPrompt(final String text) {
-        showingStatusPrompt = true;
-        chatTextArea.clear();
-        chatTextArea.setPromptText(text == null ? "" : text);
-    }
-
-    private void clearStatusPrompt() {
-        showingStatusPrompt = false;
-        chatTextArea.setPromptText(basePromptText);
-    }
-
-    private void setStreamControlMode(final StreamControlMode mode) {
-        this.streamControlMode = mode;
-
-        if (streamControlButton == null) {
-            return;
-        }
-
-        if (mode == StreamControlMode.STOP) {
-            streamControlButton.setDisable(false);
-            streamControlButton.setGraphic(new FontIcon(ICON_STOP));
-            return;
-        }
-
-        // REGENERATE
-        streamControlButton.setGraphic(new FontIcon(ICON_REGENERATE));
-        streamControlButton.setDisable(!hasAnyUserMessages);
     }
 
 }
