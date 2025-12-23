@@ -2,10 +2,12 @@ package com.patres.alina.server.openai;
 
 
 import com.patres.alina.common.event.bus.DefaultEventBus;
+import com.patres.alina.common.message.SpeechToTextErrorType;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
 import com.patres.alina.server.event.AssistantSettingsUpdatedEvent;
 import com.patres.alina.server.mcp.McpToolIntegrationService;
+import com.patres.alina.server.message.exception.CannotConvertSpeechToTextException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -13,7 +15,9 @@ import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -29,6 +33,7 @@ public class OpenAiApiFacade {
 
     private final OpenAiApiCreator openAiApiCreator;
     private ChatModel chatModel;
+    private OpenAiAudioTranscriptionModel audioTranscriptionModel;
     private final McpToolIntegrationService mcpToolIntegrationService;
 
     public OpenAiApiFacade(FileManager<AssistantSettings> assistantSettingsManager,
@@ -54,16 +59,28 @@ public class OpenAiApiFacade {
             logger.error("Failed to update OpenAI service", e);
             chatModel = null;
         }
+
+        try {
+            audioTranscriptionModel = openAiApiCreator.createOpenAiAudioTranscriptionModel(settings.openAiApiKey(), SPEECH_TO_TEXT_MODEL);
+            if (audioTranscriptionModel == null) {
+                logger.warn("OpenAI audio transcription model is null - API key not properly configured.");
+            } else {
+                logger.info("OpenAI audio transcription model updated successfully");
+            }
+        } catch (Exception e) {
+            logger.error("Failed to update OpenAI audio transcription model", e);
+            audioTranscriptionModel = null;
+        }
     }
 
     public String speechToText(final File audio) {
-//        final TranscriptionResult transcription = service.createTranscription(
-//                CreateTranscriptionRequest.builder()
-//                        .model(SPEECH_TO_TEXT_MODEL)
-//                        .language("pl") // TODO do not hardcode
-//                        .build(),
-//                audio.getPath());
-        return "transcription.getText();";
+        if (audioTranscriptionModel == null) {
+            throw new CannotConvertSpeechToTextException(
+                    SpeechToTextErrorType.MISSING_API_KEY,
+                    "OpenAI API key not configured. Please set a valid API key in assistant settings."
+            );
+        }
+        return audioTranscriptionModel.call(new FileSystemResource(audio));
     }
 
     public Flux<String> sendMessageStream(final List<AbstractMessage> messages) {

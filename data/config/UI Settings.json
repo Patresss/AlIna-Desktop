@@ -3,9 +3,9 @@
   "language" : "pl",
   "shortcutKeysSettings" : {
     "speechShortcutKeys" : {
-      "modeKeys" : [ null, null, null ],
-      "executeKey" : null,
-      "allKeys" : [ ]
+      "modeKeys" : [ "CONTROL", null, null ],
+      "executeKey" : "X",
+      "allKeys" : [ "CONTROL", "X" ]
     },
     "focusShortcutKeys" : {
       "modeKeys" : [ null, null, null ],

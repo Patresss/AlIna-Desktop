@@ -93,6 +93,11 @@ ChatWindow {
 .primary-button {
     -color-button-fg: -color-accent-fg;
 }
+
+.recording-active {
+    -color-button-fg: -color-danger-emphasis;
+}
+
 /*.tool-bar > .container > .button,*/
 /*.tool-bar > .container > .menu-button {*/
 /*    -fx-background-color: transparent;*/

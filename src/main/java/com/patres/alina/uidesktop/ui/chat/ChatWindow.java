@@ -8,7 +8,9 @@ import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.common.message.OnMessageCompleteCallback;
+import com.patres.alina.common.message.SpeechToTextErrorType;
 import com.patres.alina.common.thread.ChatThread;
+import com.patres.alina.server.message.exception.CannotConvertSpeechToTextException;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.messagecontext.MessageContextException;
 import com.patres.alina.uidesktop.messagecontext.MessageWithContextGenerator;
@@ -53,6 +55,7 @@ public class ChatWindow extends BorderPane {
     private static final Logger logger = LoggerFactory.getLogger(ChatWindow.class);
     private static final String ICON_STOP = "fth-square";
     private static final String ICON_REGENERATE = "fth-refresh-cw";
+    private static final String RECORDING_STYLE_CLASS = "recording-active";
 
     private final ChatThread chatThread;
     private final List<ChatMessageResponseModel> messages;
@@ -205,14 +208,16 @@ public class ChatWindow extends BorderPane {
     }
 
     private void triggerSpeechAction() {
-        if (recordMode == RecordMode.PREPARE_TO_START_RECORDING) {
-            recordMode = RecordMode.PREPARE_TO_STOP_RECORDING;
-            startRecording();
-        } else {
-            recordMode = RecordMode.PREPARE_TO_START_RECORDING;
-            stopAndSendRecording();
-        }
-        Platform.runLater(() -> recordButton.setGraphic(recordMode.getFontIcon()));
+        runOnFxThread(() -> {
+            if (recordButton != null && recordButton.isDisable()) {
+                return;
+            }
+            if (recordMode == RecordMode.PREPARE_TO_START_RECORDING) {
+                startRecording();
+            } else {
+                stopAndSendRecording();
+            }
+        });
     }
 
     private void triggerFocusAction() {
@@ -231,18 +236,33 @@ public class ChatWindow extends BorderPane {
         }
     }
 
-    public void startRecording() {
+    private void startRecording() {
+        if (recordMode != RecordMode.PREPARE_TO_START_RECORDING) {
+            return;
+        }
+        if (!audioRecorder.startRecording()) {
+            handleSpeechError(LanguageManager.getLanguageString("chat.speech.error.microphone"));
+            return;
+        }
+        recordMode = RecordMode.PREPARE_TO_STOP_RECORDING;
+        updateRecordingState(true);
         nomRecordingActionNodes.forEach(node -> node.setDisable(true));
-        chatTextArea.setText(LanguageManager.getLanguageString("chat.message.sending"));
-        audioRecorder.startRecording();
+        showStatusPrompt(LanguageManager.getLanguageString("chat.speech.recording"));
     }
 
-    public void stopAndSendRecording() {
+    private void stopAndSendRecording() {
+        if (recordMode != RecordMode.PREPARE_TO_STOP_RECORDING) {
+            return;
+        }
+        recordMode = RecordMode.PREPARE_TO_START_RECORDING;
+        updateRecordingState(false);
+        actionNodes.forEach(node -> node.setDisable(true));
+        showStatusPrompt(LanguageManager.getLanguageString("chat.speech.processing"));
         Thread.startVirtualThread(() -> {
             audioRecorder.stopRecording()
                     .ifPresentOrElse(
                             this::stopAndSendRecording,
-                            () -> handleError("Cannot stop recording. File is not found"));
+                            () -> handleSpeechError(LanguageManager.getLanguageString("chat.speech.error.empty")));
         });
     }
 
@@ -252,20 +272,60 @@ public class ChatWindow extends BorderPane {
         actionNodes.forEach(node -> node.setDisable(false));
     }
 
+    private void handleSpeechError(String message) {
+        logger.error(message);
+        displayMessage(message, ASSISTANT, ChatMessageStyleType.DANGER);
+        runOnFxThread(() -> {
+            actionNodes.forEach(node -> node.setDisable(false));
+            clearStatusPrompt();
+            recordMode = RecordMode.PREPARE_TO_START_RECORDING;
+            updateRecordingState(false);
+            chatTextArea.clear();
+            chatTextArea.requestFocus();
+        });
+    }
+
     private void stopAndSendRecording(File audio) {
         try {
-            actionNodes.forEach(node -> node.setDisable(true));
             String message = BackendApi.sendChatMessagesAsAudio(audio).content();
+            if (message == null || message.isBlank()) {
+                handleSpeechError(LanguageManager.getLanguageString("chat.speech.error.empty"));
+                return;
+            }
             displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
+            hasAnyUserMessages = true;
             sendMessageToService(message);
+        } catch (CannotConvertSpeechToTextException e) {
+            handleSpeechError(resolveSpeechErrorMessage(e));
         } catch (Exception e) {
-            final ChatMessageResponseModel chatMessageResponseModel = handelExceptionAsMessage("<speech>", e, e.getMessage());
-            displayMessage(chatMessageResponseModel);
+            logger.error("Cannot send speech message", e);
+            handleSpeechError(LanguageManager.getLanguageString("chat.speech.error.unknown"));
         } finally {
             if (audio != null) {
                 audio.delete();
             }
         }
+    }
+
+    private void updateRecordingState(boolean recording) {
+        if (recordButton == null) {
+            return;
+        }
+        if (recording) {
+            if (!recordButton.getStyleClass().contains(RECORDING_STYLE_CLASS)) {
+                recordButton.getStyleClass().add(RECORDING_STYLE_CLASS);
+            }
+        } else {
+            recordButton.getStyleClass().remove(RECORDING_STYLE_CLASS);
+        }
+        recordButton.setGraphic(recordMode.getFontIcon());
+    }
+
+    private String resolveSpeechErrorMessage(CannotConvertSpeechToTextException exception) {
+        SpeechToTextErrorType errorType = exception.getErrorType() == null
+                ? SpeechToTextErrorType.UNKNOWN
+                : exception.getErrorType();
+        return LanguageManager.getLanguageString(errorType.getI18nKey());
     }
 
     private void initializeInputHandler() {

@@ -4,6 +4,7 @@ import com.patres.alina.AppLauncher;
 import com.patres.alina.common.card.UpdateStateRequest;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
+import com.patres.alina.common.message.SpeechToTextErrorType;
 import com.patres.alina.common.message.SpeechToTextResponse;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.common.settings.AssistantSettings;
@@ -96,7 +97,11 @@ public class BackendApi {
             byte[] bytes = Files.readAllBytes(file.toPath());
             return AppLauncher.getBean(SpeechToTextController.class).speechToText(bytes);
         } catch (IOException e) {
-            throw new CannotConvertSpeechToTextException(e);
+            throw new CannotConvertSpeechToTextException(
+                    SpeechToTextErrorType.UNKNOWN,
+                    "Cannot read recorded audio.",
+                    e
+            );
         }
     }
 
