@@ -7,8 +7,11 @@ import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.message.ChatMessageStyleType;
+import com.patres.alina.common.message.CommandUsageInfo;
 import com.patres.alina.common.message.OnMessageCompleteCallback;
 import com.patres.alina.common.thread.ChatThread;
+import com.patres.alina.server.command.Command;
+import com.patres.alina.server.command.CommandConstants;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.messagecontext.MessageContextException;
 import com.patres.alina.uidesktop.messagecontext.MessageWithContextGenerator;
@@ -40,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static com.patres.alina.common.message.ChatMessageRole.ASSISTANT;
@@ -58,6 +62,7 @@ public class ChatWindow extends BorderPane {
 
     private SearchCommandPopup popup;
     private CardListItem currentCommand;
+    private volatile Command currentCommandDetails;
 
     @FXML
     private StackPane chatAnswersPane;
@@ -235,7 +240,8 @@ public class ChatWindow extends BorderPane {
     }
 
     private void handleTranscriptionReady(String message) {
-        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
+        CommandUsageInfo commandUsageInfo = buildCommandUsageInfo(getCurrentCommandId(), message);
+        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE, commandUsageInfo);
         streamingController.markUserMessageSent();
         sendMessageToService(message);
     }
@@ -272,46 +278,36 @@ public class ChatWindow extends BorderPane {
         if (message.isBlank()) {
             return;
         }
+        final String commandId = getCurrentCommandId();
         chatTextArea.clear();
-        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
+        PreparedMessage prepared = prepareMessageToSend(message, commandId);
+        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE, prepared.commandUsageInfo());
         streamingController.markUserMessageSent();
-        prepareContextAndSendMessageToService(message);
+        sendMessageToService(prepared.messageToSend(), commandId);
     }
 
     public void sendMessage(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
-        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE);
+        PreparedMessage prepared = prepareMessageToSend(message, commandId);
+        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE, prepared.commandUsageInfo());
         streamingController.markUserMessageSent();
-        prepareContextAndSendMessageToService(message, commandId, onComplete);
+        sendMessageToService(prepared.messageToSend(), commandId, onComplete);
     }
 
     private void displayMessage(final ChatMessageResponseModel message) {
-        displayMessage(message.content(), message.seder(), message.styleType());
+        displayMessage(message.content(), message.seder(), message.styleType(), message.commandUsageInfo());
     }
 
     private void displayMessage(final String text,
                                 final ChatMessageRole chatMessageRole,
                                 final ChatMessageStyleType chatMessageStyleType) {
-        FxThreadRunner.run(() -> browser.addContent(text, chatMessageRole, chatMessageStyleType));
+        displayMessage(text, chatMessageRole, chatMessageStyleType, null);
     }
 
-    private void prepareContextAndSendMessageToService(final String message) {
-        prepareContextAndSendMessageToService(message, getCurrentCommandId());
-    }
-
-    private void prepareContextAndSendMessageToService(final String message, final String commandId) {
-        prepareContextAndSendMessageToService(message, commandId, null);
-    }
-
-    private void prepareContextAndSendMessageToService(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
-        try {
-            final MessageWithContextGenerator messageWithContextGenerator = new MessageWithContextGenerator(message);
-            final String messageToSend = messageWithContextGenerator.replacePathsWithContents();
-            sendMessageToService(messageToSend, commandId, onComplete);
-        } catch (MessageContextException e) {
-            logger.error("Cannot generate context for message '{}', sending original message", message, e);
-            handleError(e.getMessage());
-            sendMessageToService(message, commandId, onComplete);
-        }
+    private void displayMessage(final String text,
+                                final ChatMessageRole chatMessageRole,
+                                final ChatMessageStyleType chatMessageStyleType,
+                                final CommandUsageInfo commandUsageInfo) {
+        FxThreadRunner.run(() -> browser.addContent(text, chatMessageRole, chatMessageStyleType, commandUsageInfo));
     }
 
     private void sendMessageToService(final String message) {
@@ -353,15 +349,64 @@ public class ChatWindow extends BorderPane {
     private static ChatMessageResponseModel handelExceptionAsMessage(final String content, final Exception e, final String message) {
         logger.error("Cannot send a message `{}` to server", content, e);
         final String errorMessage = LanguageManager.getLanguageString("chat.message.error");
-        return new ChatMessageResponseModel(errorMessage + ": " + message, ASSISTANT, LocalDateTime.now(), ChatMessageStyleType.DANGER, null);
+        return new ChatMessageResponseModel(errorMessage + ": " + message, ASSISTANT, LocalDateTime.now(), ChatMessageStyleType.DANGER, null, null);
     }
 
     public ChatThread getChatThread() {
         return chatThread;
     }
 
+    private PreparedMessage prepareMessageToSend(final String message, final String commandId) {
+        String messageToSend = message;
+        try {
+            final MessageWithContextGenerator messageWithContextGenerator = new MessageWithContextGenerator(message);
+            messageToSend = messageWithContextGenerator.replacePathsWithContents();
+        } catch (MessageContextException e) {
+            logger.error("Cannot generate context for message '{}', sending original message", message, e);
+            handleError(e.getMessage());
+        }
+        CommandUsageInfo commandUsageInfo = buildCommandUsageInfo(commandId, messageToSend);
+        return new PreparedMessage(messageToSend, commandUsageInfo);
+    }
+
+    private CommandUsageInfo buildCommandUsageInfo(final String commandId, final String messageToSend) {
+        if (commandId == null || commandId.isBlank()) {
+            return null;
+        }
+        final Command command = resolveCommandDetails(commandId);
+        if (command == null) {
+            return null;
+        }
+        final String prompt = buildPromptWithCommand(command.systemPrompt(), messageToSend);
+        return new CommandUsageInfo(command.id(), command.name(), command.icon(), prompt);
+    }
+
+    private Command resolveCommandDetails(final String commandId) {
+        if (currentCommandDetails != null && Objects.equals(commandId, currentCommandDetails.id())) {
+            return currentCommandDetails;
+        }
+        try {
+            return BackendApi.getCommand(commandId);
+        } catch (Exception e) {
+            logger.warn("Cannot load command details for id {}", commandId, e);
+            return null;
+        }
+    }
+
+    private String buildPromptWithCommand(final String systemPrompt, final String message) {
+        final String commandContent = systemPrompt == null ? "" : systemPrompt.trim();
+        if (commandContent.isEmpty()) {
+            return message;
+        }
+        if (commandContent.contains(CommandConstants.ARGUMENTS_PLACEHOLDER)) {
+            return commandContent.replace(CommandConstants.ARGUMENTS_PLACEHOLDER, message);
+        }
+        return commandContent + System.lineSeparator() + message;
+    }
+
     private void setCurrentCommand(final CardListItem currentCommand) {
         this.currentCommand = currentCommand;
+        currentCommandDetails = null;
         if (currentCommand == null) {
             statusPrompt.setBasePromptText(LanguageManager.getLanguageString("chat.message.type.noCommand"));
             commandLabel.setText(LanguageManager.getLanguageString("chat.command.noCommand"));
@@ -370,8 +415,26 @@ public class ChatWindow extends BorderPane {
             statusPrompt.setBasePromptText(LanguageManager.getLanguageString("chat.message.type.command", currentCommand.description()));
             commandLabel.setText(LanguageManager.getLanguageString("chat.command.current", currentCommand.name()));
             commandLabel.setGraphic(new FontIcon(currentCommand.icon()));
+            Thread.startVirtualThread(() -> {
+                try {
+                    Command command = BackendApi.getCommand(currentCommand.id());
+                    FxThreadRunner.run(() -> {
+                        if (this.currentCommand != null && Objects.equals(currentCommand.id(), this.currentCommand.id())) {
+                            currentCommandDetails = command;
+                        }
+                    });
+                } catch (Exception e) {
+                    logger.warn("Cannot load command details for id {}", currentCommand.id(), e);
+                }
+            });
         }
 
+    }
+
+    private record PreparedMessage(
+            String messageToSend,
+            CommandUsageInfo commandUsageInfo
+    ) {
     }
 
 }

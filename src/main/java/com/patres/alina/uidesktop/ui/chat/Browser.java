@@ -3,12 +3,25 @@ package com.patres.alina.uidesktop.ui.chat;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageStyleType;
+import com.patres.alina.common.message.CommandUsageInfo;
 import com.patres.alina.uidesktop.common.event.ThemeEvent;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import javafx.application.Platform;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
+import javafx.scene.SnapshotParameters;
+import javafx.scene.image.WritableImage;
+import javafx.scene.paint.Color;
+import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.IkonHandler;
+import org.kordamp.ikonli.bootstrapicons.BootstrapIconsIkonHandler;
+import org.kordamp.ikonli.devicons.DeviconsIkonHandler;
+import org.kordamp.ikonli.feather.FeatherIkonHandler;
+import org.kordamp.ikonli.javafx.FontIcon;
+import org.kordamp.ikonli.material2.Material2ALIkonHandler;
+import org.kordamp.ikonli.material2.Material2MZIkonHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -17,8 +30,15 @@ import org.w3c.dom.events.EventTarget;
 import org.w3c.dom.html.HTMLAnchorElement;
 
 import java.awt.*;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.imageio.ImageIO;
+import javafx.scene.text.Font;
 
 import static com.patres.alina.uidesktop.util.MarkdownToHtmlConverter.convertMarkdownToHtml;
 
@@ -30,6 +50,17 @@ public class Browser extends StackPane {
     final WebEngine webEngine;
     
     private final StringBuilder streamingContent = new StringBuilder();
+    private static final int COMMAND_ICON_SIZE = 14;
+    private static final String DEFAULT_COMMAND_ICON_LITERAL = "bi-slash";
+    private static final List<IkonHandler> ICON_HANDLERS = List.of(
+            new Material2ALIkonHandler(),
+            new Material2MZIkonHandler(),
+            new DeviconsIkonHandler(),
+            new FeatherIkonHandler(),
+            new BootstrapIconsIkonHandler()
+    );
+    private final Map<String, String> commandIconCache = new HashMap<>();
+    private String commandIconColor = "#6b7280";
 
     public Browser() {
         super();
@@ -84,11 +115,129 @@ public class Browser extends StackPane {
     public void addContent(final String markdownContent,
                            final ChatMessageRole chatMessageRole,
                            final ChatMessageStyleType chatMessageStyleType) {
+        addContent(markdownContent, chatMessageRole, chatMessageStyleType, null);
+    }
+
+    public void addContent(final String markdownContent,
+                           final ChatMessageRole chatMessageRole,
+                           final ChatMessageStyleType chatMessageStyleType,
+                           final CommandUsageInfo commandUsageInfo) {
         final String htmlContent = convertMarkdownToHtml(markdownContent);
-        safeJavaScriptCall("addHtmlContent", htmlContent, chatMessageRole.getChatMessageRole(), chatMessageStyleType.getStyleType());
+        final CommandTooltipData tooltipData = buildCommandTooltipData(commandUsageInfo);
+        safeJavaScriptCall(
+                "addHtmlContent",
+                htmlContent,
+                chatMessageRole.getChatMessageRole(),
+                chatMessageStyleType.getStyleType(),
+                tooltipData.iconDataUrl(),
+                tooltipData.commandName(),
+                tooltipData.prompt()
+        );
         
         stopOpeningUrlInWebView();
         executeJavaScript("scrollToBottom()");
+    }
+
+    private CommandTooltipData buildCommandTooltipData(final CommandUsageInfo commandUsageInfo) {
+        if (commandUsageInfo == null) {
+            return CommandTooltipData.empty();
+        }
+        final String iconDataUrl = resolveCommandIconData(commandUsageInfo.commandIcon());
+        if (iconDataUrl == null || iconDataUrl.isBlank()) {
+            return CommandTooltipData.empty();
+        }
+        return new CommandTooltipData(
+                iconDataUrl,
+                commandUsageInfo.commandName(),
+                commandUsageInfo.prompt()
+        );
+    }
+
+    private String resolveCommandIconData(final String iconLiteral) {
+        if (iconLiteral == null || iconLiteral.isBlank()) {
+            return null;
+        }
+        return commandIconCache.computeIfAbsent(iconLiteral, this::createCommandIconData);
+    }
+
+    private String createCommandIconData(final String iconLiteral) {
+        final FontIcon icon = resolveFontIcon(iconLiteral);
+        if (icon == null) {
+            return null;
+        }
+        String color = commandIconColor == null || commandIconColor.isBlank() ? "#6b7280" : commandIconColor;
+        Color iconColor = parseIconColor(color);
+        icon.setIconSize(COMMAND_ICON_SIZE);
+        icon.setIconColor(iconColor);
+        icon.applyCss();
+        int width = (int) Math.ceil(icon.getLayoutBounds().getWidth());
+        int height = (int) Math.ceil(icon.getLayoutBounds().getHeight());
+        if (width <= 0 || height <= 0) {
+            width = COMMAND_ICON_SIZE;
+            height = COMMAND_ICON_SIZE;
+        }
+        final SnapshotParameters params = new SnapshotParameters();
+        params.setFill(Color.TRANSPARENT);
+        final WritableImage snapshot = new WritableImage(width, height);
+        icon.snapshot(params, snapshot);
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            boolean written = ImageIO.write(SwingFXUtils.fromFXImage(snapshot, null), "png", out);
+            if (!written) {
+                return null;
+            }
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(out.toByteArray());
+        } catch (IOException e) {
+            logger.warn("Cannot encode command icon {}", iconLiteral, e);
+            return null;
+        }
+    }
+
+    private FontIcon resolveFontIcon(final String iconLiteral) {
+        FontIcon icon = resolveFontIconForLiteral(iconLiteral);
+        if (icon != null) {
+            return icon;
+        }
+        return resolveFontIconForLiteral(DEFAULT_COMMAND_ICON_LITERAL);
+    }
+
+    private FontIcon resolveFontIconForLiteral(final String iconLiteral) {
+        if (iconLiteral == null || iconLiteral.isBlank()) {
+            return null;
+        }
+        for (IkonHandler handler : ICON_HANDLERS) {
+            if (handler.supports(iconLiteral)) {
+                Ikon ikon = handler.resolve(iconLiteral);
+                if (ikon == null) {
+                    return null;
+                }
+                FontIcon fontIcon = new FontIcon(ikon);
+                loadFontIfNeeded(handler);
+                Font font = Font.font(handler.getFontFamily(), COMMAND_ICON_SIZE);
+                if (font != null) {
+                    fontIcon.setFont(font);
+                }
+                return fontIcon;
+            }
+        }
+        return null;
+    }
+
+    private Color parseIconColor(final String value) {
+        try {
+            return Color.web(value);
+        } catch (IllegalArgumentException e) {
+            return Color.web("#6b7280");
+        }
+    }
+
+    private void loadFontIfNeeded(final IkonHandler handler) {
+        try (var stream = handler.getFontResourceAsStream()) {
+            if (stream != null) {
+                Font.loadFont(stream, COMMAND_ICON_SIZE);
+            }
+        } catch (Exception e) {
+            logger.debug("Cannot load icon font {}", handler.getFontFamily(), e);
+        }
     }
 
     private void stopOpeningUrlInWebView() {
@@ -297,6 +446,15 @@ public class Browser extends StackPane {
                   word-wrap: break-word;
                   align-items: center;
                   overflow-y: auto;
+                  position: relative;
+                  box-sizing: border-box;
+                }
+                .chat-message.command-message {
+                  padding-right: 36px;
+                  padding-left: 15px;
+                  padding-top: 2px;
+                  padding-bottom: 2px;
+                  overflow: visible;
                 }
                 .chat-message.accent {
                   box-shadow: 0 0 10px var(--color-accent-fg);
@@ -315,6 +473,55 @@ public class Browser extends StackPane {
                 }
                 .chat-message.assistant {
                   border-left: 4px solid var(--color-accent-0);
+                }
+                .command-badge {
+                  position: absolute;
+                  top: 4px;
+                  right: 6px;
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  border-radius: 999px;
+                  background-color: var(--color-bg-default);
+                  border: 1px solid var(--color-border-default);
+                  box-shadow: 0 2px 6px var(--color-neutral-muted);
+                  cursor: help;
+                }
+                .command-badge img {
+                  width: 14px;
+                  height: 14px;
+                }
+                .command-tooltip {
+                  position: absolute;
+                  top: 22px;
+                  right: 0;
+                  background-color: var(--color-bg-default);
+                  color: var(--color-fg-default);
+                  border: 1px solid var(--color-border-default);
+                  border-radius: 6px;
+                  padding: 8px 10px;
+                  min-width: 220px;
+                  max-width: 420px;
+                  max-height: 260px;
+                  overflow: auto;
+                  box-shadow: 0 8px 24px var(--color-neutral-muted);
+                  display: none;
+                  z-index: 10;
+                }
+                .command-badge:hover .command-tooltip {
+                  display: block;
+                }
+                .command-tooltip-title {
+                  font-weight: 600;
+                  margin-bottom: 6px;
+                }
+                .command-tooltip-prompt {
+                  white-space: pre-wrap;
+                  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+                  font-size: 12px;
+                  color: var(--color-fg-muted, var(--color-fg-default));
                 }
                 .loader {
                   display: none;
@@ -352,10 +559,39 @@ public class Browser extends StackPane {
     private String getJavaScript() {
         return """
                 <script>
-                    function addHtmlContent(htmlContent, messageType, notificationStyle) {
+                    function addHtmlContent(htmlContent, messageType, notificationStyle, commandIconUrl, commandName, commandPrompt) {
                         var div = document.createElement('div');
-                        div.innerHTML = htmlContent;
                         div.className = 'chat-message ' + messageType + ' ' + notificationStyle;
+                        if (commandIconUrl) {
+                            div.classList.add('command-message');
+                        }
+                        div.innerHTML = htmlContent;
+
+                        if (commandIconUrl) {
+                            var badge = document.createElement('div');
+                            badge.className = 'command-badge';
+
+                            var img = document.createElement('img');
+                            img.src = commandIconUrl;
+                            img.alt = commandName ? commandName : 'Command';
+                            badge.appendChild(img);
+
+                            var tooltip = document.createElement('div');
+                            tooltip.className = 'command-tooltip';
+
+                            var title = document.createElement('div');
+                            title.className = 'command-tooltip-title';
+                            title.textContent = commandName ? commandName : '';
+                            tooltip.appendChild(title);
+
+                            var prompt = document.createElement('div');
+                            prompt.className = 'command-tooltip-prompt';
+                            prompt.textContent = commandPrompt ? commandPrompt : '';
+                            tooltip.appendChild(prompt);
+
+                            badge.appendChild(tooltip);
+                            div.appendChild(badge);
+                        }
 
                         var chatContainer = document.getElementById('chat-container');
                         chatContainer.appendChild(div);
@@ -510,7 +746,10 @@ public class Browser extends StackPane {
             
             if (theme != null) {
                 try {
-                    theme.parseColors().forEach(this::setCssProperty);
+                    final Map<String, String> colors = theme.parseColors();
+                    colors.forEach(this::setCssProperty);
+                    commandIconColor = resolveCommandIconColor(colors);
+                    commandIconCache.clear();
                 } catch (final IOException e) {
                     logger.error("Failed to parse theme colors", e);
                 }
@@ -527,5 +766,54 @@ public class Browser extends StackPane {
         executeJavaScript(script);
     }
 
+    private String resolveCommandIconColor(final Map<String, String> colors) {
+        if (colors == null || colors.isEmpty()) {
+            return commandIconColor;
+        }
+        String muted = resolveThemeColorValue(colors, "-color-fg-muted");
+        if (muted != null) {
+            return muted;
+        }
+        String fallback = resolveThemeColorValue(colors, "-color-fg-default");
+        return fallback == null ? commandIconColor : fallback;
+    }
+
+    private String resolveThemeColorValue(final Map<String, String> colors, final String key) {
+        String value = resolveThemeColorValue(colors, key, 0);
+        if (value == null) {
+            return null;
+        }
+        try {
+            Color.web(value);
+            return value;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private String resolveThemeColorValue(final Map<String, String> colors, final String key, final int depth) {
+        if (depth > 8 || key == null) {
+            return null;
+        }
+        String value = colors.get(key);
+        if (value == null) {
+            return null;
+        }
+        value = value.trim();
+        if (value.startsWith("-")) {
+            return resolveThemeColorValue(colors, value, depth + 1);
+        }
+        return value;
+    }
+
+    private record CommandTooltipData(
+            String iconDataUrl,
+            String commandName,
+            String prompt
+    ) {
+        private static CommandTooltipData empty() {
+            return new CommandTooltipData(null, null, null);
+        }
+    }
 
 }

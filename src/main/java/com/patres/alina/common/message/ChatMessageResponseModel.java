@@ -10,6 +10,7 @@ public record ChatMessageResponseModel(
         ChatMessageRole seder,
         LocalDateTime createdAt,
         ChatMessageStyleType styleType,
-        String chatThreadId
+        String chatThreadId,
+        CommandUsageInfo commandUsageInfo
 ){
 }

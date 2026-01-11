@@ -6,6 +6,7 @@ import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.message.ChatMessageStyleType;
+import com.patres.alina.common.message.CommandUsageInfo;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
 import com.patres.alina.common.thread.ChatThread;
@@ -26,7 +27,9 @@ import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -281,15 +284,36 @@ public class ChatMessageService {
 
     public List<ChatMessageResponseModel> getMessagesByThreadId(final String chatThreadId) {
         final List<ChatMessage> messages = chatMessageRepository.findMessagesToDisplay(chatThreadId);
+        final Map<String, Command> commandCache = new HashMap<>();
         return messages.stream()
                 .map(msg -> new ChatMessageResponseModel(
                         msg.content(),
                         ChatMessageRole.findChatMessageRoleByValue(msg.role().getValue()),
                         msg.createdAt(),
                         msg.styleType(),
-                        chatThreadId
+                        chatThreadId,
+                        buildCommandUsageInfo(msg, commandCache)
                 ))
                 .toList();
+    }
+
+    private CommandUsageInfo buildCommandUsageInfo(final ChatMessage message, final Map<String, Command> commandCache) {
+        if (message.role() != MessageType.USER) {
+            return null;
+        }
+        final String commandId = message.commandId();
+        if (commandId == null || commandId.isBlank()) {
+            return null;
+        }
+        final Command command = commandCache.computeIfAbsent(commandId, this::findCommandById);
+        final String commandName = command == null ? commandId : command.name();
+        final String commandIcon = command == null ? "bi-slash" : command.icon();
+        final String prompt = message.contentWithContext() == null ? message.content() : message.contentWithContext();
+        return new CommandUsageInfo(commandId, commandName, commandIcon, prompt);
+    }
+
+    private Command findCommandById(final String commandId) {
+        return commandFileService.findById(commandId).orElse(null);
     }
 
     private String calculateContentWithCommandPrompt(final String content, final String commandId) {
