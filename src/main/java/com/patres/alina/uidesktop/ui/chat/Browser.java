@@ -7,19 +7,14 @@ import com.patres.alina.common.message.CommandUsageInfo;
 import com.patres.alina.uidesktop.common.event.ThemeEvent;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import javafx.application.Platform;
-import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
-import javafx.scene.SnapshotParameters;
-import javafx.scene.image.WritableImage;
-import javafx.scene.paint.Color;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.IkonHandler;
 import org.kordamp.ikonli.bootstrapicons.BootstrapIconsIkonHandler;
 import org.kordamp.ikonli.devicons.DeviconsIkonHandler;
 import org.kordamp.ikonli.feather.FeatherIkonHandler;
-import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.material2.Material2ALIkonHandler;
 import org.kordamp.ikonli.material2.Material2MZIkonHandler;
 import org.slf4j.Logger;
@@ -30,15 +25,14 @@ import org.w3c.dom.events.EventTarget;
 import org.w3c.dom.html.HTMLAnchorElement;
 
 import java.awt.*;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.imageio.ImageIO;
-import javafx.scene.text.Font;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.patres.alina.uidesktop.util.MarkdownToHtmlConverter.convertMarkdownToHtml;
 
@@ -59,8 +53,7 @@ public class Browser extends StackPane {
             new FeatherIkonHandler(),
             new BootstrapIconsIkonHandler()
     );
-    private final Map<String, String> commandIconCache = new HashMap<>();
-    private String commandIconColor = "#6b7280";
+    private final Map<String, CommandIconData> commandIconCache = new HashMap<>();
 
     public Browser() {
         super();
@@ -129,7 +122,8 @@ public class Browser extends StackPane {
                 htmlContent,
                 chatMessageRole.getChatMessageRole(),
                 chatMessageStyleType.getStyleType(),
-                tooltipData.iconDataUrl(),
+                tooltipData.iconFontFamily(),
+                tooltipData.iconGlyph(),
                 tooltipData.commandName(),
                 tooltipData.prompt()
         );
@@ -142,65 +136,29 @@ public class Browser extends StackPane {
         if (commandUsageInfo == null) {
             return CommandTooltipData.empty();
         }
-        final String iconDataUrl = resolveCommandIconData(commandUsageInfo.commandIcon());
-        if (iconDataUrl == null || iconDataUrl.isBlank()) {
+        CommandIconData iconData = resolveCommandIconData(commandUsageInfo.commandIcon());
+        if (iconData == null) {
+            iconData = resolveCommandIconData(DEFAULT_COMMAND_ICON_LITERAL);
+        }
+        if (iconData == null) {
             return CommandTooltipData.empty();
         }
         return new CommandTooltipData(
-                iconDataUrl,
+                iconData.fontFamily(),
+                iconData.glyph(),
                 commandUsageInfo.commandName(),
                 commandUsageInfo.prompt()
         );
     }
 
-    private String resolveCommandIconData(final String iconLiteral) {
+    private CommandIconData resolveCommandIconData(final String iconLiteral) {
         if (iconLiteral == null || iconLiteral.isBlank()) {
             return null;
         }
         return commandIconCache.computeIfAbsent(iconLiteral, this::createCommandIconData);
     }
 
-    private String createCommandIconData(final String iconLiteral) {
-        final FontIcon icon = resolveFontIcon(iconLiteral);
-        if (icon == null) {
-            return null;
-        }
-        String color = commandIconColor == null || commandIconColor.isBlank() ? "#6b7280" : commandIconColor;
-        Color iconColor = parseIconColor(color);
-        icon.setIconSize(COMMAND_ICON_SIZE);
-        icon.setIconColor(iconColor);
-        icon.applyCss();
-        int width = (int) Math.ceil(icon.getLayoutBounds().getWidth());
-        int height = (int) Math.ceil(icon.getLayoutBounds().getHeight());
-        if (width <= 0 || height <= 0) {
-            width = COMMAND_ICON_SIZE;
-            height = COMMAND_ICON_SIZE;
-        }
-        final SnapshotParameters params = new SnapshotParameters();
-        params.setFill(Color.TRANSPARENT);
-        final WritableImage snapshot = new WritableImage(width, height);
-        icon.snapshot(params, snapshot);
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            boolean written = ImageIO.write(SwingFXUtils.fromFXImage(snapshot, null), "png", out);
-            if (!written) {
-                return null;
-            }
-            return "data:image/png;base64," + Base64.getEncoder().encodeToString(out.toByteArray());
-        } catch (IOException e) {
-            logger.warn("Cannot encode command icon {}", iconLiteral, e);
-            return null;
-        }
-    }
-
-    private FontIcon resolveFontIcon(final String iconLiteral) {
-        FontIcon icon = resolveFontIconForLiteral(iconLiteral);
-        if (icon != null) {
-            return icon;
-        }
-        return resolveFontIconForLiteral(DEFAULT_COMMAND_ICON_LITERAL);
-    }
-
-    private FontIcon resolveFontIconForLiteral(final String iconLiteral) {
+    private CommandIconData createCommandIconData(final String iconLiteral) {
         if (iconLiteral == null || iconLiteral.isBlank()) {
             return null;
         }
@@ -210,34 +168,11 @@ public class Browser extends StackPane {
                 if (ikon == null) {
                     return null;
                 }
-                FontIcon fontIcon = new FontIcon(ikon);
-                loadFontIfNeeded(handler);
-                Font font = Font.font(handler.getFontFamily(), COMMAND_ICON_SIZE);
-                if (font != null) {
-                    fontIcon.setFont(font);
-                }
-                return fontIcon;
+                String glyph = new String(Character.toChars(ikon.getCode()));
+                return new CommandIconData(handler.getFontFamily(), glyph);
             }
         }
         return null;
-    }
-
-    private Color parseIconColor(final String value) {
-        try {
-            return Color.web(value);
-        } catch (IllegalArgumentException e) {
-            return Color.web("#6b7280");
-        }
-    }
-
-    private void loadFontIfNeeded(final IkonHandler handler) {
-        try (var stream = handler.getFontResourceAsStream()) {
-            if (stream != null) {
-                Font.loadFont(stream, COMMAND_ICON_SIZE);
-            }
-        } catch (Exception e) {
-            logger.debug("Cannot load icon font {}", handler.getFontFamily(), e);
-        }
     }
 
     private void stopOpeningUrlInWebView() {
@@ -410,8 +345,10 @@ public class Browser extends StackPane {
     }
 
     private String getCssStyles() {
+        final String iconFontCss = buildIconFontFaceCss();
         return """
                 <style>
+                """.concat(iconFontCss).concat("""
                 body {
                     background-color: var(--color-bg-default);
                     color: var(--color-fg-default);
@@ -489,9 +426,10 @@ public class Browser extends StackPane {
                   box-shadow: 0 2px 6px var(--color-neutral-muted);
                   cursor: help;
                 }
-                .command-badge img {
-                  width: 14px;
-                  height: 14px;
+                .command-icon {
+                  font-size: 14px;
+                  line-height: 1;
+                  color: var(--color-fg-muted, var(--color-fg-default));
                 }
                 .command-tooltip {
                   position: absolute;
@@ -553,28 +491,68 @@ public class Browser extends StackPane {
                   to { transform: scale(0.5); }
                 }
                 </style>
-                """;
+                """);
+    }
+
+    private String buildIconFontFaceCss() {
+        StringBuilder css = new StringBuilder();
+        Set<String> loadedFamilies = new HashSet<>();
+        for (IkonHandler handler : ICON_HANDLERS) {
+            String family = handler.getFontFamily();
+            if (family == null || family.isBlank() || !loadedFamilies.add(family)) {
+                continue;
+            }
+            String dataUrl = readFontAsDataUrl(handler);
+            if (dataUrl == null) {
+                logger.warn("Cannot load icon font {}", family);
+                continue;
+            }
+            css.append("@font-face{font-family:'")
+                    .append(escapeCssValue(family))
+                    .append("';src:url('")
+                    .append(dataUrl)
+                    .append("') format('truetype');font-weight:normal;font-style:normal;}");
+        }
+        return css.toString();
+    }
+
+    private String readFontAsDataUrl(final IkonHandler handler) {
+        try (var stream = handler.getFontResourceAsStream()) {
+            if (stream == null) {
+                return null;
+            }
+            byte[] data = stream.readAllBytes();
+            return "data:font/ttf;base64," + Base64.getEncoder().encodeToString(data);
+        } catch (IOException e) {
+            logger.warn("Cannot read icon font {}", handler.getFontFamily(), e);
+            return null;
+        }
+    }
+
+    private String escapeCssValue(final String value) {
+        return value.replace("'", "\\'");
     }
 
     private String getJavaScript() {
         return """
                 <script>
-                    function addHtmlContent(htmlContent, messageType, notificationStyle, commandIconUrl, commandName, commandPrompt) {
+                    function addHtmlContent(htmlContent, messageType, notificationStyle, commandFontFamily, commandGlyph, commandName, commandPrompt) {
                         var div = document.createElement('div');
                         div.className = 'chat-message ' + messageType + ' ' + notificationStyle;
-                        if (commandIconUrl) {
+                        if (commandGlyph && commandFontFamily) {
                             div.classList.add('command-message');
                         }
                         div.innerHTML = htmlContent;
 
-                        if (commandIconUrl) {
+                        if (commandGlyph && commandFontFamily) {
                             var badge = document.createElement('div');
                             badge.className = 'command-badge';
 
-                            var img = document.createElement('img');
-                            img.src = commandIconUrl;
-                            img.alt = commandName ? commandName : 'Command';
-                            badge.appendChild(img);
+                            var icon = document.createElement('span');
+                            icon.className = 'command-icon';
+                            icon.textContent = commandGlyph;
+                            icon.style.fontFamily = commandFontFamily;
+                            badge.appendChild(icon);
 
                             var tooltip = document.createElement('div');
                             tooltip.className = 'command-tooltip';
@@ -746,10 +724,7 @@ public class Browser extends StackPane {
             
             if (theme != null) {
                 try {
-                    final Map<String, String> colors = theme.parseColors();
-                    colors.forEach(this::setCssProperty);
-                    commandIconColor = resolveCommandIconColor(colors);
-                    commandIconCache.clear();
+                    theme.parseColors().forEach(this::setCssProperty);
                 } catch (final IOException e) {
                     logger.error("Failed to parse theme colors", e);
                 }
@@ -766,54 +741,21 @@ public class Browser extends StackPane {
         executeJavaScript(script);
     }
 
-    private String resolveCommandIconColor(final Map<String, String> colors) {
-        if (colors == null || colors.isEmpty()) {
-            return commandIconColor;
-        }
-        String muted = resolveThemeColorValue(colors, "-color-fg-muted");
-        if (muted != null) {
-            return muted;
-        }
-        String fallback = resolveThemeColorValue(colors, "-color-fg-default");
-        return fallback == null ? commandIconColor : fallback;
-    }
-
-    private String resolveThemeColorValue(final Map<String, String> colors, final String key) {
-        String value = resolveThemeColorValue(colors, key, 0);
-        if (value == null) {
-            return null;
-        }
-        try {
-            Color.web(value);
-            return value;
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    private String resolveThemeColorValue(final Map<String, String> colors, final String key, final int depth) {
-        if (depth > 8 || key == null) {
-            return null;
-        }
-        String value = colors.get(key);
-        if (value == null) {
-            return null;
-        }
-        value = value.trim();
-        if (value.startsWith("-")) {
-            return resolveThemeColorValue(colors, value, depth + 1);
-        }
-        return value;
-    }
-
     private record CommandTooltipData(
-            String iconDataUrl,
+            String iconFontFamily,
+            String iconGlyph,
             String commandName,
             String prompt
     ) {
         private static CommandTooltipData empty() {
-            return new CommandTooltipData(null, null, null);
+            return new CommandTooltipData(null, null, null, null);
         }
+    }
+
+    private record CommandIconData(
+            String fontFamily,
+            String glyph
+    ) {
     }
 
 }
