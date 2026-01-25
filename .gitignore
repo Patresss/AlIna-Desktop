@@ -167,3 +167,8 @@ config/application.yml
 
 # Local patch artifacts (repo root)
 /*.patch
+
+######################
+# Release / Installer
+######################
+/release/
