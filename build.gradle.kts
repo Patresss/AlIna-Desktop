@@ -293,7 +293,9 @@ tasks.register<Exec>("jpackageApp") {
             dep.copyTo(file("$libDir/${dep.name}"), overwrite = true)
         }
         val os = org.gradle.internal.os.OperatingSystem.current()
+        val requestedInstallerType = (findProperty("installerType") as String?)?.lowercase()
         val installerType = when {
+            !requestedInstallerType.isNullOrBlank() -> requestedInstallerType
             os.isWindows -> "exe"
             os.isMacOsX -> "pkg"
             os.isLinux -> "deb"
@@ -309,16 +311,12 @@ tasks.register<Exec>("jpackageApp") {
 
         val versionForInstaller = if (os.isMacOsX || os.isWindows || os.isLinux) sanitizeVersion(project.version.toString()) else project.version.toString()
 
-        // build classpath from copied dependencies (relative to --input)
-        val classPath = file("$buildDir/jpackage/input/lib").listFiles()?.filter { it.isFile && it.name.endsWith(".jar") }
-            ?.sortedBy { it.name }
-            ?.joinToString(separator = File.pathSeparator) { "lib/${it.name}" }
-            ?: ""
-
         val iconIco = file("src/main/resources/com/patres/alina/uidesktop/assets/app-icon.ico")
         val iconIcns = file("src/main/resources/icon/desktop/main_icon.icns")
         val iconPng = file("src/main/resources/com/patres/alina/uidesktop/assets/icon-square-512.png")
-        // main jar already defined above as 'mainJar'
+
+        // Java options including native access for JNativeHook
+        val javaOptions = runArgsValue + listOf("--enable-native-access=ALL-UNNAMED")
 
         val baseCmd = mutableListOf(
             "jpackage",
@@ -328,11 +326,11 @@ tasks.register<Exec>("jpackageApp") {
             "--dest", file("release/${project.version}").absolutePath,
             "--input", file("$buildDir/jpackage/input").absolutePath,
             "--main-jar", mainJar.name,
-            "--main-class", application.mainClass.get(),
-            "--java-options", runArgsValue.joinToString(" ")
+            "--main-class", application.mainClass.get()
         )
-        if (classPath.isNotBlank()) {
-            baseCmd += listOf("--class-path", classPath)
+        // Add each java option separately
+        javaOptions.forEach { opt ->
+            baseCmd += listOf("--java-options", opt)
         }
 
         if (os.isWindows && iconIco.exists()) {

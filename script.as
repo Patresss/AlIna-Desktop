@@ -1,0 +1,1 @@
+do shell script "curl -s http://127.0.0.1:18080/context-menu"
