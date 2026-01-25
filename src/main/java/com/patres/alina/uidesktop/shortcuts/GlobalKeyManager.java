@@ -29,6 +29,10 @@ public final class GlobalKeyManager extends Listener implements NativeKeyListene
     }
 
     private GlobalKeyManager() {
+        if (!Listener.isNativeHookAvailable()) {
+            logger.warn("Native hook not available - global shortcuts will be disabled");
+            return;
+        }
         try {
             GlobalScreen.addNativeKeyListener(this);
             logger.info("GlobalKeyManager registered as native key listener");
