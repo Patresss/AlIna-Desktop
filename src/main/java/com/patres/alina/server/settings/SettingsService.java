@@ -15,7 +15,6 @@ public class SettingsService {
     private final FileManager<AssistantSettings> assistantSettingsManager;
     private final OpenAiApiFacade openAiApi;
 
-
     public SettingsService(FileManager<AssistantSettings> assistantSettingsManager, OpenAiApiFacade openAiApi) {
         this.assistantSettingsManager = assistantSettingsManager;
         this.openAiApi = openAiApi;
@@ -31,7 +30,7 @@ public class SettingsService {
     }
 
     public List<String> getChatModels() {
-        return openAiApi.getChatModels();
+        return openAiApi.getChatModels(assistantSettingsManager.getSettings());
     }
 
 }

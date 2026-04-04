@@ -1,8 +1,8 @@
 package com.patres.alina.server.openai;
 
-
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.message.SpeechToTextErrorType;
+import com.patres.alina.common.settings.AiProvider;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
 import com.patres.alina.server.event.AssistantSettingsUpdatedEvent;
@@ -10,6 +10,7 @@ import com.patres.alina.server.mcp.McpToolIntegrationService;
 import com.patres.alina.server.message.exception.CannotConvertSpeechToTextException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -38,32 +40,36 @@ public class OpenAiApiFacade {
 
     public OpenAiApiFacade(FileManager<AssistantSettings> assistantSettingsManager,
                            OpenAiApiCreator openAiApiCreator,
-                           com.patres.alina.server.mcp.McpToolIntegrationService mcpToolIntegrationService) {
+                           McpToolIntegrationService mcpToolIntegrationService) {
         this.openAiApiCreator = openAiApiCreator;
         this.mcpToolIntegrationService = mcpToolIntegrationService;
-        updateOpenAiService(assistantSettingsManager.getSettings());
+        updateAiService(assistantSettingsManager.getSettings());
         DefaultEventBus.getInstance().subscribe(AssistantSettingsUpdatedEvent.class, e -> {
-            updateOpenAiService(e.getSettings());
+            updateAiService(e.getSettings());
         });
     }
 
-    public void updateOpenAiService(final AssistantSettings settings) {
+    public void updateAiService(final AssistantSettings settings) {
+        AiProvider provider = settings.resolveProvider();
+        String apiKey = settings.getApiKeyForProvider(provider);
+
         try {
-            chatModel = openAiApiCreator.createOpenAiChatModel(settings.openAiApiKey(), settings.chatModel());
+            chatModel = openAiApiCreator.createChatModel(provider, apiKey, settings.chatModel());
             if (chatModel == null) {
-                logger.warn("OpenAI chat model is null - API key not properly configured. Please set a valid API key in assistant settings.");
+                logger.warn("Chat model is null - API key for {} not properly configured.", provider.getDisplayName());
             } else {
-                logger.info("OpenAI chat model updated successfully");
+                logger.info("Chat model updated successfully with provider: {} model: {}", provider.getDisplayName(), settings.chatModel());
             }
         } catch (Exception e) {
-            logger.error("Failed to update OpenAI service", e);
+            logger.error("Failed to update chat model for provider: {}", provider.getDisplayName(), e);
             chatModel = null;
         }
 
+        // Speech-to-text always uses OpenAI (Whisper)
         try {
             audioTranscriptionModel = openAiApiCreator.createOpenAiAudioTranscriptionModel(settings.openAiApiKey(), SPEECH_TO_TEXT_MODEL);
             if (audioTranscriptionModel == null) {
-                logger.warn("OpenAI audio transcription model is null - API key not properly configured.");
+                logger.warn("OpenAI audio transcription model is null - OpenAI API key not properly configured.");
             } else {
                 logger.info("OpenAI audio transcription model updated successfully");
             }
@@ -85,10 +91,10 @@ public class OpenAiApiFacade {
 
     public Flux<String> sendMessageStream(final List<AbstractMessage> messages) {
         if (chatModel == null) {
-            logger.warn("Cannot send message - OpenAI chat model is not configured. Please set a valid API key in assistant settings.");
-            return Flux.just("Error: OpenAI API key not configured. Please set a valid API key in assistant settings.");
+            logger.warn("Cannot send message - chat model is not configured. Please set a valid API key in assistant settings.");
+            return Flux.just("Error: AI API key not configured. Please set a valid API key in assistant settings.");
         }
-        
+
         List<Message> messageList = messages.stream().map(m -> (Message) m).toList();
         ChatClient client = ChatClient
                 .builder(chatModel)
@@ -100,16 +106,27 @@ public class OpenAiApiFacade {
                 .content();
     }
 
-    public List<String> getChatModels() {
-        try {
-            return Arrays.stream(OpenAiApi.ChatModel.values())
+    public List<String> getChatModels(AssistantSettings settings) {
+        List<String> models = new ArrayList<>();
+        if (isValidApiKey(settings.openAiApiKey())) {
+            Arrays.stream(OpenAiApi.ChatModel.values())
                     .map(OpenAiApi.ChatModel::getValue)
                     .sorted()
-                    .toList();
-        } catch (Exception e) {
-            logger.error("Cannot receive models, e");
-            return List.of();
+                    .forEach(models::add);
         }
+        if (isValidApiKey(settings.anthropicApiKey())) {
+            Arrays.stream(AnthropicApi.ChatModel.values())
+                    .map(AnthropicApi.ChatModel::getValue)
+                    .sorted()
+                    .forEach(models::add);
+        }
+        if (isValidApiKey(settings.googleApiKey())) {
+            models.addAll(List.of("gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-pro", "gemini-1.5-flash"));
+        }
+        return models;
     }
 
+    private static boolean isValidApiKey(String key) {
+        return key != null && !key.isBlank() && !AssistantSettings.DEFAULT_OPENAI_API_KEY.equals(key);
+    }
 }

@@ -2,6 +2,7 @@ package com.patres.alina.uidesktop.settings.ui;
 
 import atlantafx.base.controls.PasswordTextField;
 import atlantafx.base.theme.Styles;
+import com.patres.alina.common.settings.AiProvider;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.scene.Cursor;
@@ -26,6 +27,8 @@ public class AssistantSettingsPane extends SettingsModalPaneContent {
     private ChoiceBox<String> chatModelSelector;
     private Spinner<Integer> numberOfMessagesInContextSpinner;
     private PasswordTextField openAiApiKeyTextField;
+    private PasswordTextField anthropicApiKeyTextField;
+    private PasswordTextField googleApiKeyTextField;
     private TextField timeoutTextField;
 
     private AssistantSettings settings;
@@ -45,6 +48,8 @@ public class AssistantSettingsPane extends SettingsModalPaneContent {
         chatModelSelector.setValue(settings.chatModel());
         numberOfMessagesInContextSpinner.getValueFactory().setValue(settings.numberOfMessagesInContext());
         openAiApiKeyTextField.setText(settings.openAiApiKey());
+        anthropicApiKeyTextField.setText(settings.anthropicApiKey() != null ? settings.anthropicApiKey() : "");
+        googleApiKeyTextField.setText(settings.googleApiKey() != null ? settings.googleApiKey() : "");
     }
 
     @Override
@@ -58,6 +63,14 @@ public class AssistantSettingsPane extends SettingsModalPaneContent {
         final String openAiApiKey = Optional.ofNullable(openAiApiKeyTextField)
                 .map(PasswordTextField::getPassword)
                 .orElse(null);
+        final String anthropicApiKey = Optional.ofNullable(anthropicApiKeyTextField)
+                .map(PasswordTextField::getPassword)
+                .filter(s -> !s.isBlank())
+                .orElse(null);
+        final String googleApiKey = Optional.ofNullable(googleApiKeyTextField)
+                .map(PasswordTextField::getPassword)
+                .filter(s -> !s.isBlank())
+                .orElse(null);
         final Integer numberOfMessagesInContext = Optional.ofNullable(numberOfMessagesInContextSpinner)
                 .map(Spinner::getValue)
                 .orElse(-1);
@@ -66,7 +79,16 @@ public class AssistantSettingsPane extends SettingsModalPaneContent {
                 .map(Integer::valueOf)
                 .orElse(-1);
 
-        final AssistantSettings assistantSettings = new AssistantSettings(chatModel, context, numberOfMessagesInContext, openAiApiKey, timeout);
+        AiProvider provider = AiProvider.detectFromModelName(chatModel);
+        if (provider == null) {
+            provider = settings.aiProvider();
+        }
+
+        final AssistantSettings assistantSettings = new AssistantSettings(
+                chatModel, context, numberOfMessagesInContext,
+                openAiApiKey, anthropicApiKey, googleApiKey,
+                provider, timeout
+        );
         BackendApi.updateAssistantSettings(assistantSettings);
     }
 
@@ -107,18 +129,25 @@ public class AssistantSettingsPane extends SettingsModalPaneContent {
                 "settings.openAiApiKey.title",
                 null
         );
-
         openAiApiKeyTextField = createResizableRegion(PasswordTextField::new, settingsBox);
-        var icon = new FontIcon(Feather.EYE_OFF);
-        icon.setCursor(Cursor.HAND);
-        icon.setOnMouseClicked(e -> {
-            icon.setIconCode(openAiApiKeyTextField.getRevealPassword()
-                    ? Feather.EYE_OFF : Feather.EYE
-            );
-            openAiApiKeyTextField.setRevealPassword(!openAiApiKeyTextField.getRevealPassword());
-        });
-        openAiApiKeyTextField.setRight(icon);
+        addRevealToggle(openAiApiKeyTextField);
         openAiApiKeyTextTile.setAction(openAiApiKeyTextField);
+
+        var anthropicApiKeyTextTile = createTile(
+                "settings.anthropicApiKey.title",
+                null
+        );
+        anthropicApiKeyTextField = createResizableRegion(PasswordTextField::new, settingsBox);
+        addRevealToggle(anthropicApiKeyTextField);
+        anthropicApiKeyTextTile.setAction(anthropicApiKeyTextField);
+
+        var googleApiKeyTextTile = createTile(
+                "settings.googleApiKey.title",
+                null
+        );
+        googleApiKeyTextField = createResizableRegion(PasswordTextField::new, settingsBox);
+        addRevealToggle(googleApiKeyTextField);
+        googleApiKeyTextTile.setAction(googleApiKeyTextField);
 
 
         var timeoutTile = createTile(
@@ -140,8 +169,20 @@ public class AssistantSettingsPane extends SettingsModalPaneContent {
         timeoutTextField.setTextFormatter(
                 new TextFormatter<>(new IntegerStringConverter(), 120, integerFilter));
 
-        return List.of(header, chatModel, openAiApiKeyTextTile, chatContext, numberOfMessagesInContextTile, timeoutTile);
+        return List.of(header, chatModel, openAiApiKeyTextTile, anthropicApiKeyTextTile, googleApiKeyTextTile,
+                chatContext, numberOfMessagesInContextTile, timeoutTile);
     }
 
+    private void addRevealToggle(PasswordTextField field) {
+        var icon = new FontIcon(Feather.EYE_OFF);
+        icon.setCursor(Cursor.HAND);
+        icon.setOnMouseClicked(e -> {
+            icon.setIconCode(field.getRevealPassword()
+                    ? Feather.EYE_OFF : Feather.EYE
+            );
+            field.setRevealPassword(!field.getRevealPassword());
+        });
+        field.setRight(icon);
+    }
 
 }

@@ -6,10 +6,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
@@ -54,17 +51,12 @@
                   <Insets top="15.0" />
                </padding>
             </HBox>
-            <GridPane>
-              <columnConstraints>
-                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-              </columnConstraints>
-              <rowConstraints>
-                <RowConstraints vgrow="SOMETIMES" />
-              </rowConstraints>
+            <HBox fx:id="statusBar" alignment="CENTER_LEFT" spacing="8.0">
                <children>
-                  <Label fx:id="commandLabel" styleClass="text-subtle" />
+                  <Label fx:id="commandLabel" styleClass="text-subtle" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308" />
+                  <Label fx:id="modelLabel" styleClass="text-subtle,model-selector-label" alignment="CENTER_RIGHT" />
                </children>
-            </GridPane>
+            </HBox>
          </children>
       </VBox>
    </bottom>

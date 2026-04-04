@@ -11,6 +11,7 @@ import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfigura
 import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration;
+import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -20,7 +21,8 @@ import org.springframework.context.ConfigurableApplicationContext;
         OpenAiChatAutoConfiguration.class,
         OpenAiEmbeddingAutoConfiguration.class,
         OpenAiImageAutoConfiguration.class,
-        OpenAiModerationAutoConfiguration.class
+        OpenAiModerationAutoConfiguration.class,
+        AnthropicChatAutoConfiguration.class
 })
 public class AppLauncher {
 

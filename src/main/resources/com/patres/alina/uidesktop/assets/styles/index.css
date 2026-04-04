@@ -141,3 +141,13 @@ ChatThreadHistoryCard {
 .logs-text-area {
     -fx-font-family: "monospace";
 }
+
+/* ── Model selector (chat footer) ──────────── */
+
+.model-selector-label {
+    -fx-cursor: hand;
+}
+
+.model-selector-label:hover {
+    -fx-underline: true;
+}

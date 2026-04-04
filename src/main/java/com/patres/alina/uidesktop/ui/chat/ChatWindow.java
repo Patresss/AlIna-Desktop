@@ -21,14 +21,20 @@ import com.patres.alina.uidesktop.common.event.shortcut.SpeechShortcutTriggeredE
 import com.patres.alina.uidesktop.command.SearchCommandPopup;
 import com.patres.alina.uidesktop.microphone.AudioRecorder;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
+import com.patres.alina.common.settings.AiProvider;
+import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.util.FxThreadRunner;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextArea;
+import javafx.scene.layout.HBox;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
@@ -86,7 +92,15 @@ public class ChatWindow extends BorderPane {
     private VBox inputButtonsBox;
 
     @FXML
+    private HBox statusBar;
+
+    @FXML
     private Label commandLabel;
+
+    @FXML
+    private Label modelLabel;
+
+    private ContextMenu modelMenu;
 
     private Browser browser;
     private ChatStatusPrompt statusPrompt;
@@ -195,6 +209,7 @@ public class ChatWindow extends BorderPane {
         recordingController.bind();
 
         initializeInputHandler();
+        initModelSelector();
         setCurrentCommand(null);
         bindInputHeightToButtonsBox();
 
@@ -203,12 +218,80 @@ public class ChatWindow extends BorderPane {
         initEventsSubscriptions();
     }
 
+    private void initModelSelector() {
+        if (modelLabel == null) return;
+
+        modelMenu = new ContextMenu();
+
+        AssistantSettings settings = BackendApi.getAssistantSettings();
+        modelLabel.setText(settings.chatModel());
+        refreshModelMenu();
+
+        modelLabel.setOnMouseClicked(_ -> {
+            if (modelMenu.isShowing()) {
+                modelMenu.hide();
+            } else {
+                modelMenu.show(modelLabel, javafx.geometry.Side.TOP, 0, 0);
+            }
+        });
+
+        DefaultEventBus.getInstance().subscribe(
+                com.patres.alina.server.event.AssistantSettingsUpdatedEvent.class,
+                e -> FxThreadRunner.run(() -> {
+                    modelLabel.setText(e.getSettings().chatModel());
+                    refreshModelMenu();
+                })
+        );
+    }
+
+    private void refreshModelMenu() {
+        modelMenu.getItems().clear();
+        List<String> models = BackendApi.getChatModels();
+        for (String model : models) {
+            MenuItem item = new MenuItem(model);
+            item.setOnAction(_ -> {
+                modelLabel.setText(model);
+                updateModel(model);
+            });
+            modelMenu.getItems().add(item);
+        }
+    }
+
+    private void updateModel(String model) {
+        Thread.startVirtualThread(() -> {
+            AssistantSettings current = BackendApi.getAssistantSettings();
+            if (model.equals(current.chatModel())) return;
+
+            AiProvider provider = AiProvider.detectFromModelName(model);
+            if (provider == null) {
+                provider = current.aiProvider();
+            }
+            AssistantSettings updated = new AssistantSettings(
+                    model,
+                    current.systemPrompt(),
+                    current.numberOfMessagesInContext(),
+                    current.openAiApiKey(),
+                    current.anthropicApiKey(),
+                    current.googleApiKey(),
+                    provider,
+                    current.timeoutSeconds()
+            );
+            BackendApi.updateAssistantSettings(updated);
+        });
+    }
+
     private void bindInputHeightToButtonsBox() {
         if (inputButtonsBox == null) {
             return;
         }
         chatTextArea.minHeightProperty().bind(inputButtonsBox.heightProperty());
         chatTextArea.prefHeightProperty().bind(inputButtonsBox.heightProperty());
+
+        if (statusBar != null) {
+            inputButtonsBox.widthProperty().addListener((_, _, newVal) ->
+                    statusBar.setPadding(new Insets(0, newVal.doubleValue(), 0, 0))
+            );
+        }
     }
 
     private void triggerSpeechAction() {
