@@ -8,6 +8,10 @@ import com.patres.alina.uidesktop.shortcuts.key.KeyboardKey;
 import com.patres.alina.uidesktop.shortcuts.key.ShortcutKeys;
 import com.patres.alina.uidesktop.ui.contextmenu.AppGlobalContextMenu;
 import com.patres.alina.uidesktop.ui.listner.Listener;
+import com.patres.alina.uidesktop.ui.util.MacTextAccessor;
+import com.patres.alina.uidesktop.ui.util.MacTextAccessor.CapturedContext;
+import com.patres.alina.uidesktop.ui.util.OsUtils;
+import com.patres.alina.uidesktop.ui.util.SystemClipboard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +21,8 @@ import static com.patres.alina.uidesktop.settings.SettingsMangers.UI_SETTINGS;
 
 /**
  * Registers context menu shortcut handling with the shared GlobalKeyManager.
+ * On macOS, captures the selected text via Accessibility API BEFORE showing the menu,
+ * so the source app is still frontmost during text capture.
  */
 public class ContextMenuKeyListener extends Listener {
 
@@ -44,12 +50,33 @@ public class ContextMenuKeyListener extends Listener {
         ShortcutKeys contextMenuShortcutKeys = UI_SETTINGS.getSettings().shortcutKeysSettings().contextMenuShortcutKeys();
         logger.info("Registering context menu shortcut: {}", contextMenuShortcutKeys.getAllKeys());
 
-
         Set<KeyboardKey> currentShortcut = contextMenuShortcutKeys.getAllKeys();
         if (!currentShortcut.isEmpty()) {
-            keyManager.registerShortcut(new ShortcutAction(currentShortcut, contextMenu::displayContextMenu));
+            keyManager.registerShortcut(new ShortcutAction(currentShortcut, this::onContextMenuShortcutTriggered));
         }
 
         keyManager.registerShortcut(new ShortcutAction(KeyboardKey.ESCAPE, contextMenu::close));
+    }
+
+    /**
+     * Called when the context menu shortcut is pressed on the JNativeHook dispatch thread.
+     * Captures context immediately (synchronously) to minimize the window between key event
+     * delivery and text capture. Then displays the context menu via Platform.runLater.
+     *
+     * Note: blocking the JNativeHook thread for ~100ms (AppleScript execution) is acceptable
+     * here — events queue up and are processed after capture completes.
+     */
+    private void onContextMenuShortcutTriggered() {
+        CapturedContext context = captureContext();
+        logger.info("Context captured: hasText={}, sourceApp='{}'", context.hasText(), context.sourceAppName());
+        contextMenu.displayWithContext(context);
+    }
+
+    private CapturedContext captureContext() {
+        if (OsUtils.isMacOS()) {
+            return MacTextAccessor.captureContext();
+        }
+        String text = SystemClipboard.copySelectedValue();
+        return new CapturedContext(text, null);
     }
 }

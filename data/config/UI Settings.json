@@ -1,5 +1,5 @@
 {
-  "theme" : "Primer Dark",
+  "theme" : "Allegro Dark",
   "language" : "pl",
   "shortcutKeysSettings" : {
     "speechShortcutKeys" : {
@@ -13,9 +13,9 @@
       "allKeys" : [ ]
     },
     "contextMenuShortcutKeys" : {
-      "modeKeys" : [ "CONTROL", null, null ],
-      "executeKey" : "Q",
-      "allKeys" : [ "CONTROL", "Q" ]
+      "modeKeys" : [ "META", "SHIFT", null ],
+      "executeKey" : "E",
+      "allKeys" : [ "SHIFT", "META", "E" ]
     }
   }
 }

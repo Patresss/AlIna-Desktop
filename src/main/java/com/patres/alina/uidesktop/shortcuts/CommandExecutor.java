@@ -7,6 +7,9 @@ import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.uidesktop.ui.contextmenu.CommandLoadingIndicator;
 import com.patres.alina.uidesktop.ui.contextmenu.CommandResultPopup;
+import com.patres.alina.uidesktop.ui.util.MacTextAccessor;
+import com.patres.alina.uidesktop.ui.util.MacTextAccessor.CapturedContext;
+import com.patres.alina.uidesktop.ui.util.OsUtils;
 import com.patres.alina.uidesktop.ui.util.SystemClipboard;
 import javafx.application.Platform;
 import org.slf4j.Logger;
@@ -25,36 +28,92 @@ public class CommandExecutor {
     private static final CommandLoadingIndicator LOADING_INDICATOR = new CommandLoadingIndicator();
 
     private final ApplicationWindow applicationWindow;
-    private final OnMessageCompleteCallback pasteResponseCallback = this::pasteAiResponse;
 
     public CommandExecutor(ApplicationWindow applicationWindow) {
         this.applicationWindow = applicationWindow;
     }
 
+    /**
+     * Captures context and executes command, pasting the AI response back.
+     * Used by direct keyboard shortcuts (source app is still frontmost).
+     */
     public void executeWithSelectedText(Command command) {
-        execute(command, pasteResponseCallback);
-    }
-
-    public void executeWithSelectedTextAndDisplay(Command command) {
-        execute(command, aiResponse -> displayAiResponse(command, aiResponse));
-    }
-
-    private void execute(Command command, OnMessageCompleteCallback onComplete) {
         CompletableFuture.runAsync(() -> {
-            String selectedText = SystemClipboard.copySelectedValue();
-            if (selectedText.isBlank()) {
+            CapturedContext context = captureCurrentContext();
+            if (!context.hasText()) {
                 logger.warn("Skipping command '{}' because no text is selected", command.name());
                 return;
             }
-            logger.info("Executing command '{}' with selected text: '{}'", command.name(), selectedText);
-
-            Platform.runLater(() -> {
-                LOADING_INDICATOR.show();
-                String threadId = applicationWindow.getChatThread().map(t -> t.id()).orElse(null);
-                subscribeToStream(threadId);
-                applicationWindow.getChatWindow().sendMessage(selectedText, command.id(), wrapOnComplete(onComplete, threadId));
-            });
+            executeWithContext(command, context, aiResponse -> pasteAiResponse(aiResponse, context.sourceAppName()));
         });
+    }
+
+    /**
+     * Captures context and executes command, displaying the AI response in a popup.
+     * Used by direct keyboard shortcuts (source app is still frontmost).
+     */
+    public void executeWithSelectedTextAndDisplay(Command command) {
+        CompletableFuture.runAsync(() -> {
+            CapturedContext context = captureCurrentContext();
+            if (!context.hasText()) {
+                logger.warn("Skipping command '{}' because no text is selected", command.name());
+                return;
+            }
+            executeWithContext(command, context, aiResponse -> displayAiResponse(command, aiResponse));
+        });
+    }
+
+    /**
+     * Executes command with pre-captured context, pasting the AI response back.
+     * Used by context menu (context was captured before menu appeared).
+     */
+    public void executeWithCapturedText(Command command, CapturedContext context) {
+        if (!context.hasText()) {
+            logger.warn("Skipping command '{}' because captured text is empty", command.name());
+            return;
+        }
+        CompletableFuture.runAsync(() ->
+                executeWithContext(command, context, aiResponse -> pasteAiResponse(aiResponse, context.sourceAppName()))
+        );
+    }
+
+    /**
+     * Executes command with pre-captured context, displaying the AI response.
+     * Used by context menu (context was captured before menu appeared).
+     */
+    public void executeWithCapturedTextAndDisplay(Command command, CapturedContext context) {
+        if (!context.hasText()) {
+            logger.warn("Skipping command '{}' because captured text is empty", command.name());
+            return;
+        }
+        CompletableFuture.runAsync(() ->
+                executeWithContext(command, context, aiResponse -> displayAiResponse(command, aiResponse))
+        );
+    }
+
+    private void executeWithContext(Command command, CapturedContext context, OnMessageCompleteCallback onComplete) {
+        logger.info("Executing command '{}' with text ({} chars): '{}'",
+                command.name(), context.selectedText().length(),
+                context.selectedText().substring(0, Math.min(100, context.selectedText().length())));
+
+        Platform.runLater(() -> {
+            LOADING_INDICATOR.show();
+            String threadId = applicationWindow.getChatThread().map(t -> t.id()).orElse(null);
+            subscribeToStream(threadId);
+            applicationWindow.getChatWindow().sendMessage(
+                    context.selectedText(),
+                    command.id(),
+                    wrapOnComplete(onComplete, threadId)
+            );
+        });
+    }
+
+    private CapturedContext captureCurrentContext() {
+        if (OsUtils.isMacOS()) {
+            return MacTextAccessor.captureContext();
+        }
+        String text = SystemClipboard.copySelectedValue();
+        return new CapturedContext(text, null);
     }
 
     private OnMessageCompleteCallback wrapOnComplete(OnMessageCompleteCallback downstream, String threadId) {
@@ -67,10 +126,14 @@ public class CommandExecutor {
         };
     }
 
-    private void pasteAiResponse(String aiResponse) {
+    private void pasteAiResponse(String aiResponse, String sourceAppName) {
         CompletableFuture.runAsync(() -> {
             try {
-                logger.info("AI response received (length: {}), pasting...", aiResponse.length());
+                logger.info("AI response received (length: {}), pasting to '{}'...", aiResponse.length(), sourceAppName);
+
+                if (OsUtils.isMacOS() && sourceAppName != null) {
+                    MacTextAccessor.activateApp(sourceAppName);
+                }
 
                 SystemClipboard.copyAndPaste(aiResponse);
 

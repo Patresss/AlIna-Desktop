@@ -4,6 +4,10 @@ import com.patres.alina.server.command.Command;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.shortcuts.CommandExecutor;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
+import com.patres.alina.uidesktop.ui.util.MacTextAccessor;
+import com.patres.alina.uidesktop.ui.util.MacTextAccessor.CapturedContext;
+import com.patres.alina.uidesktop.ui.util.OsUtils;
+import com.patres.alina.uidesktop.ui.util.SystemClipboard;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -157,7 +161,10 @@ public final class AlinaHttpServer {
             }
 
             try {
-                contextMenu.displayContextMenu();
+                CapturedContext context = OsUtils.isMacOS()
+                        ? MacTextAccessor.captureContext()
+                        : new CapturedContext(SystemClipboard.copySelectedValue(), null);
+                contextMenu.displayWithContext(context);
                 sendPlainTextResponse(exchange, HttpURLConnection.HTTP_OK, "Context menu triggered");
             } catch (Exception e) {
                 logger.error("Failed to display context menu", e);

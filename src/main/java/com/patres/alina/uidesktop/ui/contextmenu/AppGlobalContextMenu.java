@@ -9,6 +9,7 @@ import com.patres.alina.uidesktop.shortcuts.CommandExecutor;
 import com.patres.alina.uidesktop.shortcuts.listener.ContextMenuKeyListener;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
+import com.patres.alina.uidesktop.ui.util.MacTextAccessor.CapturedContext;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -43,6 +44,13 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
     private Stage stage;
     private final StackPane stackPane;
 
+    /**
+     * Holds the context captured before the menu was displayed.
+     * This includes the selected text and the source app name,
+     * captured while the source app was still frontmost.
+     */
+    private volatile CapturedContext capturedContext;
+
     public static AppGlobalContextMenu init(ApplicationWindow applicationWindow) {
         return new AppGlobalContextMenu(applicationWindow);
     }
@@ -69,10 +77,49 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         // Initial load will happen when menu is displayed
     }
 
+    /**
+     * Displays the context menu with pre-captured context.
+     * The context (selected text + source app) should have been captured
+     * BEFORE this method is called, while the source app was still frontmost.
+     */
+    public void displayWithContext(CapturedContext context) {
+        this.capturedContext = context;
+        Platform.runLater(() -> {
+            if (stage == null) {
+                logger.error("Stage is null after initialization");
+                return;
+            }
+
+            if (!context.hasText()) {
+                logger.warn("No text captured, not showing context menu");
+                return;
+            }
+
+            loadCommands();
+
+            try {
+                final Point mousePosition = MouseInfo.getPointerInfo().getLocation();
+                final double x = mousePosition.getX();
+                final double y = mousePosition.getY();
+                stage.setX(x);
+                stage.setY(y);
+
+                stage.setAlwaysOnTop(true);
+                stage.show();
+
+                logger.debug("Context menu displayed at ({}, {}) with {} chars of captured text",
+                        x, y, context.selectedText().length());
+            } catch (HeadlessException e) {
+                logger.error("Failed to get mouse position - headless environment", e);
+            } catch (Exception e) {
+                logger.error("Failed to display context menu", e);
+            }
+        });
+    }
+
     private void loadCommands() {
         commandsVBox.getChildren().clear();
 
-        // Load enabled commands from backend with visibility flags
         List<Command> commands = BackendApi.getEnabledCommands();
         List<Command> pasteCommands = commands.stream()
                 .filter(cmd -> cmd.visibility().showInContextMenuPaste())
@@ -84,7 +131,7 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         boolean hasPaste = addCommandGroup(
                 LanguageManager.getLanguageString("context.menu.section.paste"),
                 pasteCommands,
-                commandExecutor::executeWithSelectedText
+                cmd -> commandExecutor.executeWithCapturedText(cmd, capturedContext)
         );
 
         if (hasPaste && !displayCommands.isEmpty()) {
@@ -94,7 +141,7 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         boolean hasDisplay = addCommandGroup(
                 LanguageManager.getLanguageString("context.menu.section.display"),
                 displayCommands,
-                commandExecutor::executeWithSelectedTextAndDisplay
+                cmd -> commandExecutor.executeWithCapturedTextAndDisplay(cmd, capturedContext)
         );
 
         if (!hasPaste && !hasDisplay) {
@@ -139,54 +186,23 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         });
     }
 
-    public void displayContextMenu() {
-        Platform.runLater(() -> {
-            if (stage == null) {
-                logger.error("Stage is null after initialization");
-                return;
-            }
-
-            loadCommands(); // Reload commands in case they changed
-
-            try {
-                final Point mousePosition = MouseInfo.getPointerInfo().getLocation();
-                final double x = mousePosition.getX();
-                final double y = mousePosition.getY();
-                stage.setX(x);
-                stage.setY(y);
-
-                // Show WITHOUT requesting focus to avoid activating main window
-                stage.setAlwaysOnTop(true);
-                stage.show();
-
-                logger.debug("Context menu displayed at ({}, {})", x, y);
-            } catch (HeadlessException e) {
-                logger.error("Failed to get mouse position - headless environment", e);
-            } catch (Exception e) {
-                logger.error("Failed to display context menu", e);
-            }
-        });
-    }
-
     private Stage createStage() {
         Stage newStage = new Stage();
         newStage.setAlwaysOnTop(true);
 
         Scene scene = new Scene(stackPane);
-        scene.setFill(javafx.scene.paint.Color.TRANSPARENT); // Make scene background transparent
+        scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
         scene.getStylesheets().add("context-menu.css");
         newStage.setScene(scene);
-        newStage.initStyle(StageStyle.UTILITY); // UTILITY properly releases focus, TRANSPARENT has issues on macOS
+        newStage.initStyle(StageStyle.UTILITY);
 
         newStage.setResizable(false);
 
-        // Close when losing focus (but don't use focusedProperty as it activates main window)
         scene.setOnMouseExited(e -> {
-            // Close if mouse leaves the window bounds
             if (e.getSceneY() < 0 || e.getSceneY() > scene.getHeight() || e.getSceneX() < 0 || e.getSceneX() > scene.getWidth()) {
                 CompletableFuture.runAsync(() -> {
                     try {
-                        Thread.sleep(500); // Give time to move mouse back
+                        Thread.sleep(500);
                     } catch (InterruptedException ex) {
                         Thread.currentThread().interrupt();
                     }
