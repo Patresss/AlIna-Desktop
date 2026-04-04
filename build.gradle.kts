@@ -33,31 +33,31 @@ repositories {
 
 
 dependencies {
-    implementation("org.commonmark:commonmark:0.21.0")
-    implementation("org.commonmark:commonmark-ext-gfm-tables:0.21.0")
-    implementation("org.commonmark:commonmark-ext-autolink:0.21.0")
-    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.21.0")
-    implementation("org.commonmark:commonmark-ext-task-list-items:0.21.0")
+    implementation("org.commonmark:commonmark:0.24.0")
+    implementation("org.commonmark:commonmark-ext-gfm-tables:0.24.0")
+    implementation("org.commonmark:commonmark-ext-autolink:0.24.0")
+    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.24.0")
+    implementation("org.commonmark:commonmark-ext-task-list-items:0.24.0")
 
     implementation("io.github.mkpaz:atlantafx-base:2.1.0")
 
-    implementation("org.kordamp.ikonli:ikonli-javafx:12.3.1")
-    implementation("org.kordamp.ikonli:ikonli-feather-pack:12.3.1")
-    implementation("org.kordamp.ikonli:ikonli-material2-pack:12.3.1")
-    implementation("org.kordamp.ikonli:ikonli-devicons-pack:12.3.1")
-    implementation("org.kordamp.ikonli:ikonli-bootstrapicons-pack:12.3.1")
+    implementation("org.kordamp.ikonli:ikonli-javafx:12.4.0")
+    implementation("org.kordamp.ikonli:ikonli-feather-pack:12.4.0")
+    implementation("org.kordamp.ikonli:ikonli-material2-pack:12.4.0")
+    implementation("org.kordamp.ikonli:ikonli-devicons-pack:12.4.0")
+    implementation("org.kordamp.ikonli:ikonli-bootstrapicons-pack:12.4.0")
 
-    implementation("org.jetbrains:annotations:23.0.0")
+    implementation("org.jetbrains:annotations:26.0.2")
     implementation("com.github.kwhat:jnativehook:2.2.2")
     implementation("com.github.tulskiy:jkeymaster:1.3")
-    implementation("net.java.dev.jna:jna:5.14.0")
-    implementation("net.java.dev.jna:jna-platform:5.14.0")
-    implementation("commons-io:commons-io:2.14.0")
-    implementation("org.apache.commons:commons-lang3:3.14.0")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
+    implementation("net.java.dev.jna:jna:5.17.0")
+    implementation("net.java.dev.jna:jna-platform:5.17.0")
+    implementation("commons-io:commons-io:2.21.0")
+    implementation("org.apache.commons:commons-lang3:3.20.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0")
     // common module
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.2")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.19.0")
 
     // server module
     implementation("org.springframework.ai:spring-ai-starter-model-openai:1.0.3")
