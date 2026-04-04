@@ -38,8 +38,10 @@ public class GlobalSettingsLoader {
                 logger.info("Global settings are loaded");
                 return settings;
             }
-            logger.info("Global settings not found - creating new");
-            return new GlobalSettings();
+            logger.info("Global settings not found - creating defaults");
+            GlobalSettings defaults = new GlobalSettings();
+            persistToFile(file, defaults);
+            return defaults;
         } catch (Exception e) {
             logger.error("Exception during load Global settings - creating new", e);
             return new GlobalSettings();
@@ -58,6 +60,16 @@ public class GlobalSettingsLoader {
             logger.info("Global settings are saved");
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static void persistToFile(File file, GlobalSettings settings) {
+        try {
+            FileUtils.createParentDirectories(file);
+            FileUtils.write(file, mapper.writeValueAsString(settings), Charset.defaultCharset());
+            logger.info("Default global settings saved to {}", file.getAbsoluteFile());
+        } catch (Exception e) {
+            logger.warn("Failed to save default global settings: {}", e.getMessage());
         }
     }
 

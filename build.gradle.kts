@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "com.patres.alina.ui-desktop"
-version = "1.0-SNAPSHOT"
+version = "1.0.2"
 application {
     mainClass.set("com.patres.alina.AppLauncher")
 }

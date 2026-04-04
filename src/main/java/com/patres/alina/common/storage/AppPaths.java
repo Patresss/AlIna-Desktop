@@ -74,7 +74,7 @@ public final class AppPaths {
         final OperatingSystem os = OperatingSystem.detect(System.getProperty(PROP_OS_NAME, ""));
         final String userHome = System.getProperty(PROP_USER_HOME, ".");
         return switch (os) {
-            case MAC -> Paths.get(userHome, "Library", "Application Support", APP_DIR_NAME).toAbsolutePath().normalize();
+            case MAC -> Paths.get(userHome, ".config", APP_DIR_NAME).toAbsolutePath().normalize();
             case WINDOWS -> {
                 final String appData = getenvOrDefault(ENV_APPDATA, Paths.get(userHome, "AppData", "Roaming").toString());
                 yield Paths.get(appData, APP_DIR_NAME).toAbsolutePath().normalize();

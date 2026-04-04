@@ -64,8 +64,10 @@ public class FileManager<T> {
                 logger.info("{} settings are loaded", name);
                 return settings;
             }
-            logger.info("{} settings not found in {} - creating new", name, file.getAbsoluteFile());
-            return defaultValueSupplier.get();
+            logger.info("{} settings not found in {} - creating defaults", name, file.getAbsoluteFile());
+            T defaultSettings = defaultValueSupplier.get();
+            persistToFile(file, defaultSettings);
+            return defaultSettings;
         } catch (Exception e) {
             logger.error("Exception during load {} settings - creating new", name, e);
             return defaultValueSupplier.get();
@@ -95,6 +97,16 @@ public class FileManager<T> {
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void persistToFile(File file, T settings) {
+        try {
+            FileUtils.createParentDirectories(file);
+            FileUtils.write(file, mapper.writeValueAsString(settings), Charset.defaultCharset());
+            logger.info("{} default settings saved to {}", name, file.getAbsoluteFile());
+        } catch (Exception e) {
+            logger.warn("Failed to save default {} settings: {}", name, e.getMessage());
         }
     }
 
