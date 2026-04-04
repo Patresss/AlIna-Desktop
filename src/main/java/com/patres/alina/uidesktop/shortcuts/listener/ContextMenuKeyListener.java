@@ -16,13 +16,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static com.patres.alina.uidesktop.settings.SettingsMangers.UI_SETTINGS;
 
 /**
  * Registers context menu shortcut handling with the shared GlobalKeyManager.
- * On macOS, captures the selected text via Accessibility API BEFORE showing the menu,
- * so the source app is still frontmost during text capture.
+ * Shows the context menu immediately when the shortcut is pressed, while
+ * text capture runs in the background via the Accessibility API.
  */
 public class ContextMenuKeyListener extends Listener {
 
@@ -59,24 +60,20 @@ public class ContextMenuKeyListener extends Listener {
     }
 
     /**
-     * Called when the context menu shortcut is pressed on the JNativeHook dispatch thread.
-     * Captures context immediately (synchronously) to minimize the window between key event
-     * delivery and text capture. Then displays the context menu via Platform.runLater.
-     *
-     * Note: blocking the JNativeHook thread for ~100ms (AppleScript execution) is acceptable
-     * here — events queue up and are processed after capture completes.
+     * Called when the context menu shortcut is pressed.
+     * Shows the menu immediately while text capture runs in the background.
+     * By the time the user clicks a command (~200ms+), the capture is already done.
      */
     private void onContextMenuShortcutTriggered() {
-        CapturedContext context = captureContext();
-        logger.info("Context captured: hasText={}, sourceApp='{}'", context.hasText(), context.sourceAppName());
-        contextMenu.displayWithContext(context);
+        CompletableFuture<CapturedContext> capture = CompletableFuture.supplyAsync(this::captureContext);
+        contextMenu.displayWithPendingCapture(capture);
     }
 
     private CapturedContext captureContext() {
-        if (OsUtils.isMacOS()) {
-            return MacTextAccessor.captureContext();
-        }
-        String text = SystemClipboard.copySelectedValue();
-        return new CapturedContext(text, null);
+        CapturedContext context = OsUtils.isMacOS()
+                ? MacTextAccessor.captureContext()
+                : new CapturedContext(SystemClipboard.copySelectedValue(), null);
+        logger.info("Context captured: hasText={}, sourceApp='{}'", context.hasText(), context.sourceAppName());
+        return context;
     }
 }

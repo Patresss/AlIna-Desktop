@@ -45,11 +45,10 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
     private final StackPane stackPane;
 
     /**
-     * Holds the context captured before the menu was displayed.
-     * This includes the selected text and the source app name,
-     * captured while the source app was still frontmost.
+     * Future that resolves to the captured context (selected text + source app).
+     * Set before the menu is displayed; resolved by the time the user clicks a command.
      */
-    private volatile CapturedContext capturedContext;
+    private volatile CompletableFuture<CapturedContext> pendingCapture;
 
     public static AppGlobalContextMenu init(ApplicationWindow applicationWindow) {
         return new AppGlobalContextMenu(applicationWindow);
@@ -78,43 +77,52 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
     }
 
     /**
-     * Displays the context menu with pre-captured context.
-     * The context (selected text + source app) should have been captured
-     * BEFORE this method is called, while the source app was still frontmost.
+     * Shows the context menu immediately while text capture runs in the background.
+     * The menu appears instantly; when the user clicks a command, the captured context
+     * is retrieved from the future (which should already be complete by then).
      */
-    public void displayWithContext(CapturedContext context) {
-        this.capturedContext = context;
+    public void displayWithPendingCapture(CompletableFuture<CapturedContext> capture) {
+        this.pendingCapture = capture;
         Platform.runLater(() -> {
             if (stage == null) {
                 logger.error("Stage is null after initialization");
                 return;
             }
 
-            if (!context.hasText()) {
-                logger.warn("No text captured, not showing context menu");
-                return;
-            }
-
             loadCommands();
-
-            try {
-                final Point mousePosition = MouseInfo.getPointerInfo().getLocation();
-                final double x = mousePosition.getX();
-                final double y = mousePosition.getY();
-                stage.setX(x);
-                stage.setY(y);
-
-                stage.setAlwaysOnTop(true);
-                stage.show();
-
-                logger.debug("Context menu displayed at ({}, {}) with {} chars of captured text",
-                        x, y, context.selectedText().length());
-            } catch (HeadlessException e) {
-                logger.error("Failed to get mouse position - headless environment", e);
-            } catch (Exception e) {
-                logger.error("Failed to display context menu", e);
-            }
+            showAtMousePosition();
         });
+    }
+
+    /**
+     * Shows the context menu with already-captured context.
+     * Used by HTTP server and other callers that capture context synchronously.
+     */
+    public void displayWithContext(CapturedContext context) {
+        if (!context.hasText()) {
+            logger.warn("No text captured, not showing context menu");
+            return;
+        }
+        displayWithPendingCapture(CompletableFuture.completedFuture(context));
+    }
+
+    private void showAtMousePosition() {
+        try {
+            final Point mousePosition = MouseInfo.getPointerInfo().getLocation();
+            final double x = mousePosition.getX();
+            final double y = mousePosition.getY();
+            stage.setX(x);
+            stage.setY(y);
+
+            stage.setAlwaysOnTop(true);
+            stage.show();
+
+            logger.debug("Context menu displayed at ({}, {})", x, y);
+        } catch (HeadlessException e) {
+            logger.error("Failed to get mouse position - headless environment", e);
+        } catch (Exception e) {
+            logger.error("Failed to display context menu", e);
+        }
     }
 
     private void loadCommands() {
@@ -131,7 +139,7 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         boolean hasPaste = addCommandGroup(
                 LanguageManager.getLanguageString("context.menu.section.paste"),
                 pasteCommands,
-                cmd -> commandExecutor.executeWithCapturedText(cmd, capturedContext)
+                cmd -> onCommandClicked(cmd, commandExecutor::executeWithCapturedText)
         );
 
         if (hasPaste && !displayCommands.isEmpty()) {
@@ -141,7 +149,7 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         boolean hasDisplay = addCommandGroup(
                 LanguageManager.getLanguageString("context.menu.section.display"),
                 displayCommands,
-                cmd -> commandExecutor.executeWithCapturedTextAndDisplay(cmd, capturedContext)
+                cmd -> onCommandClicked(cmd, commandExecutor::executeWithCapturedTextAndDisplay)
         );
 
         if (!hasPaste && !hasDisplay) {
@@ -149,6 +157,26 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
             noCommandsLabel.getStyleClass().add("context-menu-title");
             commandsVBox.getChildren().add(noCommandsLabel);
         }
+    }
+
+    /**
+     * Called when a command button is clicked. Waits for the pending capture to complete
+     * (should be near-instant since capture runs in parallel with user interaction),
+     * then executes the command with the captured context.
+     */
+    private void onCommandClicked(Command command, java.util.function.BiConsumer<Command, CapturedContext> executor) {
+        final CompletableFuture<CapturedContext> capture = this.pendingCapture;
+        if (capture == null) {
+            logger.warn("No pending capture for command '{}'", command.name());
+            return;
+        }
+        capture.thenAcceptAsync(ctx -> {
+            if (!ctx.hasText()) {
+                logger.warn("No text captured for command '{}'", command.name());
+                return;
+            }
+            executor.accept(command, ctx);
+        });
     }
 
     private boolean addCommandGroup(String groupName, List<Command> commands, Consumer<Command> action) {
