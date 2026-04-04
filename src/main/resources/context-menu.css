@@ -1,38 +1,42 @@
 .context-menu-root {
     -fx-background-color: transparent;
-    -fx-opacity: 0.95;
 }
 
 .context-menu-container {
     -fx-background-color: -color-bg-default;
-    -fx-background-radius: 0 0 8px 8px;
+    -fx-background-radius: 12px;
     -fx-border-color: -color-border-default;
     -fx-border-width: 1px;
-    -fx-border-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0, 0, 2);
+    -fx-border-radius: 12px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 20, 0, 0, 4);
+    -fx-min-width: 260px;
+    -fx-max-width: 340px;
 }
 
 .context-menu-loader {
     -fx-background-color: transparent;
-    -fx-background-radius: 0 0 8px 8px;
+    -fx-background-radius: 12px;
     -fx-border-color: -color-border-default;
     -fx-border-width: 1px;
-    -fx-border-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0, 0, 2);
+    -fx-border-radius: 12px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 20, 0, 0, 4);
 }
 
 .context-menu-title {
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-text-fill: -color-fg-muted;
-    -fx-padding: 5 0 5 0;
+    -fx-padding: 4 4 2 4;
+    -fx-text-transform: uppercase;
 }
 
 .context-menu-button {
     -fx-padding: 8 12 8 12;
-    -fx-background-radius: 4px;
+    -fx-background-radius: 8px;
     -fx-cursor: hand;
     -fx-alignment: center-left;
+    -fx-font-size: 13px;
+    -fx-graphic-text-gap: 10;
 }
 
 .context-menu-button:hover {
@@ -43,10 +47,74 @@
     -fx-background-color: -color-accent-muted;
 }
 
-.command-result-text {
+.context-menu-button .ikonli-font-icon {
+    -fx-icon-size: 16;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.context-menu-button:hover .ikonli-font-icon {
+    -fx-icon-color: -color-accent-fg;
+}
+
+.context-menu-separator {
+    -fx-padding: 4 0 4 0;
+}
+
+.context-menu-separator .line {
+    -fx-border-color: -color-border-muted;
+    -fx-border-width: 0.5 0 0 0;
+}
+
+/* ── Result popup ─────────────────────────────── */
+
+.result-popup-container {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 12px;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1px;
+    -fx-border-radius: 12px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 20, 0, 0, 4);
+    -fx-min-width: 320px;
+    -fx-pref-width: 420px;
+}
+
+.result-popup-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+    -fx-padding: 0 0 2 0;
+}
+
+.result-popup-text {
     -fx-background-color: -color-bg-subtle;
-    -fx-background-radius: 6px;
+    -fx-background-radius: 8px;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
-    -fx-pref-width: 400px;
+    -fx-font-size: 13px;
+    -fx-padding: 10;
+}
+
+.result-popup-text .content {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 8px;
+}
+
+.result-popup-button {
+    -fx-padding: 6 16 6 16;
+    -fx-background-radius: 8px;
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 8px;
+    -fx-border-width: 1px;
+    -fx-cursor: hand;
+    -fx-font-size: 12px;
+}
+
+.result-popup-button:hover {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-muted;
+}
+
+.result-popup-button:pressed {
+    -fx-background-color: -color-accent-muted;
 }

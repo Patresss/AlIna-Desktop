@@ -84,7 +84,7 @@ public class CommandResultPopup extends StackPane implements Initializable {
         scene.getStylesheets().add("context-menu.css");
 
         newStage.setScene(scene);
-        newStage.initStyle(StageStyle.UTILITY);
+        newStage.initStyle(StageStyle.TRANSPARENT);
         newStage.setAlwaysOnTop(true);
         newStage.setResizable(true);
         newStage.setMinWidth(350);

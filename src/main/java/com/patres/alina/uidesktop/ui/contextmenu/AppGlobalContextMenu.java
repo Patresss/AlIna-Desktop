@@ -22,6 +22,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import org.kordamp.ikonli.javafx.FontIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,7 +144,9 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         );
 
         if (hasPaste && !displayCommands.isEmpty()) {
-            commandsVBox.getChildren().add(new Separator());
+            Separator separator = new Separator();
+            separator.getStyleClass().add("context-menu-separator");
+            commandsVBox.getChildren().add(separator);
         }
 
         boolean hasDisplay = addCommandGroup(
@@ -199,6 +202,13 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         button.getStyleClass().addAll(Styles.FLAT, "context-menu-button");
         button.setMaxWidth(Double.MAX_VALUE);
 
+        try {
+            FontIcon icon = new FontIcon(command.icon());
+            button.setGraphic(icon);
+        } catch (Exception e) {
+            logger.debug("Could not load icon '{}' for command '{}'", command.icon(), command.name());
+        }
+
         button.setOnAction(_ -> {
             close();
             action.accept(command);
@@ -222,7 +232,7 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
         scene.getStylesheets().add("context-menu.css");
         newStage.setScene(scene);
-        newStage.initStyle(StageStyle.UTILITY);
+        newStage.initStyle(StageStyle.TRANSPARENT);
 
         newStage.setResizable(false);
 

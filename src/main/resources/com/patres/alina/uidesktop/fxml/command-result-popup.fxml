@@ -5,24 +5,27 @@
 <?import javafx.scene.layout.*?>
 
 <fx:root type="javafx.scene.layout.StackPane" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" styleClass="context-menu-root">
-    <VBox spacing="8.0" styleClass="context-menu-container" VBox.vgrow="ALWAYS">
+    <VBox spacing="10.0" styleClass="result-popup-container" VBox.vgrow="ALWAYS">
         <padding>
-            <Insets top="10.0" right="12.0" bottom="10.0" left="12.0"/>
+            <Insets top="16.0" right="16.0" bottom="12.0" left="16.0"/>
         </padding>
 
-        <Label fx:id="titleLabel" styleClass="context-menu-title"/>
+        <Label fx:id="titleLabel" styleClass="result-popup-title"/>
 
         <TextArea fx:id="contentArea"
                   editable="false"
                   wrapText="true"
-                  prefRowCount="8"
+                  prefRowCount="6"
                   VBox.vgrow="ALWAYS"
                   HBox.hgrow="ALWAYS"
-                  styleClass="command-result-text"/>
+                  styleClass="result-popup-text"/>
 
         <HBox spacing="8.0" alignment="CENTER_RIGHT">
-            <Button fx:id="copyButton" />
-            <Button fx:id="closeButton" />
+            <padding>
+                <Insets top="4.0"/>
+            </padding>
+            <Button fx:id="copyButton" styleClass="result-popup-button"/>
+            <Button fx:id="closeButton" styleClass="result-popup-button"/>
         </HBox>
     </VBox>
 </fx:root>
