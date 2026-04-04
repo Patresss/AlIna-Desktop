@@ -1,6 +1,7 @@
 package com.patres.alina.uidesktop.shortcuts.listener;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
+import com.github.kwhat.jnativehook.NativeInputEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import com.patres.alina.common.event.Event;
@@ -63,6 +64,7 @@ public class ShortcutKeyListener extends Listener implements NativeKeyListener {
 
     @Override
     public void nativeKeyPressed(NativeKeyEvent keyEvent) {
+        syncModifiersFromEvent(keyEvent);
         getKeyEventAsKeyboardKey(keyEvent)
                 .ifPresent(pressedKeys::add);
         checkKeys();
@@ -82,10 +84,27 @@ public class ShortcutKeyListener extends Listener implements NativeKeyListener {
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent keyEvent) {
+        syncModifiersFromEvent(keyEvent);
         if (List.of(KeyboardKey.CONTROL.getKeyValue(), KeyboardKey.ALT.getKeyValue(), KeyboardKey.META.getKeyValue()).contains(getKeyEvent(keyEvent))) {
             pressedKeys.clear();
         } else {
             getKeyEventAsKeyboardKey(keyEvent).ifPresent(pressedKeys::remove);
+        }
+    }
+
+    private void syncModifiersFromEvent(NativeKeyEvent keyEvent) {
+        int modifiers = keyEvent.getModifiers();
+        syncModifier(modifiers, NativeInputEvent.SHIFT_L_MASK | NativeInputEvent.SHIFT_R_MASK, KeyboardKey.SHIFT);
+        syncModifier(modifiers, NativeInputEvent.CTRL_L_MASK | NativeInputEvent.CTRL_R_MASK, KeyboardKey.CONTROL);
+        syncModifier(modifiers, NativeInputEvent.META_L_MASK | NativeInputEvent.META_R_MASK, KeyboardKey.META);
+        syncModifier(modifiers, NativeInputEvent.ALT_L_MASK | NativeInputEvent.ALT_R_MASK, KeyboardKey.ALT);
+    }
+
+    private void syncModifier(int modifiers, int mask, KeyboardKey key) {
+        if ((modifiers & mask) != 0) {
+            pressedKeys.add(key);
+        } else {
+            pressedKeys.remove(key);
         }
     }
 

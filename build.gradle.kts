@@ -49,6 +49,9 @@ dependencies {
 
     implementation("org.jetbrains:annotations:23.0.0")
     implementation("com.github.kwhat:jnativehook:2.2.2")
+    implementation("com.github.tulskiy:jkeymaster:1.3")
+    implementation("net.java.dev.jna:jna:5.14.0")
+    implementation("net.java.dev.jna:jna-platform:5.14.0")
     implementation("commons-io:commons-io:2.14.0")
     implementation("org.apache.commons:commons-lang3:3.14.0")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
