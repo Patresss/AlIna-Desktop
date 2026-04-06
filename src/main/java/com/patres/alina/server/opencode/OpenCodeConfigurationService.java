@@ -57,6 +57,8 @@ public class OpenCodeConfigurationService {
         return env;
     }
 
+    public static final String OPENCODE_COMMAND = "opencode";
+
     public Path resolveWorkingDirectory() {
         return Path.of(workspaceSettings().openCodeWorkingDirectory()).toAbsolutePath().normalize();
     }

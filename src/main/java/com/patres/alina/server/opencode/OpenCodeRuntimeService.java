@@ -144,7 +144,6 @@ public class OpenCodeRuntimeService {
 
     public OpenCodeRuntimeStatus getRuntimeStatus() {
         final WorkspaceSettings workspace = configurationService.workspaceSettings();
-        final Path executable = Path.of(workspace.openCodeExecutablePath()).toAbsolutePath().normalize();
         final Path workingDirectory = configurationService.resolveWorkingDirectory();
 
         boolean healthy = false;
@@ -161,9 +160,6 @@ public class OpenCodeRuntimeService {
         }
 
         return new OpenCodeRuntimeStatus(
-                executable.toString(),
-                Files.exists(executable),
-                Files.isExecutable(executable),
                 workspace.openCodeHostname(),
                 workspace.openCodePort(),
                 httpClient.baseUrl(),

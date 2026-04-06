@@ -11,8 +11,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 
@@ -86,13 +84,8 @@ public class OpenCodeServerManager {
             serverProcess = null;
         }
 
-        final Path executable = Path.of(workspace.openCodeExecutablePath()).toAbsolutePath().normalize();
-        if (!Files.isExecutable(executable)) {
-            throw new IllegalStateException("OpenCode executable is not available: " + executable);
-        }
-
         final ProcessBuilder processBuilder = new ProcessBuilder(
-                executable.toString(),
+                OpenCodeConfigurationService.OPENCODE_COMMAND,
                 "serve",
                 "--hostname",
                 workspace.openCodeHostname(),
@@ -176,7 +169,6 @@ public class OpenCodeServerManager {
 
     private String signature(final WorkspaceSettings workspace, final AssistantSettings assistant) {
         return String.join("|",
-                workspace.openCodeExecutablePath(),
                 workspace.openCodeHostname(),
                 String.valueOf(workspace.openCodePort()),
                 workspace.openCodeWorkingDirectory(),

@@ -15,7 +15,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
 import org.kordamp.ikonli.feather.Feather;
 
 import java.io.File;
@@ -35,7 +34,6 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
     private ToggleSwitch alwaysOnTopToggle;
 
     private TextField tasksFileField;
-    private TextField openCodeExecutablePathField;
     private TextField openCodeHostnameField;
     private TextField openCodePortField;
     private TextField openCodeWorkingDirectoryField;
@@ -56,7 +54,6 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         showDashboardToggle.setSelected(settings.showDashboard());
         alwaysOnTopToggle.setSelected(settings.keepWindowAlwaysOnTop());
         tasksFileField.setText(orEmpty(settings.tasksFile()));
-        openCodeExecutablePathField.setText(orEmpty(settings.openCodeExecutablePath()));
         openCodeHostnameField.setText(orEmpty(settings.openCodeHostname()));
         openCodePortField.setText(String.valueOf(settings.openCodePort()));
         openCodeWorkingDirectoryField.setText(orEmpty(settings.openCodeWorkingDirectory()));
@@ -72,7 +69,6 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 alwaysOnTopToggle.isSelected(),
                 tasksFileField.getText(),
                 dashboardTaskLimitSpinner.getValue(),
-                openCodeExecutablePathField.getText(),
                 openCodeHostnameField.getText(),
                 parseInteger(openCodePortField.getText(), WorkspaceSettings.DEFAULT_OPENCODE_PORT),
                 openCodeWorkingDirectoryField.getText()
@@ -94,7 +90,6 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         showDashboardToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         alwaysOnTopToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         tasksFileField = createResizableTextField(settingsBox);
-        openCodeExecutablePathField = createResizableTextField(settingsBox);
         openCodeHostnameField = createResizableTextField(settingsBox);
         openCodePortField = createResizableTextField(settingsBox);
         openCodeWorkingDirectoryField = createResizableTextField(settingsBox);
@@ -113,7 +108,6 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         taskLimitTile.setAction(dashboardTaskLimitSpinner);
 
         final Button refreshOpenCodeStatusButton = createButton(Feather.REFRESH_CCW, e -> refreshOpenCodeStatus());
-        final Node openCodeExecutablePicker = createFilePickerField(openCodeExecutablePathField, this::chooseOpenCodeExecutable);
         final Node openCodeWorkingDirectoryPicker = createFilePickerField(openCodeWorkingDirectoryField, this::chooseOpenCodeWorkingDirectory);
         final VBox openCodeStatusBox = new VBox(8, openCodeStatusArea, refreshOpenCodeStatusButton);
 
@@ -126,7 +120,6 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 taskLimitTile,
                 new Separator(),
                 runtimeHeader,
-                tileFor(openCodeExecutablePicker, "settings.workspace.openCode.executable.title", "settings.workspace.openCode.executable.description"),
                 tileFor(openCodeHostnameField, "settings.workspace.openCode.hostname.title", "settings.workspace.openCode.hostname.description"),
                 tileFor(openCodePortField, "settings.workspace.openCode.port.title", "settings.workspace.openCode.port.description"),
                 tileFor(openCodeWorkingDirectoryPicker, "settings.workspace.openCode.directory.title", "settings.workspace.openCode.directory.description"),
@@ -150,16 +143,6 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         return box;
     }
 
-    private void chooseOpenCodeExecutable() {
-        final FileChooser chooser = new FileChooser();
-        chooser.setTitle("OpenCode executable");
-        applyInitialDirectory(chooser, openCodeExecutablePathField.getText());
-        final File selected = chooser.showOpenDialog(settingsBox.getScene() == null ? null : settingsBox.getScene().getWindow());
-        if (selected != null) {
-            openCodeExecutablePathField.setText(selected.getAbsolutePath());
-        }
-    }
-
     private void chooseOpenCodeWorkingDirectory() {
         final DirectoryChooser chooser = new DirectoryChooser();
         chooser.setTitle("OpenCode working directory");
@@ -170,30 +153,19 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         }
     }
 
-    private void applyInitialDirectory(final FileChooser chooser, final String currentValue) {
-        final Path path = resolveExistingDirectory(currentValue, false);
-        if (path != null) {
-            chooser.setInitialDirectory(path.toFile());
-        }
-    }
-
     private void applyInitialDirectory(final DirectoryChooser chooser, final String currentValue) {
-        final Path path = resolveExistingDirectory(currentValue, true);
+        final Path path = resolveExistingDirectory(currentValue);
         if (path != null) {
             chooser.setInitialDirectory(path.toFile());
         }
     }
 
-    private Path resolveExistingDirectory(final String currentValue, final boolean valueIsDirectory) {
+    private Path resolveExistingDirectory(final String currentValue) {
         if (currentValue == null || currentValue.isBlank()) {
             return existingDirectory(Path.of(System.getProperty("user.home", ".")));
         }
         final Path path = Path.of(currentValue).toAbsolutePath().normalize();
-        if (valueIsDirectory) {
-            final Path directory = existingDirectory(path);
-            return directory != null ? directory : existingDirectory(Path.of(System.getProperty("user.home", ".")));
-        }
-        final Path directory = existingDirectory(path.getParent());
+        final Path directory = existingDirectory(path);
         return directory != null ? directory : existingDirectory(Path.of(System.getProperty("user.home", ".")));
     }
 
@@ -224,9 +196,6 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 "Base URL: " + fallback(status.baseUrl(), "-"),
                 "Host: " + fallback(status.hostname(), "-"),
                 "Port: " + status.port(),
-                "Executable: " + fallback(status.executablePath(), "-"),
-                "Executable exists: " + yesNo(status.executableExists()),
-                "Executable is runnable: " + yesNo(status.executableExecutable()),
                 "Working directory: " + fallback(status.workingDirectory(), "-"),
                 "Working directory exists: " + yesNo(status.workingDirectoryExists()),
                 "Process started by AlIna: " + yesNo(status.processRunning()),

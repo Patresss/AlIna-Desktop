@@ -2,15 +2,12 @@ package com.patres.alina.server.opencode;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.patres.alina.common.settings.AssistantSettings;
-import com.patres.alina.common.settings.WorkspaceSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.TreeSet;
@@ -82,13 +79,9 @@ public class OpenCodeModelService {
     }
 
     private List<String> fetchAvailableModelsFromCli() throws IOException, InterruptedException {
-        final WorkspaceSettings workspace = configurationService.workspaceSettings();
-        final Path executable = Path.of(workspace.openCodeExecutablePath()).toAbsolutePath().normalize();
-        if (!Files.isExecutable(executable)) {
-            return List.of();
-        }
-
-        final ProcessBuilder processBuilder = new ProcessBuilder(executable.toString(), "models");
+        final ProcessBuilder processBuilder = new ProcessBuilder(
+                OpenCodeConfigurationService.OPENCODE_COMMAND, "models"
+        );
         processBuilder.directory(configurationService.resolveWorkingDirectory().toFile());
         processBuilder.environment().putAll(configurationService.buildServerEnvironment());
         processBuilder.redirectErrorStream(true);
