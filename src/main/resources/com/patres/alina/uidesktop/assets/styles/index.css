@@ -255,6 +255,18 @@ ChatThreadHistoryCard {
     -fx-opacity: 0.72;
 }
 
+.workspace-task-item {
+    -fx-alignment: top-left;
+    -fx-padding: 4px 2px;
+}
+
+.workspace-task-label {
+    -fx-text-fill: -color-fg-default;
+    -fx-padding: 2px 0 0 0;
+    -fx-cursor: hand;
+    -fx-text-overrun: ellipsis;
+}
+
 .workspace-dashboard-empty {
     -fx-text-fill: -color-fg-muted;
     -fx-font-size: 11px;

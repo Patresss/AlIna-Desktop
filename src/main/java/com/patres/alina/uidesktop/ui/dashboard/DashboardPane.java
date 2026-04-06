@@ -95,12 +95,26 @@ public class DashboardPane extends VBox {
         }
 
         for (final DashboardTask task : state.tasks()) {
-            final CheckBox checkBox = new CheckBox(task.title());
-            checkBox.getStyleClass().add("workspace-task-item");
-            checkBox.setMaxWidth(Double.MAX_VALUE);
+            final CheckBox checkBox = new CheckBox();
+            checkBox.getStyleClass().add("workspace-task-checkbox");
             checkBox.setOnAction(event -> updateTask(task, checkBox.isSelected()));
-            HBox.setHgrow(checkBox, Priority.ALWAYS);
-            tasksBox.getChildren().add(checkBox);
+
+            final Label taskLabel = new Label(task.title());
+            taskLabel.getStyleClass().add("workspace-task-label");
+            taskLabel.setMaxWidth(Double.MAX_VALUE);
+            taskLabel.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+            taskLabel.setWrapText(false);
+            HBox.setHgrow(taskLabel, Priority.ALWAYS);
+
+            taskLabel.setOnMouseClicked(event -> {
+                taskLabel.setWrapText(!taskLabel.isWrapText());
+            });
+
+            final HBox row = new HBox(8, checkBox, taskLabel);
+            row.getStyleClass().add("workspace-task-item");
+            row.setMaxWidth(Double.MAX_VALUE);
+            HBox.setHgrow(row, Priority.ALWAYS);
+            tasksBox.getChildren().add(row);
         }
     }
 
