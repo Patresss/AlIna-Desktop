@@ -50,6 +50,7 @@ public class CommandEditPane extends CommandSavePane {
                 commandDescriptionTextArea.getText(),
                 commandSystemPromptTextArea.getText(),
                 iconComboBox.getValue().getObject().name(),
+                commandModelTextField.getText(),
                 stateToggleSwitch.isSelected() ? State.ENABLED : State.DISABLED,
                 pasteShortcutKeyPane.getShortcutKeys(),
                 displayShortcutKeyPane.getShortcutKeys(),
@@ -96,6 +97,7 @@ public class CommandEditPane extends CommandSavePane {
         commandNameTextField.setText(command.name());
         commandDescriptionTextArea.setText(command.description());
         commandSystemPromptTextArea.setText(command.systemPrompt());
+        commandModelTextField.setText(command.model() == null ? "" : command.model());
         iconComboBox.getSelectionModel().select(CONVERTER.fromString(command.icon()));
     }
 

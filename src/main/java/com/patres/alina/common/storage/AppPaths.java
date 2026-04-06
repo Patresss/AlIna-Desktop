@@ -3,7 +3,6 @@ package com.patres.alina.common.storage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
@@ -16,7 +15,6 @@ public final class AppPaths {
     private static final String PROP_STORAGE_BASE = "storage.local.base.path";
     private static final String ENV_APPDATA = "APPDATA";
     private static final String ENV_XDG_DATA_HOME = "XDG_DATA_HOME";
-    private static final String DIR_DATA = "data";
     private static final String PROP_OS_NAME = "os.name";
     private static final String PROP_USER_HOME = "user.home";
 
@@ -49,12 +47,12 @@ public final class AppPaths {
     }
 
     private static Path determineBaseDataDir() {
-        Path override = overrideBaseDir();
+        final Path override = overrideBaseDir();
         if (override != null) {
-            return ensureDir(override);
+            return ensureDirectory(override);
         }
-        Path projectLocal = projectLocalDataDir();
-        return ensureDir(Objects.requireNonNullElseGet(projectLocal, AppPaths::platformDefaultBaseDir));
+        final Path platformDefault = platformDefaultBaseDir();
+        return ensureDirectory(platformDefault);
     }
 
     private static Path overrideBaseDir() {
@@ -63,11 +61,6 @@ public final class AppPaths {
             return null;
         }
         return Paths.get(override).toAbsolutePath().normalize();
-    }
-
-    private static Path projectLocalDataDir() {
-        final Path dir = Paths.get(DIR_DATA);
-        return Files.isDirectory(dir) ? dir.toAbsolutePath().normalize() : null;
     }
 
     private static Path platformDefaultBaseDir() {
@@ -103,9 +96,9 @@ public final class AppPaths {
         return p.normalize();
     }
 
-    private static Path ensureDir(final Path dir) {
+    private static Path ensureDirectory(final Path dir) {
         try {
-            Files.createDirectories(dir);
+            java.nio.file.Files.createDirectories(dir);
             return dir;
         } catch (Exception e) {
             logger.warn("Failed to create directory: {}", dir, e);

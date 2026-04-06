@@ -1,7 +1,7 @@
-# AlIna Desktop — AI Chat Application
+# AlIna Desktop — OpenCode Client
 
-AlIna is a native desktop AI chat application. It combines a modern JavaFX UI with Spring Boot services running in the same process. 
-Conversations and settings are stored locally, while integrations (Spring AI/OpenAI, MCP) enable powerful tool usage.
+AlIna is a native desktop AI client for OpenCode. It combines a modern JavaFX UI with Spring Boot services running in the same process.
+Conversations and settings are stored locally, while the main chat runtime, tools, skills, terminal access, and MCP execution flow through OpenCode.
 https://github.com/Patresss/AlIna-Desktop/blob/main/examples/commands.png?raw=true
 
 ### Dark mode
@@ -17,10 +17,14 @@ https://github.com/Patresss/AlIna-Desktop/blob/main/examples/commands.png?raw=tr
 
 Key features:
 - Chat UI with streaming responses.
-- Local storage of conversations and settings in `data/`.
-- Theming and styling (Atlantafx, custom CSS in `data/css/`).
-- Integrations with Spring AI (OpenAI) and MCP client.
+- Local storage of conversations, settings and assistant state in `~/.config/AlIna/`.
+- Theming and styling (Atlantafx, custom CSS in `~/.config/AlIna/themes/`).
+- OpenCode-backed chat runtime with approvals, skills, local tools and MCP.
 - Embedded Spring Boot backend (no separate server required).
+- Workspace dashboard above the chat with always-visible checklist tasks.
+- File-based local skills, profile memory and prompt inbox under `~/.config/AlIna/`.
+- Persistent always-on-top setting and workspace-focused configuration panel.
+- Starter custom commands for morning planning, standups, decisions and Obsidian cleanup.
 
 ## Requirements
 
@@ -45,7 +49,7 @@ Before first use, set your API key (e.g., OpenAI) as an environment variable or 
   - `com.patres.alina.common` — shared models, events, utilities.
 - `src/main/resources/` — FXML layouts and assets.
 - `config/` — local configuration (YAML/JSON).
-- `data/` — app data (conversations, commands, CSS themes).
+- Runtime storage: `~/.config/AlIna/`
 - `logs/` — application logs.
 
 ## Creating Installers
@@ -80,10 +84,31 @@ Options & metadata:
 
 ## Data & Configuration
 
-- Conversations: `data/conversations/`
-- Commands: `data/commands/`
-- User themes (CSS): `data/css/`
+- Conversations: `~/.config/AlIna/conversations/`
+- Commands: local OpenCode commands from `<working-directory>/.opencode/commands/` first, then global `~/.config/opencode/commands/`.
+- User themes (CSS): `~/.config/AlIna/themes/`
+- Skills: `~/.config/opencode/skills/` via native OpenCode config.
+- Assistant profile: `~/.config/AlIna/profile/default/`
+- MCP config: `~/.config/opencode/opencode.json`.
+- App config: `~/.config/AlIna/config/`
 - Local config: `config/application.local.yml` (untracked, no secrets).
+
+## Workspace Features
+
+- `Focus Board`: a persistent dashboard above the chat showing checklist tasks from `profile/default/focus.md` or an Obsidian file.
+- `Context Settings`: configure always-on-top behavior, Obsidian vault paths, profile files and skill directories.
+- `Memory`: persistent reusable context lives in `profile/default/memory.md`.
+- `Learned Notes`: short conversation journal appended to `profile/default/learned-notes.md`.
+- `Prompt Inbox`: lightweight backlog for ideas and prompts in `profile/default/prompt-inbox.md`.
+- `Skills`: drop folder-based skills into `skills/<name>/SKILL.md` and activate them in chat with `#skill:<name>`.
+- `OpenCode`: AlIna starts and configures a local OpenCode backend, then uses it for chat execution, tools, skills, bash and MCP.
+
+Architecture notes:
+- [`docs/assistant-architecture.md`](docs/assistant-architecture.md)
+
+Example skill usage:
+- `#skill:code-review check this diff`
+- `#skill:obsidian clean up this note`
 
 ## Signing & Distribution (Optional)
 

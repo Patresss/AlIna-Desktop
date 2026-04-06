@@ -15,42 +15,63 @@
    <bottom>
       <VBox fx:id="footerPane" maxWidth="1.7976931348623157E308">
          <children>
-            <HBox alignment="CENTER" maxWidth="1.7976931348623157E308">
+            <StackPane fx:id="composerPane" maxWidth="1.7976931348623157E308">
                <children>
-                  <TextArea fx:id="chatTextArea" maxWidth="1.7976931348623157E308" onKeyPressed="#chatTextAreaOnKeyPressed" prefWidth="10000.0" wrapText="true" />
-                  <VBox fx:id="inputButtonsBox">
+                  <HBox fx:id="messageInputRow" alignment="CENTER" maxWidth="1.7976931348623157E308">
                      <children>
-                        <Button fx:id="sendButton" alignment="CENTER" styleClass="primary-button"  mnemonicParsing="false" onAction="#sendMessageFromUi" text="Button">
-                           <graphic>
-                              <FontIcon iconLiteral="fth-send" styleClass="primary-button" />
-                           </graphic>
-                           <styleClass>
-                              <String fx:value="button-circle" />
-                              <String fx:value="flat" />
-                           </styleClass>
-                        </Button>
-                        <Button fx:id="recordButton" alignment="CENTER" mnemonicParsing="false" text="Button">
-                           <graphic>
-                              <FontIcon iconLiteral="fth-mic" />
-                           </graphic>
-                           <styleClass>
-                              <String fx:value="button-circle" />
-                              <String fx:value="flat" />
-                           </styleClass>
-                        </Button>
-                        <Button fx:id="streamControlButton" alignment="CENTER" mnemonicParsing="false" onAction="#streamControlFromUi" text="Button">
-                           <styleClass>
-                              <String fx:value="button-circle" />
-                              <String fx:value="flat" />
-                           </styleClass>
-                        </Button>
+                        <TextArea fx:id="chatTextArea" maxWidth="1.7976931348623157E308" onKeyPressed="#chatTextAreaOnKeyPressed" prefWidth="10000.0" wrapText="true" />
+                        <VBox fx:id="inputButtonsBox">
+                           <children>
+                              <Button fx:id="sendButton" alignment="CENTER" styleClass="primary-button"  mnemonicParsing="false" onAction="#sendMessageFromUi" text="Button">
+                                 <graphic>
+                                    <FontIcon iconLiteral="fth-send" styleClass="primary-button" />
+                                 </graphic>
+                                 <styleClass>
+                                    <String fx:value="button-circle" />
+                                    <String fx:value="flat" />
+                                 </styleClass>
+                              </Button>
+                              <Button fx:id="recordButton" alignment="CENTER" mnemonicParsing="false" text="Button">
+                                 <graphic>
+                                    <FontIcon iconLiteral="fth-mic" />
+                                 </graphic>
+                                 <styleClass>
+                                    <String fx:value="button-circle" />
+                                    <String fx:value="flat" />
+                                 </styleClass>
+                              </Button>
+                              <Button fx:id="streamControlButton" alignment="CENTER" mnemonicParsing="false" onAction="#streamControlFromUi" text="Button">
+                                 <styleClass>
+                                    <String fx:value="button-circle" />
+                                    <String fx:value="flat" />
+                                 </styleClass>
+                              </Button>
+                           </children>
+                        </VBox>
+                     </children>
+                     <padding>
+                        <Insets top="15.0" />
+                     </padding>
+                  </HBox>
+                  <VBox fx:id="permissionComposerPane" managed="false" maxWidth="1.7976931348623157E308" spacing="10.0" styleClass="composer-approval-pane" visible="false">
+                     <padding>
+                        <Insets top="15.0" />
+                     </padding>
+                     <children>
+                        <Label fx:id="permissionComposerTitleLabel" styleClass="composer-approval-title" text="Approval" />
+                        <Label fx:id="permissionComposerMessageLabel" maxWidth="1.7976931348623157E308" styleClass="composer-approval-message" wrapText="true" />
+                        <HBox fx:id="permissionComposerActionsRow" spacing="8.0">
+                           <children>
+                              <Button fx:id="permissionApproveButton" mnemonicParsing="false" styleClass="composer-approval-button,composer-approval-button-primary" text="Allow" />
+                              <Button fx:id="permissionApproveAlwaysButton" mnemonicParsing="false" styleClass="composer-approval-button,composer-approval-button-always" text="Always allow" />
+                              <Button fx:id="permissionDenyButton" mnemonicParsing="false" styleClass="composer-approval-button,composer-approval-button-deny" text="Deny" />
+                           </children>
+                        </HBox>
+                        <Label fx:id="permissionComposerStatusLabel" maxWidth="1.7976931348623157E308" styleClass="composer-approval-status" wrapText="true" />
                      </children>
                   </VBox>
                </children>
-               <padding>
-                  <Insets top="15.0" />
-               </padding>
-            </HBox>
+            </StackPane>
             <HBox fx:id="statusBar" alignment="CENTER_LEFT" spacing="8.0">
                <children>
                   <Label fx:id="commandLabel" styleClass="text-subtle" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308" />

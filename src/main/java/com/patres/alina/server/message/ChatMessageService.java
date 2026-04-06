@@ -13,8 +13,8 @@ import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.server.command.CommandConstants;
 import com.patres.alina.server.command.CommandFileService;
-import com.patres.alina.server.mcp.McpChatIntegrationService;
-import com.patres.alina.server.openai.OpenAiApiFacade;
+import com.patres.alina.server.assistant.AssistantPromptService;
+import com.patres.alina.server.opencode.OpenCodeRuntimeService;
 import com.patres.alina.server.thread.ChatThreadFacade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,28 +64,28 @@ public class ChatMessageService {
 
     private final ChatMessageStorageRepository chatMessageRepository;
     private final CommandFileService commandFileService;
-    private final OpenAiApiFacade openAiApi;
     private final StoreMessageManager storeMessageManager;
     private final ChatThreadFacade chatThreadFacade;
     private final FileManager<AssistantSettings> assistantSettingsManager;
-    private final McpChatIntegrationService mcpChatIntegrationService;
+    private final AssistantPromptService assistantPromptService;
+    private final OpenCodeRuntimeService openCodeRuntimeService;
 
     private final ConcurrentHashMap<String, StreamSession> activeStreams = new ConcurrentHashMap<>();
 
     public ChatMessageService(final ChatMessageStorageRepository chatMessageRepository,
                               final CommandFileService commandFileService,
-                              final OpenAiApiFacade openAiApi,
                               final StoreMessageManager storeMessageManager,
                               final ChatThreadFacade chatThreadFacade,
                               final FileManager<AssistantSettings> assistantSettingsManager,
-                              final McpChatIntegrationService mcpChatIntegrationService) {
+                              final AssistantPromptService assistantPromptService,
+                              final OpenCodeRuntimeService openCodeRuntimeService) {
         this.chatMessageRepository = chatMessageRepository;
-        this.openAiApi = openAiApi;
         this.commandFileService = commandFileService;
         this.storeMessageManager = storeMessageManager;
         this.chatThreadFacade = chatThreadFacade;
         this.assistantSettingsManager = assistantSettingsManager;
-        this.mcpChatIntegrationService = mcpChatIntegrationService;
+        this.assistantPromptService = assistantPromptService;
+        this.openCodeRuntimeService = openCodeRuntimeService;
     }
 
     public synchronized void sendMessageStream(final ChatMessageSendModel chatMessageSendModel) {
@@ -105,6 +105,9 @@ public class ChatMessageService {
     }
 
     public synchronized void cancelStreaming(final String chatThreadId) {
+        if (openCodeRuntimeService.isEnabled()) {
+            openCodeRuntimeService.cancelStreaming(chatThreadId);
+        }
         final StreamSession session = activeStreams.remove(chatThreadId);
         if (session == null) {
             DefaultEventBus.getInstance().publish(
@@ -168,6 +171,33 @@ public class ChatMessageService {
         sendStreamingAssistantResponse(contextMessages, regenerateModel, StreamPurpose.REGENERATE, messageIdsToDeleteOnComplete);
     }
 
+    public synchronized void retryLastUserMessage(final String chatThreadId) {
+        cancelStreamingSilently(chatThreadId);
+
+        final List<ChatMessage> allMessages = chatMessageRepository.findAllByThreadId(chatThreadId);
+        final int lastUserIndex = findLastIndexByRole(allMessages, MessageType.USER);
+        if (lastUserIndex < 0) {
+            DefaultEventBus.getInstance().publish(
+                    new ChatMessageStreamEvent(
+                            chatThreadId,
+                            ChatMessageStreamEvent.StreamEventType.ERROR,
+                            "No user message to retry"
+                    )
+            );
+            return;
+        }
+
+        final List<AbstractMessage> contextMessages = loadMessagesForRegeneration(allMessages, lastUserIndex);
+        final ChatMessage lastUser = allMessages.get(lastUserIndex);
+        final ChatMessageSendModel retryModel = new ChatMessageSendModel(
+                lastUser.content(),
+                chatThreadId,
+                lastUser.commandId()
+        );
+
+        sendStreamingAssistantResponse(contextMessages, retryModel, StreamPurpose.NORMAL, List.of());
+    }
+
     public synchronized void sendMessageStreamWithChatThread(final ChatMessageSendModel chatMessageSendModel) {
         final String chatThreadId = chatMessageSendModel.chatThreadId();
         logger.info("Sending streaming '{}' content, threadId={} ...", chatMessageSendModel.content(), chatThreadId);
@@ -197,18 +227,28 @@ public class ChatMessageService {
                                                 final List<String> messageIdsToDeleteOnComplete) {
         final String chatThreadId = chatMessageSendModel.chatThreadId();
 
-        // Enhance messages with MCP tools if available
-        final List<AbstractMessage> enhancedMessages = mcpChatIntegrationService.enhanceMessagesWithMcpTools(contextMessages);
-        
-        if (mcpChatIntegrationService.hasMcpTools()) {
-            logger.debug("Enhanced chat messages with {} MCP tools", mcpChatIntegrationService.getAvailableToolCount());
-        }
-
         final StreamSession session = new StreamSession(chatMessageSendModel, purpose, messageIdsToDeleteOnComplete);
         activeStreams.put(chatThreadId, session);
 
         try {
-            final Flux<String> stream = openAiApi.sendMessageStream(enhancedMessages);
+            if (!openCodeRuntimeService.isEnabled()) {
+                throw new IllegalStateException("OpenCode runtime is disabled. Włącz OpenCode w ustawieniach Workspace.");
+            }
+            final String systemPrompt = buildOpenCodeSystemPrompt(contextMessages);
+            final String historySummary = summarizeHistoryForOpenCode(contextMessages);
+            final String modelOverride = resolveCommandModelOverride(chatMessageSendModel.commandId());
+            final String currentUserMessage = contextMessages.isEmpty()
+                    ? chatMessageSendModel.content()
+                    : contextMessages.getLast().getText();
+            final Flux<String> stream = openCodeRuntimeService.sendMessageStream(
+                    chatThreadId,
+                    chatThreadId,
+                    currentUserMessage,
+                    systemPrompt,
+                    historySummary,
+                    modelOverride,
+                    purpose == StreamPurpose.REGENERATE
+            );
 
             final Disposable disposable = stream.subscribe(
                     token -> {
@@ -335,6 +375,14 @@ public class ChatMessageService {
         return commandContent + System.lineSeparator() + content;
     }
 
+    private String resolveCommandModelOverride(final String commandId) {
+        return Optional.ofNullable(commandId)
+                .flatMap(commandFileService::findById)
+                .map(Command::model)
+                .filter(model -> !model.isBlank())
+                .orElse(null);
+    }
+
     private List<AbstractMessage> loadMessages(final String chatThreadId) {
         final int numberOfMessagesInContext = assistantSettingsManager.getSettings().numberOfMessagesInContext();
         final List<ChatMessage> messages = chatMessageRepository.findLastMessagesForContext(
@@ -378,12 +426,55 @@ public class ChatMessageService {
     }
 
     private void cancelStreamingSilently(final String chatThreadId) {
+        if (openCodeRuntimeService.isEnabled()) {
+            openCodeRuntimeService.cancelStreaming(chatThreadId);
+        }
         final StreamSession session = activeStreams.remove(chatThreadId);
         if (session == null) {
             return;
         }
         session.cancelled = true;
         disposeQuietly(session.disposable);
+    }
+
+    private String buildOpenCodeSystemPrompt(final List<AbstractMessage> enhancedMessages) {
+        final String assistantPrompt = assistantPromptService.buildSystemPrompt(assistantSettingsManager.getSettings());
+        final String storedSystemMessages = enhancedMessages.stream()
+                .filter(message -> message.getMessageType() == MessageType.SYSTEM)
+                .map(AbstractMessage::getText)
+                .filter(text -> text != null && !text.isBlank())
+                .collect(Collectors.joining(System.lineSeparator() + System.lineSeparator()));
+        if (storedSystemMessages.isBlank()) {
+            return assistantPrompt;
+        }
+        return assistantPrompt + System.lineSeparator() + System.lineSeparator() + storedSystemMessages;
+    }
+
+    private String summarizeHistoryForOpenCode(final List<AbstractMessage> contextMessages) {
+        final String history = contextMessages.stream()
+                .filter(message -> message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.ASSISTANT)
+                .map(message -> (message.getMessageType() == MessageType.USER ? "User: " : "Assistant: ") + compact(message.getText(), 800))
+                .collect(Collectors.joining(System.lineSeparator()));
+        if (history.isBlank()) {
+            return "";
+        }
+        return """
+                <conversation-history>
+                Use this recent local history as background context for this thread. It may come from AlIna storage before the OpenCode session was created.
+                %s
+                </conversation-history>
+                """.formatted(history);
+    }
+
+    private String compact(final String text, final int limit) {
+        if (text == null) {
+            return "";
+        }
+        final String normalized = text.replace('\r', ' ').replace('\n', ' ').trim();
+        if (normalized.length() <= limit) {
+            return normalized;
+        }
+        return normalized.substring(0, limit) + "...";
     }
 
     private static void disposeQuietly(final Disposable disposable) {

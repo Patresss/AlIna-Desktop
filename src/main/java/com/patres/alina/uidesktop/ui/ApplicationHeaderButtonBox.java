@@ -1,5 +1,7 @@
 package com.patres.alina.uidesktop.ui;
 
+import com.patres.alina.common.settings.WorkspaceSettings;
+import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import javafx.fxml.FXML;
@@ -35,8 +37,13 @@ public class ApplicationHeaderButtonBox extends HBox {
 
     @FXML
     public void initialize() {
+        pinToggleButton.setSelected(BackendApi.getWorkspaceSettings().keepWindowAlwaysOnTop());
         pinToggleButton.selectedProperty()
-                .addListener((obs, newValue, oldValue) -> getStage().setAlwaysOnTop(!newValue));
+                .addListener((obs, oldValue, newValue) -> {
+                    getStage().setAlwaysOnTop(newValue);
+                    final WorkspaceSettings settings = BackendApi.getWorkspaceSettings();
+                    BackendApi.updateWorkspaceSettings(settings.withKeepWindowAlwaysOnTop(newValue));
+                });
     }
 
 
@@ -58,6 +65,11 @@ public class ApplicationHeaderButtonBox extends HBox {
     @FXML
     public void openAssistantSettings() {
         applicationWindow.openAssistantSettings();
+    }
+
+    @FXML
+    public void openWorkspaceSettings() {
+        applicationWindow.openWorkspaceSettings();
     }
 
     @FXML

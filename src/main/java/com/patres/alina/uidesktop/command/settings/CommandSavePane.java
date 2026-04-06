@@ -20,6 +20,7 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
     protected TextField commandNameTextField;
     protected TextArea commandDescriptionTextArea;
     protected TextArea commandSystemPromptTextArea;
+    protected TextField commandModelTextField;
     protected ComboBox<AutoCompleteComboBox.HideableItem<ApplicationIcon>> iconComboBox;
     protected ToggleSwitch showInChatToggleSwitch;
     protected ToggleSwitch showInContextMenuPasteToggleSwitch;
@@ -62,6 +63,13 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
         );
         commandSystemPromptTextArea = createResizableTextArea(settingsBox);
         commandSystemPromptTile.setAction(commandSystemPromptTextArea);
+
+        var commandModelTile = new CustomTile(
+                getLanguageString("command.model.title"),
+                getLanguageString("command.model.description")
+        );
+        commandModelTextField = createResizableTextField(settingsBox);
+        commandModelTile.setAction(commandModelTextField);
 
         iconComboBox = createResizableRegion(IconComboBox::create, settingsBox);
         var iconTile = new CustomTile(
@@ -112,6 +120,7 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
                 commandNameTile,
                 commandDescriptionTile,
                 commandSystemPromptTile,
+                commandModelTile,
                 iconTile,
                 new Separator(),
                 showInChatTile,

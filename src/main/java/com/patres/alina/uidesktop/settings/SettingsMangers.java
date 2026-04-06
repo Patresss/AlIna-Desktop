@@ -5,6 +5,6 @@ import com.patres.alina.uidesktop.common.event.UiSettingsUpdateEvent;
 
 public class SettingsMangers {
 
-    public final static FileManager<UiSettings> UI_SETTINGS = new FileManager<>("UI Settings", UiSettings.class, UiSettings::new, UiSettingsUpdateEvent::new);
+    public final static FileManager<UiSettings> UI_SETTINGS = new FileManager<>("ui", UiSettings.class, UiSettings::new, UiSettingsUpdateEvent::new);
 
 }

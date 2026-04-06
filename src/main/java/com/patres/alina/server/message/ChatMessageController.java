@@ -31,4 +31,8 @@ public class ChatMessageController {
         chatMessageService.regenerateLastAssistantResponse(chatThreadId);
     }
 
+    public void retryLastUserMessage(final String chatThreadId) {
+        chatMessageService.retryLastUserMessage(chatThreadId);
+    }
+
 }

@@ -4,7 +4,7 @@ import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
 import com.patres.alina.server.event.AssistantSettingsUpdatedEvent;
-import com.patres.alina.server.openai.OpenAiApiFacade;
+import com.patres.alina.server.opencode.OpenCodeRuntimeService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,11 +13,12 @@ import java.util.List;
 public class SettingsService {
 
     private final FileManager<AssistantSettings> assistantSettingsManager;
-    private final OpenAiApiFacade openAiApi;
+    private final OpenCodeRuntimeService openCodeRuntimeService;
 
-    public SettingsService(FileManager<AssistantSettings> assistantSettingsManager, OpenAiApiFacade openAiApi) {
+    public SettingsService(FileManager<AssistantSettings> assistantSettingsManager,
+                           OpenCodeRuntimeService openCodeRuntimeService) {
         this.assistantSettingsManager = assistantSettingsManager;
-        this.openAiApi = openAiApi;
+        this.openCodeRuntimeService = openCodeRuntimeService;
     }
 
     public AssistantSettings getApplicationSettings() {
@@ -30,7 +31,28 @@ public class SettingsService {
     }
 
     public List<String> getChatModels() {
-        return openAiApi.getChatModels(assistantSettingsManager.getSettings());
+        final List<String> models = openCodeRuntimeService.getAvailableModels();
+        normalizeModelIfNeeded(models);
+        return models;
+    }
+
+    private void normalizeModelIfNeeded(final List<String> availableModels) {
+        final AssistantSettings current = assistantSettingsManager.getSettings();
+        final String effective = openCodeRuntimeService.resolveEffectiveModelIdentifier(current, availableModels);
+        if (effective == null || effective.isBlank() || effective.equals(current.resolveModelIdentifier())) {
+            return;
+        }
+
+        final AssistantSettings normalized = new AssistantSettings(
+                effective,
+                current.systemPrompt(),
+                current.numberOfMessagesInContext(),
+                current.openAiApiKey(),
+                current.anthropicApiKey(),
+                current.googleApiKey(),
+                current.timeoutSeconds()
+        );
+        saveDocument(normalized);
     }
 
 }

@@ -51,9 +51,9 @@ public class MarkdownParser {
         
         ParsedFrontmatter parsedFrontmatter = parseYaml(frontmatterYaml, id);
         if (!id.equals(parsedFrontmatter.id())) {
-            logger.warn("Frontmatter id '{}' does not match filename '{}', using filename", parsedFrontmatter.id(), id);
+            logger.warn("Frontmatter id '{}' does not match filename '{}', using frontmatter id", parsedFrontmatter.id(), id);
         }
-        return new ParsedCommand(id, parsedFrontmatter.metadata(), markdownContent);
+        return new ParsedCommand(parsedFrontmatter.id(), parsedFrontmatter.metadata(), markdownContent);
     }
     
     public String generateMarkdownWithFrontmatter(Command command) {
@@ -65,6 +65,9 @@ public class MarkdownParser {
         sb.append("name: \"").append(escapeYamlString(command.name())).append("\"\n");
         sb.append("description: \"").append(escapeYamlString(command.description())).append("\"\n");
         sb.append("icon: ").append(command.icon()).append("\n");
+        if (command.model() != null && !command.model().isBlank()) {
+            sb.append("model: ").append(command.model()).append("\n");
+        }
         sb.append("state: ").append(command.state().name()).append("\n");
         sb.append("showInChat: ").append(command.visibility().showInChat()).append("\n");
         sb.append("showInContextMenuPaste: ").append(command.visibility().showInContextMenuPaste()).append("\n");
@@ -93,12 +96,13 @@ public class MarkdownParser {
             String name = getStringValue(yamlMap, "name", resolvedId);
         String description = getStringValue(yamlMap, "description", "");
         String icon = getStringValue(yamlMap, "icon", "bi-slash");
+        String model = normalizeOptionalString(getStringValue(yamlMap, "model", null));
         State state = parseState(getStringValue(yamlMap, "state", "ENABLED"));
         ShortcutKeys copyAndPasteShortcut = parseCopyAndPasteShortcut(yamlMap);
         ShortcutKeys displayShortcut = parseShortcut(yamlMap, "displayShortcut");
         CommandVisibility visibility = parseVisibility(yamlMap);
 
-        return new ParsedFrontmatter(resolvedId, new CommandMetadata(name, description, icon, state, copyAndPasteShortcut, displayShortcut, visibility));
+        return new ParsedFrontmatter(resolvedId, new CommandMetadata(name, description, icon, model, state, copyAndPasteShortcut, displayShortcut, visibility));
 
     } catch (Exception e) {
         logger.warn("Failed to parse YAML frontmatter for command id: {}, using defaults. Error: {}", id, e.getMessage());
@@ -209,6 +213,7 @@ public class MarkdownParser {
                 id != null ? id.replace("-", " ") : "Unnamed Command",
                 "",
                 "bi-slash",
+                null,
                 State.ENABLED,
                 new ShortcutKeys(),
                 new ShortcutKeys(),
@@ -219,6 +224,10 @@ public class MarkdownParser {
     private String escapeYamlString(String str) {
         if (str == null) return "";
         return str.replace("\"", "\\\"").replace("\n", "\\n");
+    }
+
+    private String normalizeOptionalString(final String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private void appendShortcut(StringBuilder sb, String key, ShortcutKeys shortcut) {
@@ -254,6 +263,7 @@ public class MarkdownParser {
             String name,
             String description,
             String icon,
+            String model,
             State state,
             ShortcutKeys copyAndPasteShortcut,
             ShortcutKeys displayShortcut,

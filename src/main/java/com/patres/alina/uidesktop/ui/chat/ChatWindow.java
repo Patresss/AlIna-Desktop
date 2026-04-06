@@ -21,7 +21,6 @@ import com.patres.alina.uidesktop.common.event.shortcut.SpeechShortcutTriggeredE
 import com.patres.alina.uidesktop.command.SearchCommandPopup;
 import com.patres.alina.uidesktop.microphone.AudioRecorder;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
-import com.patres.alina.common.settings.AiProvider;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.util.FxThreadRunner;
@@ -77,6 +76,12 @@ public class ChatWindow extends BorderPane {
     private VBox footerPane;
 
     @FXML
+    private StackPane composerPane;
+
+    @FXML
+    private HBox messageInputRow;
+
+    @FXML
     private Button sendButton;
 
     @FXML
@@ -90,6 +95,27 @@ public class ChatWindow extends BorderPane {
 
     @FXML
     private VBox inputButtonsBox;
+
+    @FXML
+    private VBox permissionComposerPane;
+
+    @FXML
+    private Label permissionComposerTitleLabel;
+
+    @FXML
+    private Label permissionComposerMessageLabel;
+
+    @FXML
+    private Label permissionComposerStatusLabel;
+
+    @FXML
+    private Button permissionApproveButton;
+
+    @FXML
+    private Button permissionApproveAlwaysButton;
+
+    @FXML
+    private Button permissionDenyButton;
 
     @FXML
     private HBox statusBar;
@@ -177,7 +203,7 @@ public class ChatWindow extends BorderPane {
         browser = new Browser();
         chatAnswersPane.getChildren().add(browser);
 
-        actionNodes = List.of(sendButton, recordButton, chatTextArea);
+        actionNodes = List.of(sendButton, recordButton);
         nonRecordingActionNodes = actionNodes.stream()
                 .filter(it -> it != recordButton)
                 .toList();
@@ -190,6 +216,14 @@ public class ChatWindow extends BorderPane {
                 streamControlButton,
                 actionNodes,
                 chatTextArea,
+                messageInputRow,
+                permissionComposerPane,
+                permissionComposerTitleLabel,
+                permissionComposerMessageLabel,
+                permissionComposerStatusLabel,
+                permissionApproveButton,
+                permissionApproveAlwaysButton,
+                permissionDenyButton,
                 statusPrompt,
                 chatThread.id(),
                 hasAnyUserMessages
@@ -223,9 +257,9 @@ public class ChatWindow extends BorderPane {
 
         modelMenu = new ContextMenu();
 
-        AssistantSettings settings = BackendApi.getAssistantSettings();
-        modelLabel.setText(settings.chatModel());
         refreshModelMenu();
+        AssistantSettings settings = BackendApi.getAssistantSettings();
+        modelLabel.setText(settings.resolveModelIdentifier());
 
         modelLabel.setOnMouseClicked(_ -> {
             if (modelMenu.isShowing()) {
@@ -238,7 +272,7 @@ public class ChatWindow extends BorderPane {
         DefaultEventBus.getInstance().subscribe(
                 com.patres.alina.server.event.AssistantSettingsUpdatedEvent.class,
                 e -> FxThreadRunner.run(() -> {
-                    modelLabel.setText(e.getSettings().chatModel());
+                    modelLabel.setText(e.getSettings().resolveModelIdentifier());
                     refreshModelMenu();
                 })
         );
@@ -247,6 +281,10 @@ public class ChatWindow extends BorderPane {
     private void refreshModelMenu() {
         modelMenu.getItems().clear();
         List<String> models = BackendApi.getChatModels();
+        AssistantSettings current = BackendApi.getAssistantSettings();
+        if (modelLabel != null) {
+            modelLabel.setText(current.resolveModelIdentifier());
+        }
         for (String model : models) {
             MenuItem item = new MenuItem(model);
             item.setOnAction(_ -> {
@@ -260,12 +298,8 @@ public class ChatWindow extends BorderPane {
     private void updateModel(String model) {
         Thread.startVirtualThread(() -> {
             AssistantSettings current = BackendApi.getAssistantSettings();
-            if (model.equals(current.chatModel())) return;
+            if (model.equals(current.resolveModelIdentifier())) return;
 
-            AiProvider provider = AiProvider.detectFromModelName(model);
-            if (provider == null) {
-                provider = current.aiProvider();
-            }
             AssistantSettings updated = new AssistantSettings(
                     model,
                     current.systemPrompt(),
@@ -273,7 +307,6 @@ public class ChatWindow extends BorderPane {
                     current.openAiApiKey(),
                     current.anthropicApiKey(),
                     current.googleApiKey(),
-                    provider,
                     current.timeoutSeconds()
             );
             BackendApi.updateAssistantSettings(updated);

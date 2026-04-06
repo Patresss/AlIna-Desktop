@@ -3,6 +3,7 @@ package com.patres.alina.server.configuration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.patres.alina.server.message.ChatMessageStorageRepository;
 import com.patres.alina.common.storage.AppPaths;
+import com.patres.alina.common.storage.OpenCodePaths;
 import com.patres.alina.server.message.ConversationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +14,6 @@ import org.springframework.context.annotation.Primary;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 @Configuration
 public class LocalStorageConfiguration {
@@ -43,7 +43,7 @@ public class LocalStorageConfiguration {
     
     @Bean
     public Path commandsStoragePath(Path localStorageBasePath) {
-        Path commandsDir = localStorageBasePath.resolve("commands").normalize();
+        Path commandsDir = OpenCodePaths.commandsDir();
         
         try {
             Files.createDirectories(commandsDir);

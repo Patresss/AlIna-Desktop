@@ -1,8 +1,11 @@
 package com.patres.alina.uidesktop.ui;
 
 import com.github.kwhat.jnativehook.NativeHookException;
+import com.patres.alina.common.event.WorkspaceSettingsUpdatedEvent;
+import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.uidesktop.DefaultExceptionHandler;
 import com.patres.alina.uidesktop.Resources;
+import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.shortcuts.listener.ShortcutKeyListener;
 import com.patres.alina.uidesktop.ui.contextmenu.AppGlobalContextMenu;
 import com.patres.alina.uidesktop.shortcuts.listener.CommandShortcutListener;
@@ -55,7 +58,15 @@ public class AssistantAppLauncher {
         stage.setTitle(System.getProperty("app.name"));
         loadIcons(stage);
         stage.setResizable(true);
+        stage.setAlwaysOnTop(BackendApi.getWorkspaceSettings().keepWindowAlwaysOnTop());
         stage.setOnCloseRequest(t -> Platform.exit());
+
+        DefaultEventBus.getInstance().subscribe(
+                WorkspaceSettingsUpdatedEvent.class,
+                event -> Platform.runLater(() ->
+                        stage.setAlwaysOnTop(BackendApi.getWorkspaceSettings().keepWindowAlwaysOnTop())
+                )
+        );
 
         // register event listeners
 

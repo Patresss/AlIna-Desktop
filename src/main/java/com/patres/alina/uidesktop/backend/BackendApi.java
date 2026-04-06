@@ -4,17 +4,26 @@ import com.patres.alina.AppLauncher;
 import com.patres.alina.common.card.UpdateStateRequest;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
+import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
+import com.patres.alina.common.permission.PermissionResolutionModel;
 import com.patres.alina.common.message.SpeechToTextErrorType;
 import com.patres.alina.common.message.SpeechToTextResponse;
+import com.patres.alina.common.permission.PermissionApprovalAction;
+import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.thread.ChatThreadRenameRequest;
 import com.patres.alina.common.thread.ChatThread;
+import com.patres.alina.common.dashboard.DashboardState;
+import com.patres.alina.common.dashboard.DashboardTaskUpdateRequest;
+import com.patres.alina.server.dashboard.DashboardController;
 import com.patres.alina.server.message.ChatMessageController;
 import com.patres.alina.server.command.CommandController;
 import com.patres.alina.server.settings.SettingsController;
 import com.patres.alina.server.speech.SpeechToTextController;
+import com.patres.alina.server.assistant.PermissionRequestController;
 import com.patres.alina.server.thread.ChatThreadController;
+import com.patres.alina.server.workspace.WorkspaceController;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +45,14 @@ public class BackendApi {
 
     public static void regenerateLastAssistantResponse(String chatThreadId) {
         AppLauncher.getBean(ChatMessageController.class).regenerateLastAssistantResponse(chatThreadId);
+    }
+
+    public static void retryLastUserMessage(String chatThreadId) {
+        AppLauncher.getBean(ChatMessageController.class).retryLastUserMessage(chatThreadId);
+    }
+
+    public static PermissionResolutionModel resolvePermissionRequest(String requestId, PermissionApprovalAction action) {
+        return AppLauncher.getBean(PermissionRequestController.class).resolve(requestId, action);
     }
 
     public static List<ChatMessageResponseModel> getMessagesByThreadId(String chatThreadId) {
@@ -116,5 +133,29 @@ public class BackendApi {
 
     public static List<String> getChatModels() {
         return AppLauncher.getBean(SettingsController.class).getChatModels();
+    }
+
+    public static WorkspaceSettings getWorkspaceSettings() {
+        return AppLauncher.getBean(WorkspaceController.class).getWorkspaceSettings();
+    }
+
+    public static void updateWorkspaceSettings(final WorkspaceSettings workspaceSettings) {
+        AppLauncher.getBean(WorkspaceController.class).updateWorkspaceSettings(workspaceSettings);
+    }
+
+    public static DashboardState getDashboardState() {
+        return AppLauncher.getBean(DashboardController.class).getState();
+    }
+
+    public static void updateDashboardTask(final DashboardTaskUpdateRequest request) {
+        AppLauncher.getBean(DashboardController.class).updateTask(request);
+    }
+
+    public static OpenCodeRuntimeStatus getOpenCodeRuntimeStatus() {
+        return AppLauncher.getBean(WorkspaceController.class).getOpenCodeRuntimeStatus();
+    }
+
+    public static void prepareOpenCodeForFreshChat() {
+        AppLauncher.getBean(WorkspaceController.class).prepareOpenCodeForFreshChat();
     }
 }

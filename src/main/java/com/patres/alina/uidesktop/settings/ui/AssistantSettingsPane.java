@@ -2,7 +2,6 @@ package com.patres.alina.uidesktop.settings.ui;
 
 import atlantafx.base.controls.PasswordTextField;
 import atlantafx.base.theme.Styles;
-import com.patres.alina.common.settings.AiProvider;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.scene.Cursor;
@@ -42,10 +41,14 @@ public class AssistantSettingsPane extends SettingsModalPaneContent {
         loadDataFromSettings();
 
         List<String> chatModels = BackendApi.getChatModels();
+        loadDataFromSettings();
         chatModelSelector.getItems().setAll(chatModels);
 
         chatContextTextArea.setText(settings.systemPrompt());
-        chatModelSelector.setValue(settings.chatModel());
+        final String selectedModel = chatModels.contains(settings.resolveModelIdentifier())
+                ? settings.resolveModelIdentifier()
+                : chatModels.isEmpty() ? settings.resolveModelIdentifier() : chatModels.getFirst();
+        chatModelSelector.setValue(selectedModel);
         numberOfMessagesInContextSpinner.getValueFactory().setValue(settings.numberOfMessagesInContext());
         openAiApiKeyTextField.setText(settings.openAiApiKey());
         anthropicApiKeyTextField.setText(settings.anthropicApiKey() != null ? settings.anthropicApiKey() : "");
@@ -59,7 +62,7 @@ public class AssistantSettingsPane extends SettingsModalPaneContent {
                 .orElse(null);
         final String chatModel = Optional.ofNullable(chatModelSelector)
                 .map(ChoiceBox::getValue)
-                .orElse(null);
+                .orElse(settings.resolveModelIdentifier());
         final String openAiApiKey = Optional.ofNullable(openAiApiKeyTextField)
                 .map(PasswordTextField::getPassword)
                 .orElse(null);
@@ -79,15 +82,10 @@ public class AssistantSettingsPane extends SettingsModalPaneContent {
                 .map(Integer::valueOf)
                 .orElse(-1);
 
-        AiProvider provider = AiProvider.detectFromModelName(chatModel);
-        if (provider == null) {
-            provider = settings.aiProvider();
-        }
-
         final AssistantSettings assistantSettings = new AssistantSettings(
                 chatModel, context, numberOfMessagesInContext,
                 openAiApiKey, anthropicApiKey, googleApiKey,
-                provider, timeout
+                timeout
         );
         BackendApi.updateAssistantSettings(assistantSettings);
     }

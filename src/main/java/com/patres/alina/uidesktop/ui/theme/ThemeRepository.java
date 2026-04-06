@@ -36,7 +36,7 @@ public final class ThemeRepository {
     private static final Logger logger = LoggerFactory.getLogger(ThemeRepository.class);
 
     private static final String DATA_DIR = AppPaths.baseDataDir().toString();
-    private static final String CSS_DIR_NAME = "css";
+    private static final String CSS_DIR_NAME = "themes";
     private static final String CSS_EXTENSION = ".css";
     private static final String DARK_KEYWORD = "dark";
     private static final String THEME_SUFFIX_REGEX = "(?i)-theme$";
@@ -65,7 +65,7 @@ public final class ThemeRepository {
         try {
             loadExternalFromDataCss();
         } catch (IOException e) {
-            logger.warn("Unable to scan data/css for themes.", e);
+            logger.warn("Unable to scan local themes directory.", e);
         }
     }
 

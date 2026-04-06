@@ -7,6 +7,7 @@ import com.patres.alina.common.message.CommandUsageInfo;
 import com.patres.alina.uidesktop.common.event.ThemeEvent;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import javafx.application.Platform;
+import javafx.concurrent.Worker;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
@@ -54,18 +55,29 @@ public class Browser extends StackPane {
             new BootstrapIconsIkonHandler()
     );
     private final Map<String, CommandIconData> commandIconCache = new HashMap<>();
+    private PermissionActionHandler permissionActionHandler;
 
     public Browser() {
         super();
         this.webView = new WebView();
         this.webView.setMaxHeight(Double.MAX_VALUE);
         this.webEngine = webView.getEngine();
+        this.webEngine.setOnAlert(event -> handleBrowserAlert(event.getData()));
+        this.webEngine.getLoadWorker().stateProperty().addListener((_, _, newState) -> {
+            if (newState == Worker.State.SUCCEEDED) {
+                attachJavaBridge();
+            }
+        });
 
         webEngine.loadContent(initHtml());
         getChildren().add(webView);
 
         updateCssColors();
         DefaultEventBus.getInstance().subscribe(ThemeEvent.class, ignored -> updateCssColors());
+    }
+
+    public void setPermissionActionHandler(final PermissionActionHandler permissionActionHandler) {
+        this.permissionActionHandler = permissionActionHandler;
     }
 
     /**
@@ -312,6 +324,92 @@ public class Browser extends StackPane {
         executeJavaScript("hideLoader()");
     }
 
+    public void showAssistantActivity(final String label) {
+        safeJavaScriptCall("showAssistantActivity", label);
+    }
+
+    public void showAssistantReasoning(final String title, final String markdownContent) {
+        final String htmlContent = convertMarkdownToHtml(markdownContent);
+        safeJavaScriptCall("showAssistantReasoning", title, htmlContent);
+    }
+
+    public void showAssistantCommentary(final String title, final String markdownContent) {
+        final String htmlContent = convertMarkdownToHtml(markdownContent);
+        safeJavaScriptCall("showAssistantCommentary", title, htmlContent);
+    }
+
+    public void finalizeAssistantActivity() {
+        executeJavaScript("finalizeAssistantActivity()");
+    }
+
+    public void finalizeAssistantReasoning() {
+        executeJavaScript("finalizeAssistantReasoning()");
+    }
+
+    public void finalizeAssistantCommentary() {
+        executeJavaScript("finalizeAssistantCommentary()");
+    }
+
+    public void clearAssistantActivity() {
+        executeJavaScript("clearAssistantActivity()");
+    }
+
+    public void clearAssistantReasoning() {
+        executeJavaScript("clearAssistantReasoning()");
+    }
+
+    public void clearAssistantCommentary() {
+        executeJavaScript("clearAssistantCommentary()");
+    }
+
+    public void attachProcessPanelToLastAssistantMessage(final String summaryText,
+                                                         final String reasoningTitle,
+                                                         final String reasoningMarkdownContent,
+                                                         final String commentaryTitle,
+                                                         final String commentaryMarkdownContent,
+                                                         final String toolsHtml) {
+        final String reasoningHtml = reasoningMarkdownContent == null || reasoningMarkdownContent.isBlank()
+                ? ""
+                : convertMarkdownToHtml(reasoningMarkdownContent);
+        final String commentaryHtml = commentaryMarkdownContent == null || commentaryMarkdownContent.isBlank()
+                ? ""
+                : convertMarkdownToHtml(commentaryMarkdownContent);
+        safeJavaScriptCall(
+                "attachProcessPanelToLastAssistantMessage",
+                summaryText == null ? "" : summaryText,
+                reasoningTitle == null ? "" : reasoningTitle,
+                reasoningHtml,
+                commentaryTitle == null ? "" : commentaryTitle,
+                commentaryHtml,
+                toolsHtml == null ? "" : toolsHtml
+        );
+    }
+
+    public void showAssistantPermissionRequest(final String requestId,
+                                               final String title,
+                                               final String message,
+                                               final String approveLabel,
+                                               final String approveAlwaysLabel,
+                                               final String denyLabel) {
+        safeJavaScriptCall(
+                "showAssistantPermissionRequest",
+                requestId,
+                title,
+                message,
+                approveLabel,
+                approveAlwaysLabel,
+                denyLabel
+        );
+    }
+
+    public void markAssistantPermissionRequestPending(final String requestId, final String statusLabel) {
+        safeJavaScriptCall("markAssistantPermissionRequestPending", requestId, statusLabel);
+    }
+
+    public void resolveAssistantPermissionRequest(final String requestId, final String statusLabel) {
+        safeJavaScriptCall("resolveAssistantPermissionRequest", requestId, statusLabel);
+    }
+
     public boolean prepareRegenerationTarget() {
         final Object result = safeJavaScriptCallResult("prepareRegenerationTarget");
         return result instanceof Boolean b && b;
@@ -342,6 +440,31 @@ public class Browser extends StackPane {
                     </body>
                 </html>
                 """.formatted(getCssStyles(), getJavaScript());
+    }
+
+    @SuppressWarnings("removal")
+    private void attachJavaBridge() {
+        try {
+            final var window = (netscape.javascript.JSObject) webEngine.executeScript("window");
+            window.setMember("alinaBrowserBridge", new BrowserBridge());
+        } catch (final Exception e) {
+            logger.warn("Failed to attach JavaScript bridge", e);
+        }
+    }
+
+    private void handleBrowserAlert(final String data) {
+        if (data == null || !data.startsWith("__ALINA_PERMISSION__|")) {
+            return;
+        }
+        final String payload = data.substring("__ALINA_PERMISSION__|".length());
+        final String[] parts = payload.split("\\|", 2);
+        if (parts.length != 2) {
+            return;
+        }
+        if (permissionActionHandler == null) {
+            return;
+        }
+        permissionActionHandler.onPermissionAction(parts[0], parts[1]);
     }
 
     private String getCssStyles() {
@@ -467,6 +590,285 @@ public class Browser extends StackPane {
                   width: 50px;
                   height: 40px;
                 }
+                .chat-message.activity-message {
+                  border-left: 4px solid var(--color-warning-fg);
+                  background-color: var(--color-bg-default);
+                  color: var(--color-fg-muted);
+                  box-shadow: none;
+                  padding-top: 6px;
+                  padding-bottom: 6px;
+                }
+                .activity-shell {
+                  width: 100%;
+                }
+                .activity-summary {
+                  font-size: 12px;
+                  font-weight: 600;
+                  color: var(--color-fg-muted);
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 10px;
+                }
+                .activity-summary-main {
+                  min-width: 0;
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  flex: 1;
+                }
+                .activity-summary-text {
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                  min-width: 0;
+                }
+                .activity-summary-badge {
+                  border: 1px solid var(--color-border-default);
+                  border-radius: 999px;
+                  padding: 1px 7px;
+                  font-size: 11px;
+                  color: var(--color-fg-muted);
+                  background-color: var(--color-bg-subtle);
+                  flex-shrink: 0;
+                }
+                .activity-toggle {
+                  border: 1px solid var(--color-border-default);
+                  border-radius: 999px;
+                  background-color: transparent;
+                  color: var(--color-fg-muted);
+                  font-size: 14px;
+                  line-height: 1;
+                  width: 26px;
+                  height: 26px;
+                  padding: 0;
+                  cursor: pointer;
+                  flex-shrink: 0;
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+                .activity-body {
+                  margin-top: 8px;
+                  display: none;
+                  padding-left: 2px;
+                }
+                .activity-body.open {
+                  display: block;
+                }
+                .activity-entry {
+                  font-size: 11px;
+                  line-height: 1.45;
+                  color: var(--color-fg-muted);
+                  margin-top: 3px;
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                }
+                .chat-message.permission-message {
+                  border-left: none;
+                  background-color: transparent;
+                  color: var(--color-fg-default);
+                  box-shadow: none;
+                  padding: 0;
+                  max-width: 100%;
+                }
+                .chat-message.reasoning-message {
+                  border-left: 4px solid var(--color-attention-fg);
+                  background-color: var(--color-bg-default);
+                  color: var(--color-fg-muted);
+                  box-shadow: none;
+                  padding-top: 8px;
+                  padding-bottom: 8px;
+                }
+                .chat-message.commentary-message {
+                  border-left: 4px solid var(--color-accent-0);
+                  background-color: var(--color-bg-default);
+                  color: var(--color-fg-muted);
+                  box-shadow: none;
+                  padding-top: 8px;
+                  padding-bottom: 8px;
+                }
+                .reasoning-details {
+                  width: 100%;
+                }
+                .commentary-details {
+                  width: 100%;
+                }
+                .reasoning-summary {
+                  cursor: pointer;
+                  font-size: 12px;
+                  font-weight: 600;
+                  color: var(--color-fg-muted);
+                  list-style: none;
+                  user-select: none;
+                }
+                .reasoning-summary::-webkit-details-marker {
+                  display: none;
+                }
+                .commentary-summary {
+                  cursor: pointer;
+                  font-size: 12px;
+                  font-weight: 600;
+                  color: var(--color-fg-muted);
+                  list-style: none;
+                  user-select: none;
+                }
+                .commentary-summary::-webkit-details-marker {
+                  display: none;
+                }
+                .reasoning-body {
+                  margin-top: 8px;
+                  color: var(--color-fg-muted);
+                }
+                .commentary-body {
+                  margin-top: 8px;
+                  color: var(--color-fg-muted);
+                }
+                .assistant-process {
+                  margin-top: 12px;
+                  border-top: 1px solid var(--color-border-default);
+                  padding-top: 10px;
+                }
+                .assistant-process-toggle {
+                  width: 100%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 10px;
+                  border: none;
+                  background: transparent;
+                  color: var(--color-fg-muted);
+                  padding: 0;
+                  cursor: pointer;
+                  font: inherit;
+                  text-align: left;
+                }
+                .assistant-process-summary {
+                  font-size: 12px;
+                  font-weight: 600;
+                  color: var(--color-fg-muted);
+                }
+                .assistant-process-chevron {
+                  width: 24px;
+                  height: 24px;
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                  border: 1px solid var(--color-border-default);
+                  border-radius: 999px;
+                  font-size: 13px;
+                  flex-shrink: 0;
+                }
+                .assistant-process-body {
+                  display: none;
+                  margin-top: 10px;
+                }
+                .assistant-process-body.open {
+                  display: block;
+                }
+                .assistant-process-section + .assistant-process-section {
+                  margin-top: 12px;
+                }
+                .assistant-process-title {
+                  font-size: 12px;
+                  font-weight: 600;
+                  color: var(--color-fg-muted);
+                  margin-bottom: 6px;
+                }
+                .assistant-process-content {
+                  font-size: 13px;
+                  color: var(--color-fg-muted);
+                }
+                .assistant-process-content ul {
+                  margin: 0;
+                  padding-left: 18px;
+                }
+                .activity-entry {
+                  font-size: 12px;
+                  line-height: 1.45;
+                }
+                .activity-entry + .activity-entry {
+                  margin-top: 4px;
+                }
+                .permission-shell {
+                  width: 100%;
+                  border: 1px solid var(--color-accent-fg);
+                  border-radius: 12px;
+                  background-color: var(--color-bg-default);
+                  padding: 12px 14px;
+                  box-sizing: border-box;
+                }
+                .permission-header {
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 12px;
+                  margin-bottom: 8px;
+                }
+                .permission-title {
+                  font-size: 13px;
+                  font-weight: 600;
+                  margin-bottom: 0;
+                }
+                .permission-badge {
+                  border: 1px solid var(--color-border-default);
+                  border-radius: 999px;
+                  padding: 2px 8px;
+                  font-size: 11px;
+                  color: var(--color-fg-muted);
+                  background-color: var(--color-bg-subtle);
+                  white-space: nowrap;
+                }
+                .permission-message-body {
+                  white-space: pre-wrap;
+                  line-height: 1.45;
+                  color: var(--color-fg-muted);
+                  font-size: 12px;
+                }
+                .permission-actions {
+                  display: grid;
+                  grid-template-columns: repeat(3, minmax(0, 1fr));
+                  gap: 8px;
+                  margin-top: 12px;
+                }
+                .permission-actions button {
+                  min-height: 38px;
+                  border: 1px solid var(--color-accent-fg);
+                  background-color: transparent;
+                  color: var(--color-fg-default);
+                  border-radius: 10px;
+                  padding: 8px 12px;
+                  cursor: pointer;
+                  font: inherit;
+                  font-weight: 600;
+                  text-align: center;
+                }
+                .permission-actions button.primary {
+                  background-color: var(--color-bg-subtle);
+                }
+                .permission-actions button.always {
+                  border-color: var(--color-success-fg);
+                  background-color: var(--color-bg-subtle);
+                }
+                .permission-actions button.deny {
+                  border-color: var(--color-danger-fg);
+                  background-color: var(--color-bg-subtle);
+                }
+                .permission-actions button:disabled {
+                  cursor: default;
+                  opacity: 0.55;
+                }
+                .permission-status {
+                  margin-top: 10px;
+                  font-size: 12px;
+                  color: var(--color-fg-muted);
+                }
+                @media (max-width: 720px) {
+                  .permission-actions {
+                    grid-template-columns: 1fr;
+                  }
+                }
                 .loader.active {
                   display: flex;
                 }
@@ -591,6 +993,466 @@ public class Browser extends StackPane {
                         document.getElementById('loader').classList.remove('user-message');
                     }
 
+                    function showAssistantActivity(label) {
+                        var chatContainer = document.getElementById('chat-container');
+                        if (!chatContainer) {
+                            return;
+                        }
+                        var activity = document.getElementById('assistant-activity-message');
+                        if (!activity) {
+                            activity = document.createElement('div');
+                            activity.className = 'chat-message assistant activity-message';
+                            activity.id = 'assistant-activity-message';
+                            activity.dataset.transient = 'true';
+                            activity.dataset.count = '0';
+                            activity.dataset.expanded = 'false';
+
+                            var shell = document.createElement('div');
+                            shell.className = 'activity-shell';
+
+                            var summary = document.createElement('div');
+                            summary.className = 'activity-summary';
+
+                            var summaryMain = document.createElement('div');
+                            summaryMain.className = 'activity-summary-main';
+
+                            var summaryText = document.createElement('span');
+                            summaryText.className = 'activity-summary-text';
+                            summaryText.id = 'assistant-activity-summary-text';
+                            summaryText.textContent = 'OpenCode: ' + label;
+
+                            var summaryBadge = document.createElement('span');
+                            summaryBadge.className = 'activity-summary-badge';
+                            summaryBadge.id = 'assistant-activity-summary-badge';
+                            summaryBadge.textContent = '1';
+
+                            var toggleButton = document.createElement('button');
+                            toggleButton.className = 'activity-toggle';
+                            toggleButton.id = 'assistant-activity-toggle';
+                            toggleButton.type = 'button';
+                            toggleButton.textContent = '▸';
+                            toggleButton.setAttribute('aria-label', 'Pokaż szczegóły');
+                            toggleButton.onclick = function() {
+                                toggleAssistantActivity();
+                            };
+
+                            summaryMain.appendChild(summaryText);
+                            summaryMain.appendChild(summaryBadge);
+                            summary.appendChild(summaryMain);
+                            summary.appendChild(toggleButton);
+
+                            var body = document.createElement('div');
+                            body.className = 'activity-body';
+                            body.id = 'assistant-activity-body';
+
+                            shell.appendChild(summary);
+                            shell.appendChild(body);
+                            activity.appendChild(shell);
+                            chatContainer.appendChild(activity);
+                        }
+
+                        var bodyNode = document.getElementById('assistant-activity-body');
+                        var lastEntry = bodyNode ? bodyNode.lastElementChild : null;
+                        if (lastEntry && lastEntry.dataset && lastEntry.dataset.label === label) {
+                            var count = parseInt(lastEntry.dataset.count ? lastEntry.dataset.count : '1', 10) + 1;
+                            lastEntry.dataset.count = String(count);
+                            lastEntry.textContent = label + ' ×' + count;
+                        } else if (bodyNode) {
+                            var entry = document.createElement('div');
+                            entry.className = 'activity-entry';
+                            entry.dataset.label = label;
+                            entry.dataset.count = '1';
+                            entry.textContent = label;
+                            bodyNode.appendChild(entry);
+                        }
+
+                        if (activity.dataset) {
+                            var totalCount = parseInt(activity.dataset.count ? activity.dataset.count : '0', 10) + 1;
+                            activity.dataset.count = String(totalCount);
+                            activity.dataset.lastEntry = label;
+                        }
+
+                        var summaryTextNode = document.getElementById('assistant-activity-summary-text');
+                        if (summaryTextNode) {
+                            summaryTextNode.textContent = buildAssistantActivitySummary(activity.dataset.count, label);
+                        }
+                        var summaryBadgeNode = document.getElementById('assistant-activity-summary-badge');
+                        if (summaryBadgeNode && activity.dataset) {
+                            summaryBadgeNode.textContent = activity.dataset.count;
+                        }
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }
+
+                    function finalizeAssistantActivity() {
+                        var activity = document.getElementById('assistant-activity-message');
+                        if (!activity) {
+                            return;
+                        }
+                        activity.removeAttribute('id');
+                        if (activity.dataset) {
+                            delete activity.dataset.lastEntry;
+                        }
+                    }
+
+                    function clearAssistantActivity() {
+                        var activity = document.getElementById('assistant-activity-message');
+                        if (!activity) {
+                            return;
+                        }
+                        activity.remove();
+                    }
+
+                    function buildAssistantActivitySummary(count, lastLabel) {
+                        var parsedCount = parseInt(count ? count : '0', 10);
+                        var safeCount = Number.isNaN(parsedCount) ? 0 : parsedCount;
+                        if (safeCount <= 1) {
+                            return 'OpenCode: ' + lastLabel;
+                        }
+                        return 'OpenCode tools: ' + safeCount + ' · ostatnio: ' + lastLabel;
+                    }
+
+                    function toggleAssistantActivity() {
+                        var activity = document.getElementById('assistant-activity-message');
+                        if (!activity || !activity.dataset) {
+                            return;
+                        }
+                        var body = document.getElementById('assistant-activity-body');
+                        var toggle = document.getElementById('assistant-activity-toggle');
+                        if (!body || !toggle) {
+                            return;
+                        }
+                        var expanded = activity.dataset.expanded === 'true';
+                        if (expanded) {
+                            body.classList.remove('open');
+                            activity.dataset.expanded = 'false';
+                            toggle.textContent = '▸';
+                            toggle.setAttribute('aria-label', 'Pokaż szczegóły');
+                        } else {
+                            body.classList.add('open');
+                            activity.dataset.expanded = 'true';
+                            toggle.textContent = '▾';
+                            toggle.setAttribute('aria-label', 'Ukryj szczegóły');
+                        }
+                    }
+
+                    function showAssistantReasoning(title, htmlContent) {
+                        var chatContainer = document.getElementById('chat-container');
+                        if (!chatContainer) {
+                            return;
+                        }
+                        var card = document.getElementById('assistant-reasoning-message');
+                        if (!card) {
+                            card = document.createElement('div');
+                            card.className = 'chat-message assistant reasoning-message';
+                            card.id = 'assistant-reasoning-message';
+                            card.dataset.transient = 'true';
+
+                            var details = document.createElement('details');
+                            details.className = 'reasoning-details';
+                            details.open = true;
+
+                            var summary = document.createElement('summary');
+                            summary.className = 'reasoning-summary';
+                            summary.textContent = title;
+
+                            var body = document.createElement('div');
+                            body.className = 'reasoning-body';
+                            body.id = 'assistant-reasoning-body';
+
+                            details.appendChild(summary);
+                            details.appendChild(body);
+                            card.appendChild(details);
+                            chatContainer.appendChild(card);
+                        }
+                        var bodyNode = document.getElementById('assistant-reasoning-body');
+                        if (bodyNode) {
+                            bodyNode.innerHTML = htmlContent;
+                        }
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }
+
+                    function showAssistantCommentary(title, htmlContent) {
+                        var chatContainer = document.getElementById('chat-container');
+                        if (!chatContainer) {
+                            return;
+                        }
+                        var card = document.getElementById('assistant-commentary-message');
+                        if (!card) {
+                            card = document.createElement('div');
+                            card.className = 'chat-message assistant commentary-message';
+                            card.id = 'assistant-commentary-message';
+                            card.dataset.transient = 'true';
+
+                            var details = document.createElement('details');
+                            details.className = 'commentary-details';
+                            details.open = true;
+
+                            var summary = document.createElement('summary');
+                            summary.className = 'commentary-summary';
+                            summary.textContent = title;
+
+                            var body = document.createElement('div');
+                            body.className = 'commentary-body';
+                            body.id = 'assistant-commentary-body';
+
+                            details.appendChild(summary);
+                            details.appendChild(body);
+                            card.appendChild(details);
+                            chatContainer.appendChild(card);
+                        }
+                        var bodyNode = document.getElementById('assistant-commentary-body');
+                        if (bodyNode) {
+                            bodyNode.innerHTML = htmlContent;
+                        }
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }
+
+                    function finalizeAssistantReasoning() {
+                        var card = document.getElementById('assistant-reasoning-message');
+                        if (!card) {
+                            return;
+                        }
+                        card.removeAttribute('id');
+                        var body = document.getElementById('assistant-reasoning-body');
+                        if (body) {
+                            body.removeAttribute('id');
+                        }
+                    }
+
+                    function finalizeAssistantCommentary() {
+                        var card = document.getElementById('assistant-commentary-message');
+                        if (!card) {
+                            return;
+                        }
+                        card.removeAttribute('id');
+                        var body = document.getElementById('assistant-commentary-body');
+                        if (body) {
+                            body.removeAttribute('id');
+                        }
+                    }
+
+                    function clearAssistantReasoning() {
+                        var card = document.getElementById('assistant-reasoning-message');
+                        if (!card) {
+                            return;
+                        }
+                        card.remove();
+                    }
+
+                    function clearAssistantCommentary() {
+                        var card = document.getElementById('assistant-commentary-message');
+                        if (!card) {
+                            return;
+                        }
+                        card.remove();
+                    }
+
+                    function attachProcessPanelToLastAssistantMessage(summaryText, reasoningTitle, reasoningHtml, commentaryTitle, commentaryHtml, toolsHtml) {
+                        var chatContainer = document.getElementById('chat-container');
+                        if (!chatContainer || !chatContainer.children) {
+                            return;
+                        }
+
+                        var target = null;
+                        for (var i = chatContainer.children.length - 1; i >= 0; i--) {
+                            var node = chatContainer.children[i];
+                            if (!node || !node.classList) {
+                                continue;
+                            }
+                            if (node.id === 'streaming-message') {
+                                target = node;
+                                break;
+                            }
+                            if (node.classList.contains('chat-message')
+                                && node.classList.contains('assistant')
+                                && (!node.dataset || node.dataset.transient !== 'true')) {
+                                target = node;
+                                break;
+                            }
+                        }
+
+                        if (!target) {
+                            return;
+                        }
+
+                        var existing = target.querySelector('.assistant-process');
+                        if (existing) {
+                            existing.remove();
+                        }
+
+                        var hasReasoning = reasoningHtml && reasoningHtml.trim() !== '';
+                        var hasCommentary = commentaryHtml && commentaryHtml.trim() !== '';
+                        var hasTools = toolsHtml && toolsHtml.trim() !== '';
+                        if (!hasReasoning && !hasCommentary && !hasTools) {
+                            return;
+                        }
+
+                        var shell = document.createElement('div');
+                        shell.className = 'assistant-process';
+
+                        var toggle = document.createElement('button');
+                        toggle.type = 'button';
+                        toggle.className = 'assistant-process-toggle';
+
+                        var summary = document.createElement('span');
+                        summary.className = 'assistant-process-summary';
+                        summary.textContent = summaryText ? summaryText : 'Process';
+
+                        var chevron = document.createElement('span');
+                        chevron.className = 'assistant-process-chevron';
+                        chevron.textContent = '▸';
+
+                        toggle.appendChild(summary);
+                        toggle.appendChild(chevron);
+
+                        var body = document.createElement('div');
+                        body.className = 'assistant-process-body';
+
+                        function appendSection(title, html) {
+                            if (!html || html.trim() === '') {
+                                return;
+                            }
+                            var section = document.createElement('div');
+                            section.className = 'assistant-process-section';
+
+                            var titleNode = document.createElement('div');
+                            titleNode.className = 'assistant-process-title';
+                            titleNode.textContent = title;
+
+                            var contentNode = document.createElement('div');
+                            contentNode.className = 'assistant-process-content';
+                            contentNode.innerHTML = html;
+
+                            section.appendChild(titleNode);
+                            section.appendChild(contentNode);
+                            body.appendChild(section);
+                        }
+
+                        appendSection(reasoningTitle, reasoningHtml);
+                        appendSection(commentaryTitle, commentaryHtml);
+                        appendSection('Tools', toolsHtml);
+
+                        toggle.onclick = function() {
+                            var expanded = body.classList.contains('open');
+                            if (expanded) {
+                                body.classList.remove('open');
+                                chevron.textContent = '▸';
+                            } else {
+                                body.classList.add('open');
+                                chevron.textContent = '▾';
+                            }
+                        };
+
+                        shell.appendChild(toggle);
+                        shell.appendChild(body);
+                        target.appendChild(shell);
+                    }
+
+                    function showAssistantPermissionRequest(requestId, title, message, approveLabel, approveAlwaysLabel, denyLabel) {
+                        var chatContainer = document.getElementById('chat-container');
+                        if (!chatContainer || !requestId) {
+                            return;
+                        }
+
+                        var messageId = 'assistant-permission-' + requestId;
+                        var card = document.getElementById(messageId);
+                        if (!card) {
+                            card = document.createElement('div');
+                            card.className = 'chat-message assistant permission-message';
+                            card.id = messageId;
+                            card.dataset.transient = 'true';
+
+                            var shell = document.createElement('div');
+                            shell.className = 'permission-shell';
+
+                            var header = document.createElement('div');
+                            header.className = 'permission-header';
+
+                            var titleNode = document.createElement('div');
+                            titleNode.className = 'permission-title';
+                            titleNode.textContent = title;
+                            header.appendChild(titleNode);
+
+                            var badge = document.createElement('div');
+                            badge.className = 'permission-badge';
+                            badge.textContent = 'Approval';
+                            header.appendChild(badge);
+                            shell.appendChild(header);
+
+                            var body = document.createElement('div');
+                            body.className = 'permission-message-body';
+                            body.textContent = message;
+                            shell.appendChild(body);
+
+                            var actions = document.createElement('div');
+                            actions.className = 'permission-actions';
+
+                            function createButton(label, cssClass, actionName) {
+                                var button = document.createElement('button');
+                                button.type = 'button';
+                                button.className = cssClass;
+                                button.textContent = label;
+                                button.onclick = function() {
+                                    markAssistantPermissionRequestPending(requestId, label + '...');
+                                    if (window.alinaBrowserBridge && window.alinaBrowserBridge.handlePermissionAction) {
+                                        window.alinaBrowserBridge.handlePermissionAction(requestId, actionName);
+                                    } else if (window.alert) {
+                                        window.alert('__ALINA_PERMISSION__|' + requestId + '|' + actionName);
+                                    }
+                                };
+                                return button;
+                            }
+
+                            actions.appendChild(createButton(approveLabel, 'primary', 'APPROVE_ONCE'));
+                            actions.appendChild(createButton(approveAlwaysLabel, 'always', 'APPROVE_ALWAYS'));
+                            actions.appendChild(createButton(denyLabel, 'deny', 'DENY'));
+                            shell.appendChild(actions);
+
+                            var status = document.createElement('div');
+                            status.className = 'permission-status';
+                            status.id = messageId + '-status';
+                            shell.appendChild(status);
+
+                            card.appendChild(shell);
+
+                            chatContainer.appendChild(card);
+                        }
+
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }
+
+                    function markAssistantPermissionRequestPending(requestId, statusLabel) {
+                        var card = document.getElementById('assistant-permission-' + requestId);
+                        if (!card) {
+                            return;
+                        }
+                        var buttons = card.querySelectorAll('button');
+                        Array.prototype.forEach.call(buttons, function(button) {
+                            button.disabled = true;
+                        });
+                        var status = document.getElementById('assistant-permission-' + requestId + '-status');
+                        if (status) {
+                            status.textContent = statusLabel ? statusLabel : '';
+                        }
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }
+
+                    function resolveAssistantPermissionRequest(requestId, statusLabel) {
+                        var card = document.getElementById('assistant-permission-' + requestId);
+                        if (!card) {
+                            return;
+                        }
+                        var buttons = card.querySelectorAll('button');
+                        Array.prototype.forEach.call(buttons, function(button) {
+                            button.disabled = true;
+                        });
+                        var status = document.getElementById('assistant-permission-' + requestId + '-status');
+                        if (status) {
+                            status.textContent = statusLabel ? statusLabel : '';
+                        }
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }
+
                     function startStreamingAssistantMessage() {
                         var chatContainer = document.getElementById('chat-container');
                         var streamingDiv = null;
@@ -673,7 +1535,9 @@ public class Browser extends StackPane {
                             if (!node || !node.classList) {
                                 continue;
                             }
-                            if (node.classList.contains('chat-message') && node.classList.contains('assistant')) {
+                            if (node.classList.contains('chat-message')
+                                && node.classList.contains('assistant')
+                                && (!node.dataset || node.dataset.transient !== 'true')) {
                                 if (node.dataset) {
                                     node.dataset.prevHtml = node.innerHTML;
                                 }
@@ -756,6 +1620,19 @@ public class Browser extends StackPane {
             String fontFamily,
             String glyph
     ) {
+    }
+
+    public interface PermissionActionHandler {
+        void onPermissionAction(String requestId, String actionName);
+    }
+
+    public final class BrowserBridge {
+        public void handlePermissionAction(final String requestId, final String actionName) {
+            if (permissionActionHandler == null) {
+                return;
+            }
+            permissionActionHandler.onPermissionAction(requestId, actionName);
+        }
     }
 
 }

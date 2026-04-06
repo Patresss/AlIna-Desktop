@@ -30,6 +30,57 @@
   -fx-background-insets: 0 40px 0 0;
 }
 
+.chat-text-area-status {
+  -fx-opacity: 1.0;
+}
+
+.chat-text-area-status .content {
+  -fx-opacity: 1.0;
+}
+
+.composer-approval-pane {
+  -fx-background-color: -color-bg-default;
+  -fx-border-color: -color-accent-fg;
+  -fx-border-radius: 12px;
+  -fx-background-radius: 12px;
+  -fx-padding: 12px 14px 12px 14px;
+}
+
+.composer-approval-title {
+  -fx-font-size: 13px;
+  -fx-font-weight: 700;
+}
+
+.composer-approval-message {
+  -fx-text-fill: -color-fg-muted;
+  -fx-font-size: 12px;
+}
+
+.composer-approval-status {
+  -fx-text-fill: -color-fg-muted;
+  -fx-font-size: 12px;
+}
+
+.composer-approval-button {
+  -fx-background-color: -color-bg-subtle;
+  -fx-background-radius: 10px;
+  -fx-border-radius: 10px;
+  -fx-padding: 8px 12px 8px 12px;
+  -fx-font-weight: 700;
+}
+
+.composer-approval-button-primary {
+  -fx-border-color: -color-accent-fg;
+}
+
+.composer-approval-button-always {
+  -fx-border-color: -color-success-fg;
+}
+
+.composer-approval-button-deny {
+  -fx-border-color: -color-danger-fg;
+}
+
 ChatWindow {
 }
 
@@ -150,4 +201,62 @@ ChatThreadHistoryCard {
 
 .model-selector-label:hover {
     -fx-underline: true;
+}
+
+.workspace-dashboard {
+    -fx-background-color: transparent;
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1px;
+    -fx-effect: none;
+}
+
+.workspace-dashboard-header {
+    -fx-alignment: center-left;
+}
+
+.workspace-dashboard-title {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+}
+
+.workspace-dashboard-count {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 999px;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 999px;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 2px 8px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.workspace-dashboard-content {
+    -fx-padding: 4px 0 0 0;
+}
+
+.workspace-collapse-button {
+    -fx-text-fill: -color-fg-muted;
+    -fx-padding: 4px;
+}
+
+.workspace-task-list {
+    -fx-spacing: 8px;
+}
+
+.workspace-task-list .check-box {
+    -fx-text-fill: -color-fg-default;
+    -fx-padding: 4px 2px;
+}
+
+.workspace-task-list .check-box:selected {
+    -fx-opacity: 0.72;
+}
+
+.workspace-dashboard-empty {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+    -fx-padding: 4px 0 2px 2px;
 }
