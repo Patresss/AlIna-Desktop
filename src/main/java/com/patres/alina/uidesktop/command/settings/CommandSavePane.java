@@ -1,6 +1,7 @@
 package com.patres.alina.uidesktop.command.settings;
 
 import atlantafx.base.controls.ToggleSwitch;
+import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.shortcuts.key.ShortcutKeyPane;
 import com.patres.alina.uidesktop.shortcuts.key.ShortcutKeys;
@@ -10,6 +11,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import org.kordamp.ikonli.feather.Feather;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.patres.alina.uidesktop.ui.language.LanguageManager.getLanguageString;
@@ -20,7 +22,7 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
     protected TextField commandNameTextField;
     protected TextArea commandDescriptionTextArea;
     protected TextArea commandSystemPromptTextArea;
-    protected TextField commandModelTextField;
+    protected ChoiceBox<String> commandModelChoiceBox;
     protected ComboBox<AutoCompleteComboBox.HideableItem<ApplicationIcon>> iconComboBox;
     protected ToggleSwitch showInChatToggleSwitch;
     protected ToggleSwitch showInContextMenuPasteToggleSwitch;
@@ -68,8 +70,9 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
                 getLanguageString("command.model.title"),
                 getLanguageString("command.model.description")
         );
-        commandModelTextField = createResizableTextField(settingsBox);
-        commandModelTile.setAction(commandModelTextField);
+        commandModelChoiceBox = createResizableRegion(ChoiceBox::new, settingsBox);
+        loadAvailableModels();
+        commandModelTile.setAction(commandModelChoiceBox);
 
         iconComboBox = createResizableRegion(IconComboBox::create, settingsBox);
         var iconTile = new CustomTile(
@@ -139,5 +142,37 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
         showInContextMenuDisplayToggleSwitch.setSelected(true);
         pasteShortcutKeyPane.setValues(new ShortcutKeys());
         displayShortcutKeyPane.setValues(new ShortcutKeys());
+    }
+
+    protected void loadAvailableModels() {
+        final String defaultLabel = getLanguageString("command.model.default");
+        final List<String> items = new ArrayList<>();
+        items.add(defaultLabel);
+        try {
+            items.addAll(BackendApi.getChatModels());
+        } catch (Exception ignored) {
+        }
+        commandModelChoiceBox.getItems().setAll(items);
+    }
+
+    protected void setSelectedModel(final String model) {
+        final String defaultLabel = getLanguageString("command.model.default");
+        if (model == null || model.isBlank()) {
+            commandModelChoiceBox.setValue(defaultLabel);
+        } else {
+            if (!commandModelChoiceBox.getItems().contains(model)) {
+                commandModelChoiceBox.getItems().add(model);
+            }
+            commandModelChoiceBox.setValue(model);
+        }
+    }
+
+    protected String getSelectedModel() {
+        final String defaultLabel = getLanguageString("command.model.default");
+        final String value = commandModelChoiceBox.getValue();
+        if (value == null || value.equals(defaultLabel)) {
+            return "";
+        }
+        return value;
     }
 }

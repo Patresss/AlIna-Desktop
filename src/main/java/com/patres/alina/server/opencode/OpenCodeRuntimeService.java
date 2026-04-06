@@ -142,6 +142,38 @@ public class OpenCodeRuntimeService {
         return modelService.resolveEffectiveModelIdentifier();
     }
 
+    /**
+     * Builds the full OpenCode web UI URL for the session mapped to the given chat thread.
+     * The web UI path uses the base64-encoded working directory as the project segment:
+     * {@code http://host:port/{base64(directory)}/session/{sessionId}}.
+     * Returns {@code null} when the thread has no mapped session or when the directory
+     * cannot be resolved from the OpenCode API.
+     */
+    public String getSessionWebUrl(final String chatThreadId) {
+        if (chatThreadId == null || chatThreadId.isBlank()) {
+            return null;
+        }
+        final String sessionId = sessionRegistry.get(chatThreadId);
+        if (sessionId == null || sessionId.isBlank()) {
+            return null;
+        }
+        try {
+            final JsonNode sessionInfo = httpClient.get("/session/" + sessionId);
+            final String directory = sessionInfo.path("directory").asText(null);
+            if (directory == null || directory.isBlank()) {
+                logger.warn("OpenCode session {} has no directory", sessionId);
+                return null;
+            }
+            final String encodedDirectory = java.util.Base64.getEncoder().encodeToString(
+                    directory.getBytes(StandardCharsets.UTF_8)
+            );
+            return httpClient.baseUrl() + "/" + encodedDirectory + "/session/" + sessionId;
+        } catch (Exception e) {
+            logger.warn("Cannot resolve OpenCode session web URL for thread {}", chatThreadId, e);
+            return null;
+        }
+    }
+
     public OpenCodeRuntimeStatus getRuntimeStatus() {
         final WorkspaceSettings workspace = configurationService.workspaceSettings();
         final Path workingDirectory = configurationService.resolveWorkingDirectory();

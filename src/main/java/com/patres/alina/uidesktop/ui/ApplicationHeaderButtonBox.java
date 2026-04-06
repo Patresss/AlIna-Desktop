@@ -77,6 +77,11 @@ public class ApplicationHeaderButtonBox extends HBox {
         applicationWindow.openCommands();
     }
 
+    @FXML
+    public void openOpenCodeSession() {
+        applicationWindow.openCurrentOpenCodeSession();
+    }
+
     public Stage getStage() {
         return (Stage) getScene().getWindow();
     }

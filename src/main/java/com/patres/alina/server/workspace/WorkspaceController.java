@@ -33,4 +33,8 @@ public class WorkspaceController {
     public void prepareOpenCodeForFreshChat() {
         openCodeRuntimeService.prepareForFreshChat();
     }
+
+    public String getOpenCodeSessionWebUrl(final String chatThreadId) {
+        return openCodeRuntimeService.getSessionWebUrl(chatThreadId);
+    }
 }

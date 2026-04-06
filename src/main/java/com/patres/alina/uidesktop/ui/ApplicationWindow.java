@@ -11,6 +11,7 @@ import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.settings.ui.AssistantSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.UiSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.WorkspaceSettingsPane;
+import com.patres.alina.uidesktop.ui.chat.Browser;
 import com.patres.alina.uidesktop.ui.chat.ChatWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.dashboard.DashboardPane;
@@ -159,6 +160,13 @@ public class ApplicationWindow extends BorderPane {
     public void openCommands() {
         commandPane.reload();
         appModalPane.show(commandPane);
+    }
+
+    public void openCurrentOpenCodeSession() {
+        getChatThread()
+                .map(ChatThread::id)
+                .map(BackendApi::getOpenCodeSessionWebUrl)
+                .ifPresent(Browser::openWebpage);
     }
 
     public Stage getStage() {

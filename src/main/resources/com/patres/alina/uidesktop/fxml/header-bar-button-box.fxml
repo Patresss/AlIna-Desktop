@@ -48,6 +48,15 @@
             <String fx:value="flat" />
          </styleClass>
       </Button>
+      <Button minWidth="0.0" mnemonicParsing="false" nodeOrientation="LEFT_TO_RIGHT" onAction="#openOpenCodeSession" text="Button">
+         <graphic>
+            <FontIcon iconLiteral="mdoal-launch" />
+         </graphic>
+         <styleClass>
+            <String fx:value="button-circle" />
+            <String fx:value="flat" />
+         </styleClass>
+      </Button>
       <MenuButton mnemonicParsing="false"  styleClass="button-circle">
          <items>
             <MenuItem mnemonicParsing="false" onAction="#openAssistantSettings" text="%settings.assistant.title" />

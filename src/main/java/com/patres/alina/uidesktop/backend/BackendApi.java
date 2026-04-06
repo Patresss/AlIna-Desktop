@@ -158,4 +158,8 @@ public class BackendApi {
     public static void prepareOpenCodeForFreshChat() {
         AppLauncher.getBean(WorkspaceController.class).prepareOpenCodeForFreshChat();
     }
+
+    public static String getOpenCodeSessionWebUrl(final String chatThreadId) {
+        return AppLauncher.getBean(WorkspaceController.class).getOpenCodeSessionWebUrl(chatThreadId);
+    }
 }
