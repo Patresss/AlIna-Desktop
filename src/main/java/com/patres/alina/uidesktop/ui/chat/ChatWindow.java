@@ -208,7 +208,7 @@ public class ChatWindow extends BorderPane {
                 .filter(it -> it != recordButton)
                 .toList();
 
-        messages.forEach(this::displayMessage);
+        browser.whenReady(() -> messages.forEach(this::displayMessage));
         boolean hasAnyUserMessages = messages.stream().anyMatch(m -> m.seder() == ChatMessageRole.USER);
 
         streamingController = new ChatStreamingController(

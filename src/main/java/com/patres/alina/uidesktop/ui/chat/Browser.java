@@ -56,6 +56,8 @@ public class Browser extends StackPane {
     );
     private final Map<String, CommandIconData> commandIconCache = new HashMap<>();
     private PermissionActionHandler permissionActionHandler;
+    private volatile boolean webViewReady = false;
+    private final java.util.List<Runnable> pendingActions = new java.util.ArrayList<>();
 
     public Browser() {
         super();
@@ -66,6 +68,9 @@ public class Browser extends StackPane {
         this.webEngine.getLoadWorker().stateProperty().addListener((_, _, newState) -> {
             if (newState == Worker.State.SUCCEEDED) {
                 attachJavaBridge();
+                webViewReady = true;
+                pendingActions.forEach(Runnable::run);
+                pendingActions.clear();
             }
         });
 
@@ -78,6 +83,18 @@ public class Browser extends StackPane {
 
     public void setPermissionActionHandler(final PermissionActionHandler permissionActionHandler) {
         this.permissionActionHandler = permissionActionHandler;
+    }
+
+    /**
+     * Executes the given action immediately if the WebView has finished loading,
+     * otherwise queues it to run once the initial HTML/JS is ready.
+     */
+    public void whenReady(final Runnable action) {
+        if (webViewReady) {
+            action.run();
+        } else {
+            pendingActions.add(action);
+        }
     }
 
     /**
@@ -188,6 +205,9 @@ public class Browser extends StackPane {
     }
 
     private void stopOpeningUrlInWebView() {
+        if (webEngine.getDocument() == null) {
+            return;
+        }
         final NodeList nodeList = webEngine.getDocument().getElementsByTagName("a");
         for (int i = 0; i < nodeList.getLength(); i++) {
             Node node = nodeList.item(i);
