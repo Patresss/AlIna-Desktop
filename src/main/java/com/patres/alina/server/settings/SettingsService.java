@@ -31,28 +31,7 @@ public class SettingsService {
     }
 
     public List<String> getChatModels() {
-        final List<String> models = openCodeRuntimeService.getAvailableModels();
-        normalizeModelIfNeeded(models);
-        return models;
-    }
-
-    private void normalizeModelIfNeeded(final List<String> availableModels) {
-        final AssistantSettings current = assistantSettingsManager.getSettings();
-        final String effective = openCodeRuntimeService.resolveEffectiveModelIdentifier(current, availableModels);
-        if (effective == null || effective.isBlank() || effective.equals(current.resolveModelIdentifier())) {
-            return;
-        }
-
-        final AssistantSettings normalized = new AssistantSettings(
-                effective,
-                current.systemPrompt(),
-                current.numberOfMessagesInContext(),
-                current.openAiApiKey(),
-                current.anthropicApiKey(),
-                current.googleApiKey(),
-                current.timeoutSeconds()
-        );
-        saveDocument(normalized);
+        return openCodeRuntimeService.getAvailableModels();
     }
 
 }
