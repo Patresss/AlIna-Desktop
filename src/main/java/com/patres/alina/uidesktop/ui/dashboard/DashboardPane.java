@@ -32,7 +32,7 @@ public class DashboardPane extends VBox {
     private final VBox detailsBox = new VBox(10);
 
     private final Timeline refreshTimeline = new Timeline(
-            new KeyFrame(Duration.seconds(45), event -> refreshAsync())
+            new KeyFrame(Duration.seconds(15), event -> refreshAsync())
     );
 
     public DashboardPane() {
