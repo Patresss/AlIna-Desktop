@@ -1,0 +1,21 @@
+---
+id: 07f9dd65-01c8-4548-b1a4-498283d65e70
+name: "Translate to English or Polish"
+description: "Przetłumacz poniższy tekst na angielski lub polski jak jest po angielsku."
+icon: mdal-g_translate
+state: ENABLED
+showInChat: true
+showInContextMenuPaste: true
+showInContextMenuDisplay: true
+copyAndPasteShortcut:
+  modeKeys:
+    - META
+    - null
+    - null
+  executeKey: R
+---
+
+Przetłumacz poniższy tekst na polski lub na angielski jak jest po polsku. Niczego nie dodawaj oprócz tłumaczenia
+"""
+$ARGUMENTS
+"""
