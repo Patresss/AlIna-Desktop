@@ -23,6 +23,7 @@ public class ChatStatusPrompt {
         showingStatusPrompt = true;
         chatTextArea.clear();
         chatTextArea.setPromptText(text == null ? "" : text);
+        chatTextArea.getParent().requestFocus();
     }
 
     public void clearStatusPrompt() {
