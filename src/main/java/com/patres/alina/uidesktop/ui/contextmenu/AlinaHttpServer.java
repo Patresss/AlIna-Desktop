@@ -43,8 +43,9 @@ public final class AlinaHttpServer {
     private static final String CONTEXT_MENU_PATH = "/context-menu";
     private static final String COMMANDS_CONTEXT_PATH = "/commands";
     private static final String COMMANDS_SEGMENT = "commands";
-    private static final String COPY_AND_PASTE_SEGMENT = "copy-and-paste";
-    private static final String COPY_AND_DISPLAY_SEGMENT = "copy-and-display";
+    private static final String PASTE_SEGMENT = "paste";
+    private static final String DISPLAY_SEGMENT = "display";
+    private static final String EXECUTE_SEGMENT = "execute";
     private static final String CONTENT_TYPE_TEXT = "text/plain; charset=utf-8";
     private static final Set<HttpMethod> DEFAULT_ALLOWED_METHODS = Set.of(HttpMethod.GET, HttpMethod.POST, HttpMethod.HEAD);
     private static final String UNKNOWN_ERROR = "unknown error";
@@ -93,8 +94,9 @@ public final class AlinaHttpServer {
 
     private static void logEndpoints(int port) {
         logger.info("Context menu HTTP endpoint listening on http://{}:{}{}", HOST_NAME, port, CONTEXT_MENU_PATH);
-        logger.info("Command trigger HTTP endpoint listening on http://{}:{}/commands/{id}/{}", HOST_NAME, port, COPY_AND_PASTE_SEGMENT);
-        logger.info("Command display HTTP endpoint listening on http://{}:{}/commands/{id}/{}", HOST_NAME, port, COPY_AND_DISPLAY_SEGMENT);
+        logger.info("Command trigger HTTP endpoint listening on http://{}:{}/commands/{id}/{}", HOST_NAME, port, PASTE_SEGMENT);
+        logger.info("Command display HTTP endpoint listening on http://{}:{}/commands/{id}/{}", HOST_NAME, port, DISPLAY_SEGMENT);
+        logger.info("Command execute HTTP endpoint listening on http://{}:{}/commands/{id}/{}", HOST_NAME, port, EXECUTE_SEGMENT);
     }
 
     private static boolean isMethodAllowedOrRespond(HttpExchange exchange, Set<HttpMethod> allowedMethods) throws IOException {
@@ -261,8 +263,9 @@ public final class AlinaHttpServer {
     }
 
     private enum CommandTrigger {
-        COPY_AND_PASTE(COPY_AND_PASTE_SEGMENT, CommandExecutor::executeWithSelectedText),
-        COPY_AND_DISPLAY(COPY_AND_DISPLAY_SEGMENT, CommandExecutor::executeWithSelectedTextAndDisplay);
+        PASTE(PASTE_SEGMENT, CommandExecutor::executeWithSelectedText),
+        DISPLAY(DISPLAY_SEGMENT, CommandExecutor::executeWithSelectedTextAndDisplay),
+        EXECUTE(EXECUTE_SEGMENT, CommandExecutor::executeWithSelectedTextSilently);
 
         private final String segment;
         private final BiConsumer<CommandExecutor, Command> action;

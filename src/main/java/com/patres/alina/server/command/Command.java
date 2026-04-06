@@ -13,8 +13,9 @@ public record Command(
         String icon,
         String model,
         State state,
-        ShortcutKeys copyAndPasteShortcut,
+        ShortcutKeys pasteShortcut,
         ShortcutKeys displayShortcut,
+        ShortcutKeys executeShortcut,
         CommandVisibility visibility
 ) {
 
@@ -22,8 +23,9 @@ public record Command(
         icon = icon != null && !icon.isBlank() ? icon : "bi-slash";
         model = model != null && !model.isBlank() ? model.trim() : null;
         state = state == null ? State.ENABLED : state;
-        copyAndPasteShortcut = copyAndPasteShortcut == null ? new ShortcutKeys() : copyAndPasteShortcut;
+        pasteShortcut = pasteShortcut == null ? new ShortcutKeys() : pasteShortcut;
         displayShortcut = displayShortcut == null ? new ShortcutKeys() : displayShortcut;
+        executeShortcut = executeShortcut == null ? new ShortcutKeys() : executeShortcut;
         visibility = CommandVisibility.defaults(visibility);
     }
 
@@ -41,6 +43,7 @@ public record Command(
                 State.ENABLED,
                 new ShortcutKeys(),
                 new ShortcutKeys(),
+                new ShortcutKeys(),
                 new CommandVisibility()
         );
     }
@@ -49,8 +52,9 @@ public record Command(
                    String description,
                    String systemPrompt,
                    String icon,
-                   ShortcutKeys copyAndPasteShortcut,
+                   ShortcutKeys pasteShortcut,
                    ShortcutKeys displayShortcut,
+                   ShortcutKeys executeShortcut,
                    CommandVisibility visibility) {
         this(
                 name,
@@ -58,8 +62,9 @@ public record Command(
                 systemPrompt,
                 icon,
                 null,
-                copyAndPasteShortcut,
+                pasteShortcut,
                 displayShortcut,
+                executeShortcut,
                 visibility
         );
     }
@@ -69,8 +74,9 @@ public record Command(
                    String systemPrompt,
                    String icon,
                    String model,
-                   ShortcutKeys copyAndPasteShortcut,
+                   ShortcutKeys pasteShortcut,
                    ShortcutKeys displayShortcut,
+                   ShortcutKeys executeShortcut,
                    CommandVisibility visibility) {
         this(
                 generateIdFromName(name),
@@ -80,8 +86,9 @@ public record Command(
                 icon,
                 model,
                 State.ENABLED,
-                copyAndPasteShortcut,
+                pasteShortcut,
                 displayShortcut,
+                executeShortcut,
                 visibility
         );
     }
@@ -92,8 +99,9 @@ public record Command(
                    String systemPrompt,
                    String icon,
                    State state,
-                   ShortcutKeys copyAndPasteShortcut,
+                   ShortcutKeys pasteShortcut,
                    ShortcutKeys displayShortcut,
+                   ShortcutKeys executeShortcut,
                    CommandVisibility visibility) {
         this(
                 id,
@@ -103,8 +111,9 @@ public record Command(
                 icon,
                 null,
                 state,
-                copyAndPasteShortcut,
+                pasteShortcut,
                 displayShortcut,
+                executeShortcut,
                 visibility
         );
     }

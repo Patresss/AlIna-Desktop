@@ -80,7 +80,7 @@ public class SystemClipboard {
         }
     }
 
-    public static void copyAndPaste(String text) {
+    public static void setClipboardAndPaste(String text) {
         Clipboard clipboard = getSystemClipboard();
         clipboard.setContents(new StringSelection(text), null);
         waitUntilClipboardEquals(clipboard, text);

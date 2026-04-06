@@ -41,7 +41,8 @@ public class CommandEditPane extends CommandSavePane {
         final CommandVisibility visibility = new CommandVisibility(
                 showInChatToggleSwitch.isSelected(),
                 showInContextMenuPasteToggleSwitch.isSelected(),
-                showInContextMenuDisplayToggleSwitch.isSelected()
+                showInContextMenuDisplayToggleSwitch.isSelected(),
+                showInContextMenuExecuteToggleSwitch.isSelected()
         );
 
         final Command commandEditRequest = new Command(
@@ -54,6 +55,7 @@ public class CommandEditPane extends CommandSavePane {
                 stateToggleSwitch.isSelected() ? State.ENABLED : State.DISABLED,
                 pasteShortcutKeyPane.getShortcutKeys(),
                 displayShortcutKeyPane.getShortcutKeys(),
+                executeShortcutKeyPane.getShortcutKeys(),
                 visibility
         );
         BackendApi.updateCommand(commandEditRequest);
@@ -89,11 +91,13 @@ public class CommandEditPane extends CommandSavePane {
     public void reload() {
         commandIdTextField.setText(command.id());
         stateToggleSwitch.setSelected(command.state() == State.ENABLED);
-        pasteShortcutKeyPane.setValues(command.copyAndPasteShortcut());
+        pasteShortcutKeyPane.setValues(command.pasteShortcut());
         displayShortcutKeyPane.setValues(command.displayShortcut());
+        executeShortcutKeyPane.setValues(command.executeShortcut());
         showInChatToggleSwitch.setSelected(command.visibility().showInChat());
         showInContextMenuPasteToggleSwitch.setSelected(command.visibility().showInContextMenuPaste());
         showInContextMenuDisplayToggleSwitch.setSelected(command.visibility().showInContextMenuDisplay());
+        showInContextMenuExecuteToggleSwitch.setSelected(command.visibility().showInContextMenuExecute());
         commandNameTextField.setText(command.name());
         commandDescriptionTextArea.setText(command.description());
         commandSystemPromptTextArea.setText(command.systemPrompt());

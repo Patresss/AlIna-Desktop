@@ -6,11 +6,16 @@ package com.patres.alina.server.command;
 public record CommandVisibility(
         boolean showInChat,
         boolean showInContextMenuPaste,
-        boolean showInContextMenuDisplay
+        boolean showInContextMenuDisplay,
+        boolean showInContextMenuExecute
 ) {
 
     public CommandVisibility() {
-        this(true, true, true);
+        this(true, true, true, false);
+    }
+
+    public CommandVisibility(boolean showInChat, boolean showInContextMenuPaste, boolean showInContextMenuDisplay) {
+        this(showInChat, showInContextMenuPaste, showInContextMenuDisplay, false);
     }
 
     public static CommandVisibility defaults(CommandVisibility visibility) {

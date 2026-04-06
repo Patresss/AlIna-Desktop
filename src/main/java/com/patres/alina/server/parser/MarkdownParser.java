@@ -72,9 +72,11 @@ public class MarkdownParser {
         sb.append("showInChat: ").append(command.visibility().showInChat()).append("\n");
         sb.append("showInContextMenuPaste: ").append(command.visibility().showInContextMenuPaste()).append("\n");
         sb.append("showInContextMenuDisplay: ").append(command.visibility().showInContextMenuDisplay()).append("\n");
+        sb.append("showInContextMenuExecute: ").append(command.visibility().showInContextMenuExecute()).append("\n");
 
-        appendShortcut(sb, "copyAndPasteShortcut", command.copyAndPasteShortcut());
+        appendShortcut(sb, "pasteShortcut", command.pasteShortcut());
         appendShortcut(sb, "displayShortcut", command.displayShortcut());
+        appendShortcut(sb, "executeShortcut", command.executeShortcut());
 
         sb.append(FRONTMATTER_DELIMITER).append("\n");
         sb.append("\n");
@@ -98,11 +100,12 @@ public class MarkdownParser {
         String icon = getStringValue(yamlMap, "icon", "bi-slash");
         String model = normalizeOptionalString(getStringValue(yamlMap, "model", null));
         State state = parseState(getStringValue(yamlMap, "state", "ENABLED"));
-        ShortcutKeys copyAndPasteShortcut = parseCopyAndPasteShortcut(yamlMap);
+        ShortcutKeys pasteShortcut = parsePasteShortcut(yamlMap);
         ShortcutKeys displayShortcut = parseShortcut(yamlMap, "displayShortcut");
+        ShortcutKeys executeShortcut = parseShortcut(yamlMap, "executeShortcut");
         CommandVisibility visibility = parseVisibility(yamlMap);
 
-        return new ParsedFrontmatter(resolvedId, new CommandMetadata(name, description, icon, model, state, copyAndPasteShortcut, displayShortcut, visibility));
+        return new ParsedFrontmatter(resolvedId, new CommandMetadata(name, description, icon, model, state, pasteShortcut, displayShortcut, executeShortcut, visibility));
 
     } catch (Exception e) {
         logger.warn("Failed to parse YAML frontmatter for command id: {}, using defaults. Error: {}", id, e.getMessage());
@@ -162,10 +165,14 @@ public class MarkdownParser {
         }
     }
 
-    private ShortcutKeys parseCopyAndPasteShortcut(Map<String, Object> yamlMap) {
-        ShortcutKeys pasteShortcut = parseShortcut(yamlMap, "copyAndPasteShortcut");
+    private ShortcutKeys parsePasteShortcut(Map<String, Object> yamlMap) {
+        ShortcutKeys pasteShortcut = parseShortcut(yamlMap, "pasteShortcut");
         if (pasteShortcut.getAllKeys().isEmpty()) {
             // backward compatibility with old key
+            pasteShortcut = parseShortcut(yamlMap, "copyAndPasteShortcut");
+        }
+        if (pasteShortcut.getAllKeys().isEmpty()) {
+            // backward compatibility with even older key
             pasteShortcut = parseShortcut(yamlMap, "globalShortcut");
         }
         return pasteShortcut;
@@ -190,7 +197,8 @@ public class MarkdownParser {
             boolean showInChat = getBooleanValue(yamlMap, "showInChat", true);
             boolean showInContextMenuPaste = getBooleanValue(yamlMap, "showInContextMenuPaste", true);
             boolean showInContextMenuDisplay = getBooleanValue(yamlMap, "showInContextMenuDisplay", true);
-            return new CommandVisibility(showInChat, showInContextMenuPaste, showInContextMenuDisplay);
+            boolean showInContextMenuExecute = getBooleanValue(yamlMap, "showInContextMenuExecute", false);
+            return new CommandVisibility(showInChat, showInContextMenuPaste, showInContextMenuDisplay, showInContextMenuExecute);
         } catch (Exception e) {
             logger.warn("Failed to parse visibility flags: {}", e.getMessage());
             return new CommandVisibility();
@@ -215,6 +223,7 @@ public class MarkdownParser {
                 "bi-slash",
                 null,
                 State.ENABLED,
+                new ShortcutKeys(),
                 new ShortcutKeys(),
                 new ShortcutKeys(),
                 new CommandVisibility()
@@ -265,8 +274,9 @@ public class MarkdownParser {
             String icon,
             String model,
             State state,
-            ShortcutKeys copyAndPasteShortcut,
+            ShortcutKeys pasteShortcut,
             ShortcutKeys displayShortcut,
+            ShortcutKeys executeShortcut,
             CommandVisibility visibility
     ) {}
 }

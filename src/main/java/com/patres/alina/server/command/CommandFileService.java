@@ -106,8 +106,9 @@ public class CommandFileService {
                 request.icon(),
                 request.model(),
                 State.ENABLED,
-                request.copyAndPasteShortcut(),
+                request.pasteShortcut(),
                 request.displayShortcut(),
+                request.executeShortcut(),
                 CommandVisibility.defaults(request.visibility())
         );
 
@@ -190,8 +191,9 @@ public class CommandFileService {
                 existing.get().systemPrompt(),
                 existing.get().icon(),
                 updateStateRequest.state(),
-                existing.get().copyAndPasteShortcut(),
+                existing.get().pasteShortcut(),
                 existing.get().displayShortcut(),
+                existing.get().executeShortcut(),
                 existing.get().visibility()
         );
 
@@ -213,8 +215,9 @@ public class CommandFileService {
                     parsed.metadata().icon(),
                     parsed.metadata().model(),
                     parsed.metadata().state(),
-                    parsed.metadata().copyAndPasteShortcut(),
+                    parsed.metadata().pasteShortcut(),
                     parsed.metadata().displayShortcut(),
+                    parsed.metadata().executeShortcut(),
                     parsed.metadata().visibility()
             );
 

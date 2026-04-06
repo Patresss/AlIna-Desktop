@@ -27,8 +27,10 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
     protected ToggleSwitch showInChatToggleSwitch;
     protected ToggleSwitch showInContextMenuPasteToggleSwitch;
     protected ToggleSwitch showInContextMenuDisplayToggleSwitch;
+    protected ToggleSwitch showInContextMenuExecuteToggleSwitch;
     protected ShortcutKeyPane pasteShortcutKeyPane;
     protected ShortcutKeyPane displayShortcutKeyPane;
+    protected ShortcutKeyPane executeShortcutKeyPane;
 
     public CommandSavePane(Runnable backFunction) {
         super(backFunction);
@@ -105,6 +107,14 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
         showInContextMenuDisplayTile.setAction(showInContextMenuDisplayToggleSwitch);
         showInContextMenuDisplayTile.setActionHandler(showInContextMenuDisplayToggleSwitch::fire);
 
+        showInContextMenuExecuteToggleSwitch = new ToggleSwitch();
+        var showInContextMenuExecuteTile = new CustomTile(
+                getLanguageString("command.visibility.contextmenu.execute.title"),
+                getLanguageString("command.visibility.contextmenu.execute.description")
+        );
+        showInContextMenuExecuteTile.setAction(showInContextMenuExecuteToggleSwitch);
+        showInContextMenuExecuteTile.setActionHandler(showInContextMenuExecuteToggleSwitch::fire);
+
         pasteShortcutKeyPane = new ShortcutKeyPane();
         var pasteShortcutTile = new CustomTile(
                 getLanguageString("command.shortcut.paste.title"),
@@ -119,6 +129,13 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
         );
         displayShortcutTile.setAction(displayShortcutKeyPane.createPane());
 
+        executeShortcutKeyPane = new ShortcutKeyPane();
+        var executeShortcutTile = new CustomTile(
+                getLanguageString("command.shortcut.execute.title"),
+                getLanguageString("command.shortcut.execute.description")
+        );
+        executeShortcutTile.setAction(executeShortcutKeyPane.createPane());
+
         return List.of(
                 commandNameTile,
                 commandDescriptionTile,
@@ -129,9 +146,11 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
                 showInChatTile,
                 showInContextMenuPasteTile,
                 showInContextMenuDisplayTile,
+                showInContextMenuExecuteTile,
                 new Separator(),
                 pasteShortcutTile,
                 displayShortcutTile,
+                executeShortcutTile,
                 new Separator()
         );
     }
@@ -140,8 +159,10 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
         showInChatToggleSwitch.setSelected(true);
         showInContextMenuPasteToggleSwitch.setSelected(true);
         showInContextMenuDisplayToggleSwitch.setSelected(true);
+        showInContextMenuExecuteToggleSwitch.setSelected(false);
         pasteShortcutKeyPane.setValues(new ShortcutKeys());
         displayShortcutKeyPane.setValues(new ShortcutKeys());
+        executeShortcutKeyPane.setValues(new ShortcutKeys());
     }
 
     protected void loadAvailableModels() {

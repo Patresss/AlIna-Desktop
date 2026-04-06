@@ -45,8 +45,9 @@ public class CommandShortcutListener extends Listener {
 
         BackendApi.getEnabledCommands().stream()
                 .forEach(command -> {
-                    registerShortcut(command, command.copyAndPasteShortcut(), "copy & paste", () -> commandExecutor.executeWithSelectedText(command));
+                    registerShortcut(command, command.pasteShortcut(), "paste", () -> commandExecutor.executeWithSelectedText(command));
                     registerDisplayShortcut(command);
+                    registerExecuteShortcut(command);
                 });
     }
 
@@ -57,14 +58,36 @@ public class CommandShortcutListener extends Listener {
         }
 
         final Set<KeyboardKey> displayKeys = displayShortcut.getAllKeys();
-        final Set<KeyboardKey> pasteKeys = command.copyAndPasteShortcut() != null ? command.copyAndPasteShortcut().getAllKeys() : Set.of();
+        final Set<KeyboardKey> pasteKeys = command.pasteShortcut() != null ? command.pasteShortcut().getAllKeys() : Set.of();
 
         if (!pasteKeys.isEmpty() && pasteKeys.equals(displayKeys)) {
-            logger.warn("Display shortcut {} for command '{}' matches copy & paste shortcut, skipping duplicate registration", displayKeys, command.name());
+            logger.warn("Display shortcut {} for command '{}' matches paste shortcut, skipping duplicate registration", displayKeys, command.name());
             return;
         }
 
-        registerShortcut(command, displayShortcut, "copy & display", () -> commandExecutor.executeWithSelectedTextAndDisplay(command));
+        registerShortcut(command, displayShortcut, "display", () -> commandExecutor.executeWithSelectedTextAndDisplay(command));
+    }
+
+    private void registerExecuteShortcut(Command command) {
+        final ShortcutKeys executeShortcut = command.executeShortcut();
+        if (executeShortcut == null || executeShortcut.getAllKeys().isEmpty()) {
+            return;
+        }
+
+        final Set<KeyboardKey> executeKeys = executeShortcut.getAllKeys();
+        final Set<KeyboardKey> pasteKeys = command.pasteShortcut() != null ? command.pasteShortcut().getAllKeys() : Set.of();
+        final Set<KeyboardKey> displayKeys = command.displayShortcut() != null ? command.displayShortcut().getAllKeys() : Set.of();
+
+        if (!pasteKeys.isEmpty() && pasteKeys.equals(executeKeys)) {
+            logger.warn("Execute shortcut {} for command '{}' matches paste shortcut, skipping duplicate registration", executeKeys, command.name());
+            return;
+        }
+        if (!displayKeys.isEmpty() && displayKeys.equals(executeKeys)) {
+            logger.warn("Execute shortcut {} for command '{}' matches display shortcut, skipping duplicate registration", executeKeys, command.name());
+            return;
+        }
+
+        registerShortcut(command, executeShortcut, "execute", () -> commandExecutor.executeWithSelectedTextSilently(command));
     }
 
     private void registerShortcut(Command command, ShortcutKeys shortcut, String shortcutLabel, Runnable action) {

@@ -39,10 +39,12 @@ public class CommandCreatePane extends CommandSavePane {
                 getSelectedModel(),
                 pasteShortcutKeyPane.getShortcutKeys(),
                 displayShortcutKeyPane.getShortcutKeys(),
+                executeShortcutKeyPane.getShortcutKeys(),
                 new CommandVisibility(
                         showInChatToggleSwitch.isSelected(),
                         showInContextMenuPasteToggleSwitch.isSelected(),
-                        showInContextMenuDisplayToggleSwitch.isSelected()
+                        showInContextMenuDisplayToggleSwitch.isSelected(),
+                        showInContextMenuExecuteToggleSwitch.isSelected()
                 )
         );
 

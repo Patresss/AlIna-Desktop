@@ -136,6 +136,9 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
         List<Command> displayCommands = commands.stream()
                 .filter(cmd -> cmd.visibility().showInContextMenuDisplay())
                 .toList();
+        List<Command> executeCommands = commands.stream()
+                .filter(cmd -> cmd.visibility().showInContextMenuExecute())
+                .toList();
 
         boolean hasPaste = addCommandGroup(
                 LanguageManager.getLanguageString("context.menu.section.paste"),
@@ -155,7 +158,19 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
                 cmd -> onCommandClicked(cmd, commandExecutor::executeWithCapturedTextAndDisplay)
         );
 
-        if (!hasPaste && !hasDisplay) {
+        if ((hasPaste || hasDisplay) && !executeCommands.isEmpty()) {
+            Separator separator2 = new Separator();
+            separator2.getStyleClass().add("context-menu-separator");
+            commandsVBox.getChildren().add(separator2);
+        }
+
+        boolean hasExecute = addCommandGroup(
+                LanguageManager.getLanguageString("context.menu.section.execute"),
+                executeCommands,
+                cmd -> onCommandClicked(cmd, commandExecutor::executeWithCapturedTextSilently)
+        );
+
+        if (!hasPaste && !hasDisplay && !hasExecute) {
             Label noCommandsLabel = new Label(LanguageManager.getLanguageString("context.menu.empty"));
             noCommandsLabel.getStyleClass().add("context-menu-title");
             commandsVBox.getChildren().add(noCommandsLabel);

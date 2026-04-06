@@ -91,6 +91,35 @@ public class CommandExecutor {
         );
     }
 
+    /**
+     * Captures context and executes command silently (no paste, no popup).
+     * Used by direct keyboard shortcuts for fire-and-forget commands.
+     */
+    public void executeWithSelectedTextSilently(Command command) {
+        CompletableFuture.runAsync(() -> {
+            CapturedContext context = captureCurrentContext();
+            if (!context.hasText()) {
+                logger.warn("Skipping command '{}' because no text is selected", command.name());
+                return;
+            }
+            executeWithContext(command, context, null);
+        });
+    }
+
+    /**
+     * Executes command with pre-captured context silently (no paste, no popup).
+     * Used by context menu for fire-and-forget commands.
+     */
+    public void executeWithCapturedTextSilently(Command command, CapturedContext context) {
+        if (!context.hasText()) {
+            logger.warn("Skipping command '{}' because captured text is empty", command.name());
+            return;
+        }
+        CompletableFuture.runAsync(() ->
+                executeWithContext(command, context, null)
+        );
+    }
+
     private void executeWithContext(Command command, CapturedContext context, OnMessageCompleteCallback onComplete) {
         logger.info("Executing command '{}' with text ({} chars): '{}'",
                 command.name(), context.selectedText().length(),
@@ -135,7 +164,7 @@ public class CommandExecutor {
                     MacTextAccessor.activateApp(sourceAppName);
                 }
 
-                SystemClipboard.copyAndPaste(aiResponse);
+                SystemClipboard.setClipboardAndPaste(aiResponse);
 
                 logger.info("AI response pasted successfully");
             } catch (Exception e) {
