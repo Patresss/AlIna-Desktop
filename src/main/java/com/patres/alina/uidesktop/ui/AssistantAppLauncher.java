@@ -55,7 +55,7 @@ public class AssistantAppLauncher {
         scene.getStylesheets().addAll(Resources.resolve("assets/styles/index.css"));
 
         stage.setScene(scene);
-        stage.setTitle(System.getProperty("app.name"));
+        stage.setTitle("AlIna");
         loadIcons(stage);
         stage.setResizable(true);
         stage.setAlwaysOnTop(BackendApi.getWorkspaceSettings().keepWindowAlwaysOnTop());

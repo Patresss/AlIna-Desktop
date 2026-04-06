@@ -11,6 +11,7 @@ import com.patres.alina.uidesktop.ui.util.MacTextAccessor;
 import com.patres.alina.uidesktop.ui.util.MacTextAccessor.CapturedContext;
 import com.patres.alina.uidesktop.ui.util.OsUtils;
 import com.patres.alina.uidesktop.ui.util.SystemClipboard;
+import com.patres.alina.uidesktop.ui.util.SystemNotification;
 import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,7 +103,7 @@ public class CommandExecutor {
                 logger.warn("Skipping command '{}' because no text is selected", command.name());
                 return;
             }
-            executeWithContext(command, context, null);
+            executeWithContext(command, context, aiResponse -> onSilentComplete(command));
         });
     }
 
@@ -116,7 +117,7 @@ public class CommandExecutor {
             return;
         }
         CompletableFuture.runAsync(() ->
-                executeWithContext(command, context, null)
+                executeWithContext(command, context, aiResponse -> onSilentComplete(command))
         );
     }
 
@@ -135,6 +136,9 @@ public class CommandExecutor {
                     wrapOnComplete(onComplete, threadId)
             );
         });
+
+        // Return focus to the source app after triggering the command on the FX thread
+        restoreFocusToSourceApp(context.sourceAppName());
     }
 
     private CapturedContext captureCurrentContext() {
@@ -182,6 +186,32 @@ public class CommandExecutor {
                 logger.error("Failed to display AI response", e);
             }
         });
+    }
+
+    private void onSilentComplete(Command command) {
+        logger.info("Silent execute completed for command '{}'", command.name());
+        SystemNotification.send("AlIna", command.name() + " completed");
+    }
+
+    /**
+     * Restores focus to the source application after the command has been dispatched.
+     * This prevents AlIna's window from stealing focus when commands are triggered
+     * via the context menu or global shortcuts.
+     */
+    private void restoreFocusToSourceApp(String sourceAppName) {
+        if (OsUtils.isMacOS() && sourceAppName != null && !sourceAppName.isBlank()) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    // Small delay to let Platform.runLater() complete first
+                    Thread.sleep(150);
+                    MacTextAccessor.activateApp(sourceAppName);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (Exception e) {
+                    logger.debug("Could not restore focus to '{}'", sourceAppName, e);
+                }
+            });
+        }
     }
 
     private void subscribeToStream(String threadId) {

@@ -16,6 +16,7 @@ import java.awt.Point;
 
 /**
  * Small always-on-top spinner shown while a command is executing.
+ * Uses focusable=false so it never steals focus from the source application.
  */
 public class CommandLoadingIndicator {
 
@@ -32,7 +33,6 @@ public class CommandLoadingIndicator {
             updatePosition();
             startFollowingCursor();
             stage.show();
-            stage.toFront();
         });
     }
 
@@ -88,6 +88,7 @@ public class CommandLoadingIndicator {
         VBox container = new VBox(indicator);
         container.getStyleClass().add("context-menu-loader");
         container.setAlignment(Pos.CENTER);
+        container.setMouseTransparent(true);
 
         Scene scene = new Scene(container);
         scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
