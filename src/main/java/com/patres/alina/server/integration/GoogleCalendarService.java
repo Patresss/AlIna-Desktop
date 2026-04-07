@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Service for fetching today's Google Calendar events via the {@code gws} CLI.
@@ -58,7 +60,7 @@ public final class GoogleCalendarService {
             final String params = String.format(
                     "{\"calendarId\": \"primary\", \"timeMin\": \"%sT00:00:00%s\", \"timeMax\": \"%sT23:59:59%s\", " +
                     "\"singleEvents\": true, \"orderBy\": \"startTime\", " +
-                    "\"fields\": \"items(summary,start,end,location,hangoutLink,conferenceData)\"}",
+                    "\"fields\": \"items(summary,description,start,end,location,hangoutLink,conferenceData)\"}",
                     today, offset, today, offset
             );
 
@@ -196,6 +198,8 @@ public final class GoogleCalendarService {
             final String location = item.path("location").asText("");
             final String hangoutLink = item.path("hangoutLink").asText("");
             final String conferenceUri = extractConferenceVideoUri(item.path("conferenceData"));
+            final String description = item.path("description").asText("");
+            final String descriptionVideoUrl = extractVideoUrlFromDescription(description);
 
             final JsonNode start = item.path("start");
             final JsonNode end = item.path("end");
@@ -219,7 +223,7 @@ public final class GoogleCalendarService {
                 rawEndDateTime = end.path("dateTime").asText("");
             }
 
-            events.add(new GoogleCalendarEvent(summary, startTime, endTime, location, allDay, hangoutLink, conferenceUri, rawStartDateTime, rawEndDateTime));
+            events.add(new GoogleCalendarEvent(summary, startTime, endTime, location, allDay, hangoutLink, conferenceUri, descriptionVideoUrl, rawStartDateTime, rawEndDateTime));
         }
 
         return Collections.unmodifiableList(events);
@@ -260,6 +264,38 @@ public final class GoogleCalendarService {
                     return uri;
                 }
             }
+        }
+        return "";
+    }
+
+    /**
+     * Pattern matching video-conference URLs from known providers (Zoom, Teams, Webex, Google Meet).
+     * Handles both plain-text and HTML ({@code href="…"}) descriptions.
+     */
+    private static final Pattern VIDEO_URL_PATTERN = Pattern.compile(
+            "https?://(?:" +
+                    "[\\w.-]*zoom\\.us/[^\\s\"<>]+" +            // Zoom
+                    "|teams\\.microsoft\\.com/[^\\s\"<>]+" +     // Microsoft Teams
+                    "|[\\w.-]*webex\\.com/[^\\s\"<>]+" +         // Webex
+                    "|meet\\.google\\.com/[^\\s\"<>]+" +         // Google Meet (fallback)
+                    ")",
+            Pattern.CASE_INSENSITIVE
+    );
+
+    /**
+     * Scans the event description (which may be plain text or HTML) for the first
+     * video-conference URL from a known provider (Zoom, Teams, Webex, Google Meet).
+     *
+     * @param description the raw event description (may contain HTML tags)
+     * @return the first matching URL, or empty string if none found
+     */
+    private static String extractVideoUrlFromDescription(final String description) {
+        if (description == null || description.isBlank()) {
+            return "";
+        }
+        final Matcher matcher = VIDEO_URL_PATTERN.matcher(description);
+        if (matcher.find()) {
+            return matcher.group();
         }
         return "";
     }

@@ -463,6 +463,9 @@ public class GoogleCalendarWidget extends VBox {
         if (event.conferenceUri() != null && !event.conferenceUri().isBlank()) {
             return event.conferenceUri();
         }
+        if (event.descriptionVideoUrl() != null && !event.descriptionVideoUrl().isBlank()) {
+            return event.descriptionVideoUrl();
+        }
         if (event.location() != null && event.location().startsWith("http")) {
             final String firstPart = event.location().split(",")[0].trim();
             if (firstPart.startsWith("http")) {
