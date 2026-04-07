@@ -1,3 +1,10 @@
+.root {
+    -color-info-fg: #58a6ff;
+    -color-info-emphasis: #58a6ff;
+    -color-info-muted: rgba(88, 166, 255, 0.3);
+    -color-info-subtle: rgba(88, 166, 255, 0.12);
+}
+
 .body {
   -fx-opacity: 1.0;
 }
@@ -377,6 +384,7 @@ ChatThreadHistoryCard {
     -fx-alignment: top-left;
     -fx-background-color: -color-accent-subtle;
     -fx-background-radius: 4px;
+    -fx-padding: 4px 2px;
 }
 
 .workspace-calendar-remaining {

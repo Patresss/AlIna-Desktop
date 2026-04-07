@@ -10,6 +10,7 @@ import com.patres.alina.uidesktop.shortcuts.listener.ShortcutKeyListener;
 import com.patres.alina.uidesktop.ui.contextmenu.AppGlobalContextMenu;
 import com.patres.alina.uidesktop.shortcuts.listener.CommandShortcutListener;
 import com.patres.alina.uidesktop.ui.contextmenu.AlinaHttpServer;
+import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
@@ -31,6 +32,8 @@ public class AssistantAppLauncher {
 
     public void start(Stage stage) throws NativeHookException {
         Thread.currentThread().setUncaughtExceptionHandler(new DefaultExceptionHandler(stage));
+
+        LanguageManager.setLanguage(UI_SETTINGS.getSettings().language());
 
         var root = new ApplicationWindow();
 

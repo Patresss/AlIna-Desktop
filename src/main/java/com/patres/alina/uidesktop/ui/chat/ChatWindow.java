@@ -1,6 +1,7 @@
 package com.patres.alina.uidesktop.ui.chat;
 
 import com.patres.alina.common.card.CardListItem;
+import com.patres.alina.common.event.ChatNotificationEvent;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.message.ChatMessageResponseModel;
@@ -64,6 +65,7 @@ public class ChatWindow extends BorderPane {
     private Consumer<SpeechShortcutTriggeredEvent> speechShortcutTriggeredEventConsumer;
     private final Consumer<FocusShortcutTriggeredEvent> focusShortcutTriggeredEventConsumer = event -> triggerFocusAction();
     private Consumer<ChatMessageStreamEvent> chatMessageStreamEventConsumer;
+    private final Consumer<ChatNotificationEvent> chatNotificationEventConsumer = this::handleChatNotification;
 
     private SearchCommandPopup popup;
     private CardListItem currentCommand;
@@ -174,6 +176,11 @@ public class ChatWindow extends BorderPane {
                     chatMessageStreamEventConsumer
             );
         }
+
+        DefaultEventBus.getInstance().subscribe(
+                ChatNotificationEvent.class,
+                chatNotificationEventConsumer
+        );
     }
 
     public void unsubscribeEvents() {
@@ -195,6 +202,11 @@ public class ChatWindow extends BorderPane {
                     chatMessageStreamEventConsumer
             );
         }
+
+        DefaultEventBus.getInstance().unsubscribe(
+                ChatNotificationEvent.class,
+                chatNotificationEventConsumer
+        );
     }
 
     @FXML
@@ -424,6 +436,10 @@ public class ChatWindow extends BorderPane {
                                 final ChatMessageStyleType chatMessageStyleType,
                                 final CommandUsageInfo commandUsageInfo) {
         FxThreadRunner.run(() -> browser.addContent(text, chatMessageRole, chatMessageStyleType, commandUsageInfo));
+    }
+
+    private void handleChatNotification(final ChatNotificationEvent event) {
+        displayMessage(event.getMessage(), ASSISTANT, event.getStyleType());
     }
 
     private void sendMessageToService(final String message) {

@@ -77,7 +77,9 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
                 settings.showDashboardCalendar(),
                 settings.dashboardCalendarRefreshSeconds(),
                 settings.calendarHideAllDayEvents(),
-                settings.calendarShowOnlyCurrentAndFuture()
+                settings.calendarShowOnlyCurrentAndFuture(),
+                settings.calendarNotificationsEnabled(),
+                settings.calendarNotificationMinutesBefore()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;

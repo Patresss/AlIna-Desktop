@@ -3,6 +3,7 @@ package com.patres.alina.common.message;
 public enum ChatMessageStyleType {
 
     ACCENT("accent"),
+    INFO("info"),
     WARNING("warning"),
     SUCCESS("success"),
     DANGER("danger"),

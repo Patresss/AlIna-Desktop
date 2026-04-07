@@ -122,7 +122,9 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 showDashboardCalendarToggle.isSelected(),
                 dashboardCalendarRefreshSpinner.getValue(),
                 calendarHideAllDayToggle.isSelected(),
-                calendarShowOnlyCurrentAndFutureToggle.isSelected()
+                calendarShowOnlyCurrentAndFutureToggle.isSelected(),
+                settings.calendarNotificationsEnabled(),
+                settings.calendarNotificationMinutesBefore()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;

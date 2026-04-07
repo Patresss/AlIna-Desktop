@@ -58,7 +58,7 @@ public final class GoogleCalendarService {
             final String params = String.format(
                     "{\"calendarId\": \"primary\", \"timeMin\": \"%sT00:00:00%s\", \"timeMax\": \"%sT23:59:59%s\", " +
                     "\"singleEvents\": true, \"orderBy\": \"startTime\", " +
-                    "\"fields\": \"items(summary,start,end,location,hangoutLink)\"}",
+                    "\"fields\": \"items(summary,start,end,location,hangoutLink,conferenceData)\"}",
                     today, offset, today, offset
             );
 
@@ -195,6 +195,7 @@ public final class GoogleCalendarService {
             final String summary = item.path("summary").asText("(No title)");
             final String location = item.path("location").asText("");
             final String hangoutLink = item.path("hangoutLink").asText("");
+            final String conferenceUri = extractConferenceVideoUri(item.path("conferenceData"));
 
             final JsonNode start = item.path("start");
             final JsonNode end = item.path("end");
@@ -218,7 +219,7 @@ public final class GoogleCalendarService {
                 rawEndDateTime = end.path("dateTime").asText("");
             }
 
-            events.add(new GoogleCalendarEvent(summary, startTime, endTime, location, allDay, hangoutLink, rawStartDateTime, rawEndDateTime));
+            events.add(new GoogleCalendarEvent(summary, startTime, endTime, location, allDay, hangoutLink, conferenceUri, rawStartDateTime, rawEndDateTime));
         }
 
         return Collections.unmodifiableList(events);
@@ -236,5 +237,30 @@ public final class GoogleCalendarService {
             logger.debug("GoogleCalendar: failed to parse dateTime: {}", isoDateTime, e);
             return isoDateTime;
         }
+    }
+
+    /**
+     * Extracts the video conference URI from {@code conferenceData.entryPoints}
+     * where {@code entryPointType} is {@code "video"}.
+     * This covers Zoom, Teams, and other add-on conferencing solutions that do not
+     * populate the top-level {@code hangoutLink} field.
+     */
+    private static String extractConferenceVideoUri(final JsonNode conferenceData) {
+        if (conferenceData == null || conferenceData.isMissingNode()) {
+            return "";
+        }
+        final JsonNode entryPoints = conferenceData.path("entryPoints");
+        if (!entryPoints.isArray()) {
+            return "";
+        }
+        for (final JsonNode entry : entryPoints) {
+            if ("video".equals(entry.path("entryPointType").asText(""))) {
+                final String uri = entry.path("uri").asText("");
+                if (!uri.isBlank()) {
+                    return uri;
+                }
+            }
+        }
+        return "";
     }
 }

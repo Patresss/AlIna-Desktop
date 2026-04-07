@@ -82,6 +82,10 @@
     -color-danger-emphasis: #a01410;
     -color-danger-muted: rgba(230, 74, 68, 0.3);
     -color-danger-subtle: rgba(230, 74, 68, 0.1);
+    -color-info-fg: #0969da;
+    -color-info-emphasis: #0969da;
+    -color-info-muted: rgba(33, 150, 243, 0.3);
+    -color-info-subtle: rgba(33, 150, 243, 0.1);
     -color-chart-1: #f3622d;
     -color-chart-2: #fba71b;
     -color-chart-3: #57b757;

@@ -1,6 +1,8 @@
 package com.patres.alina.uidesktop.ui.dashboard;
 
 import atlantafx.base.theme.Styles;
+import com.patres.alina.common.event.ChatNotificationEvent;
+import com.patres.alina.common.event.Event;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.server.integration.GoogleCalendarEvent;
 import com.patres.alina.server.integration.GoogleCalendarResult;
@@ -27,7 +29,9 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Dashboard widget displaying today's Google Calendar events.
@@ -70,6 +74,7 @@ public class GoogleCalendarWidget extends VBox {
 
     private boolean collapsed = false;
     private Timeline refreshTimeline;
+    private final Set<String> notifiedEventKeys = new HashSet<>();
 
     public GoogleCalendarWidget() {
         getStyleClass().add(STYLE_DASHBOARD);
@@ -157,6 +162,8 @@ public class GoogleCalendarWidget extends VBox {
         for (final GoogleCalendarEvent event : filtered) {
             contentBox.getChildren().add(createEventRow(event));
         }
+
+        checkAndSendNotifications(filtered, settings);
     }
 
     private void renderLoading() {
@@ -218,6 +225,7 @@ public class GoogleCalendarWidget extends VBox {
         final Label summaryLabel = createSummaryLabel(event);
 
         final HBox row = new HBox(8, timeColumn, videoSlot, summaryLabel);
+        row.setAlignment(Pos.TOP_LEFT);
         row.getStyleClass().add(STYLE_CALENDAR_ITEM);
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
@@ -323,6 +331,51 @@ public class GoogleCalendarWidget extends VBox {
         return LanguageManager.getLanguageString("dashboard.calendar.upcoming", minutes);
     }
 
+    // ── Notifications ─────────────────────────────────────────────
+
+    private void checkAndSendNotifications(final List<GoogleCalendarEvent> events, final WorkspaceSettings settings) {
+        if (!settings.calendarNotificationsEnabled()) {
+            return;
+        }
+        final int minutesBefore = settings.calendarNotificationMinutesBefore();
+
+        for (final GoogleCalendarEvent event : events) {
+            if (event.allDay()) {
+                continue;
+            }
+            final long minutesUntilStart = getMinutesUntilStart(event);
+            if (minutesUntilStart < 0 || minutesUntilStart > minutesBefore) {
+                continue;
+            }
+
+            final String eventKey = buildEventKey(event);
+            if (notifiedEventKeys.contains(eventKey)) {
+                continue;
+            }
+            notifiedEventKeys.add(eventKey);
+            Event.publish(new ChatNotificationEvent(formatNotificationMessage(event, minutesUntilStart)));
+        }
+    }
+
+    private String buildEventKey(final GoogleCalendarEvent event) {
+        return event.summary() + "|" + event.rawStartDateTime();
+    }
+
+    private String formatNotificationMessage(final GoogleCalendarEvent event, final long minutesUntilStart) {
+        final String meetUrl = resolveClickUrl(event);
+        final boolean hasLink = !meetUrl.isEmpty();
+        final String summary = event.summary().strip();
+
+        if (minutesUntilStart <= 0) {
+            return hasLink
+                    ? LanguageManager.getLanguageString("dashboard.calendar.notificationNowWithLink", summary, meetUrl)
+                    : LanguageManager.getLanguageString("dashboard.calendar.notificationNow", summary);
+        }
+        return hasLink
+                ? LanguageManager.getLanguageString("dashboard.calendar.notificationWithLink", summary, minutesUntilStart, meetUrl)
+                : LanguageManager.getLanguageString("dashboard.calendar.notification", summary, minutesUntilStart);
+    }
+
     // ── Event filtering ──────────────────────────────────────────
 
     private List<GoogleCalendarEvent> filterEvents(final List<GoogleCalendarEvent> events, final WorkspaceSettings settings) {
@@ -406,6 +459,9 @@ public class GoogleCalendarWidget extends VBox {
     private static String resolveClickUrl(final GoogleCalendarEvent event) {
         if (event.hangoutLink() != null && !event.hangoutLink().isBlank()) {
             return event.hangoutLink();
+        }
+        if (event.conferenceUri() != null && !event.conferenceUri().isBlank()) {
+            return event.conferenceUri();
         }
         if (event.location() != null && event.location().startsWith("http")) {
             final String firstPart = event.location().split(",")[0].trim();

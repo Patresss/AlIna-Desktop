@@ -25,7 +25,9 @@ public record WorkspaceSettings(
         boolean showDashboardCalendar,
         int dashboardCalendarRefreshSeconds,
         boolean calendarHideAllDayEvents,
-        boolean calendarShowOnlyCurrentAndFuture
+        boolean calendarShowOnlyCurrentAndFuture,
+        boolean calendarNotificationsEnabled,
+        int calendarNotificationMinutesBefore
 ) {
 
     public static final String DEFAULT_TASKS_FILE = "profile/default/focus.md";
@@ -40,6 +42,7 @@ public record WorkspaceSettings(
     public static final int DEFAULT_DASHBOARD_JIRA_REFRESH_SECONDS = 120;
     public static final int DEFAULT_DASHBOARD_JIRA_ISSUE_LIMIT = 10;
     public static final int DEFAULT_DASHBOARD_CALENDAR_REFRESH_SECONDS = 300;
+    public static final int DEFAULT_CALENDAR_NOTIFICATION_MINUTES_BEFORE = 1;
 
     public WorkspaceSettings() {
         this(
@@ -67,7 +70,9 @@ public record WorkspaceSettings(
                 true,
                 DEFAULT_DASHBOARD_CALENDAR_REFRESH_SECONDS,
                 false,
-                true
+                true,
+                false,
+                DEFAULT_CALENDAR_NOTIFICATION_MINUTES_BEFORE
         );
     }
 
@@ -87,6 +92,7 @@ public record WorkspaceSettings(
         jiraEmail = jiraEmail == null ? "" : jiraEmail.trim();
         jiraApiToken = jiraApiToken == null ? "" : jiraApiToken.trim();
         dashboardCalendarRefreshSeconds = dashboardCalendarRefreshSeconds > 0 ? dashboardCalendarRefreshSeconds : DEFAULT_DASHBOARD_CALENDAR_REFRESH_SECONDS;
+        calendarNotificationMinutesBefore = calendarNotificationMinutesBefore > 0 ? calendarNotificationMinutesBefore : DEFAULT_CALENDAR_NOTIFICATION_MINUTES_BEFORE;
     }
 
     public WorkspaceSettings withKeepWindowAlwaysOnTop(final boolean value) {
@@ -115,7 +121,9 @@ public record WorkspaceSettings(
                 showDashboardCalendar,
                 dashboardCalendarRefreshSeconds,
                 calendarHideAllDayEvents,
-                calendarShowOnlyCurrentAndFuture
+                calendarShowOnlyCurrentAndFuture,
+                calendarNotificationsEnabled,
+                calendarNotificationMinutesBefore
         );
     }
 
@@ -145,7 +153,9 @@ public record WorkspaceSettings(
                 showDashboardCalendar,
                 dashboardCalendarRefreshSeconds,
                 calendarHideAllDayEvents,
-                calendarShowOnlyCurrentAndFuture
+                calendarShowOnlyCurrentAndFuture,
+                calendarNotificationsEnabled,
+                calendarNotificationMinutesBefore
         );
     }
 

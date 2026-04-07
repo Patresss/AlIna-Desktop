@@ -34,6 +34,8 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     private ToggleSwitch calendarHideAllDayToggle;
     private ToggleSwitch calendarShowOnlyCurrentAndFutureToggle;
     private Spinner<Integer> dashboardCalendarRefreshSpinner;
+    private ToggleSwitch calendarNotificationsToggle;
+    private Spinner<Integer> calendarNotificationMinutesSpinner;
 
     // Tasks
     private ToggleSwitch showDashboardTasksToggle;
@@ -77,6 +79,8 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         calendarHideAllDayToggle.setSelected(settings.calendarHideAllDayEvents());
         calendarShowOnlyCurrentAndFutureToggle.setSelected(settings.calendarShowOnlyCurrentAndFuture());
         dashboardCalendarRefreshSpinner.getValueFactory().setValue(settings.dashboardCalendarRefreshSeconds());
+        calendarNotificationsToggle.setSelected(settings.calendarNotificationsEnabled());
+        calendarNotificationMinutesSpinner.getValueFactory().setValue(settings.calendarNotificationMinutesBefore());
 
         // Tasks
         showDashboardTasksToggle.setSelected(settings.showDashboardTasks());
@@ -125,7 +129,9 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 showDashboardCalendarToggle.isSelected(),
                 dashboardCalendarRefreshSpinner.getValue(),
                 calendarHideAllDayToggle.isSelected(),
-                calendarShowOnlyCurrentAndFutureToggle.isSelected()
+                calendarShowOnlyCurrentAndFutureToggle.isSelected(),
+                calendarNotificationsToggle.isSelected(),
+                calendarNotificationMinutesSpinner.getValue()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;
@@ -157,6 +163,10 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         dashboardCalendarRefreshSpinner = createResizableRegion(() -> new Spinner<>(60, 1800, settings.dashboardCalendarRefreshSeconds()), settingsBox);
         final var calendarRefreshTile = createTile("settings.workspace.calendarRefresh.title", "settings.workspace.calendarRefresh.description");
         calendarRefreshTile.setAction(dashboardCalendarRefreshSpinner);
+        calendarNotificationsToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        calendarNotificationMinutesSpinner = createResizableRegion(() -> new Spinner<>(1, 30, settings.calendarNotificationMinutesBefore()), settingsBox);
+        final var calendarNotificationMinutesTile = createTile("settings.workspace.calendarNotificationMinutes.title", "settings.workspace.calendarNotificationMinutes.description");
+        calendarNotificationMinutesTile.setAction(calendarNotificationMinutesSpinner);
 
         // ── Tasks ──
         final var tasksHeader = createTextSeparator("settings.dashboard.tasks.section", Styles.TITLE_4);
@@ -210,6 +220,8 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 tileFor(calendarHideAllDayToggle, "settings.workspace.calendarHideAllDay.title", "settings.workspace.calendarHideAllDay.description"),
                 tileFor(calendarShowOnlyCurrentAndFutureToggle, "settings.workspace.calendarOnlyFuture.title", "settings.workspace.calendarOnlyFuture.description"),
                 calendarRefreshTile,
+                tileFor(calendarNotificationsToggle, "settings.workspace.calendarNotifications.title", "settings.workspace.calendarNotifications.description"),
+                calendarNotificationMinutesTile,
                 new Separator(),
                 // Tasks
                 tasksHeader,

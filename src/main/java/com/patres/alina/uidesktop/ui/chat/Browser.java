@@ -536,8 +536,17 @@ public class Browser extends StackPane {
                   padding-bottom: 2px;
                   overflow: visible;
                 }
+                .chat-message.user {
+                  margin-left: auto;
+                }
+                .chat-message.assistant {
+                  border-left: 4px solid var(--color-accent-0);
+                }
                 .chat-message.accent {
                   box-shadow: 0 0 10px var(--color-accent-fg);
+                }
+                .chat-message.info {
+                  border-left: 4px solid var(--color-info-fg);
                 }
                 .chat-message.warning {
                   box-shadow: 0 0 10px var(--color-warning-fg);
@@ -547,12 +556,6 @@ public class Browser extends StackPane {
                 }
                 .chat-message.danger {
                   box-shadow: 0 0 10px var(--color-danger-fg);
-                }
-                .chat-message.user {
-                  margin-left: auto;
-                }
-                .chat-message.assistant {
-                  border-left: 4px solid var(--color-accent-0);
                 }
                 .command-badge {
                   position: absolute;
