@@ -38,6 +38,7 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
     private TextField openCodePortField;
     private TextField openCodeWorkingDirectoryField;
     private TextArea openCodeStatusArea;
+    private TextField githubTokenField;
 
     private Spinner<Integer> dashboardTaskLimitSpinner;
 
@@ -58,6 +59,7 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         openCodePortField.setText(String.valueOf(settings.openCodePort()));
         openCodeWorkingDirectoryField.setText(orEmpty(settings.openCodeWorkingDirectory()));
         dashboardTaskLimitSpinner.getValueFactory().setValue(settings.dashboardTaskLimit());
+        githubTokenField.setText(orEmpty(settings.githubToken()));
         refreshOpenCodeStatus();
     }
 
@@ -71,7 +73,8 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 dashboardTaskLimitSpinner.getValue(),
                 openCodeHostnameField.getText(),
                 parseInteger(openCodePortField.getText(), WorkspaceSettings.DEFAULT_OPENCODE_PORT),
-                openCodeWorkingDirectoryField.getText()
+                openCodeWorkingDirectoryField.getText(),
+                githubTokenField.getText()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;
@@ -86,6 +89,7 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         final var dashboardHeader = createTextSeparator("settings.workspace.dashboard.section", Styles.TITLE_4);
         final var runtimeHeader = createTextSeparator("settings.workspace.runtime.title", Styles.TITLE_4);
         final var runtimeStatusHeader = createTextSeparator("settings.workspace.openCode.status.section", Styles.TITLE_4);
+        final var integrationsHeader = createTextSeparator("settings.workspace.integrations.section", Styles.TITLE_4);
 
         showDashboardToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         alwaysOnTopToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
@@ -93,6 +97,7 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         openCodeHostnameField = createResizableTextField(settingsBox);
         openCodePortField = createResizableTextField(settingsBox);
         openCodeWorkingDirectoryField = createResizableTextField(settingsBox);
+        githubTokenField = createResizableTextField(settingsBox);
 
         openCodeStatusArea = createResizableTextArea(settingsBox);
         openCodeStatusArea.setPrefRowCount(8);
@@ -118,6 +123,9 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 tileFor(alwaysOnTopToggle, "settings.workspace.ontop.title", "settings.workspace.ontop.description"),
                 tileFor(tasksFileField, "settings.workspace.tasksFile.title", "settings.workspace.tasksFile.description"),
                 taskLimitTile,
+                new Separator(),
+                integrationsHeader,
+                tileFor(githubTokenField, "settings.workspace.github.token.title", "settings.workspace.github.token.description"),
                 new Separator(),
                 runtimeHeader,
                 tileFor(openCodeHostnameField, "settings.workspace.openCode.hostname.title", "settings.workspace.openCode.hostname.description"),

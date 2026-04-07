@@ -272,3 +272,38 @@ ChatThreadHistoryCard {
     -fx-font-size: 11px;
     -fx-padding: 4px 0 2px 2px;
 }
+
+/* ── GitHub PR widget ──────────────────────── */
+
+.workspace-pr-item {
+    -fx-alignment: center-left;
+    -fx-padding: 4px 2px;
+}
+
+.workspace-pr-repo {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+    -fx-min-width: -fx-pref-width;
+}
+
+.workspace-pr-title {
+    -fx-text-fill: -color-fg-default;
+    -fx-cursor: hand;
+    -fx-text-overrun: ellipsis;
+}
+
+.workspace-pr-title:hover {
+    -fx-underline: true;
+}
+
+.workspace-pr-link-icon {
+    -fx-icon-color: -color-fg-muted;
+    -fx-icon-size: 12px;
+}
+
+.workspace-pr-draft {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+    -fx-min-width: -fx-pref-width;
+}

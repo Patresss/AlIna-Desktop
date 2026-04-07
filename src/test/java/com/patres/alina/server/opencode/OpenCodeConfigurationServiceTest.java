@@ -126,7 +126,9 @@ class OpenCodeConfigurationServiceTest {
                 WorkspaceSettings.DEFAULT_DASHBOARD_TASK_LIMIT,
                 WorkspaceSettings.DEFAULT_OPENCODE_HOSTNAME,
                 WorkspaceSettings.DEFAULT_OPENCODE_PORT,
-                workingDirectory.toString()
+                workingDirectory.toString(),
+                "",
+                ""
         ));
 
         return new OpenCodeConfigurationService(

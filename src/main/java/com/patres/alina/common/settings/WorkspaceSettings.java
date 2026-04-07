@@ -8,7 +8,8 @@ public record WorkspaceSettings(
         int dashboardTaskLimit,
         String openCodeHostname,
         int openCodePort,
-        String openCodeWorkingDirectory
+        String openCodeWorkingDirectory,
+        String githubToken
 ) {
 
     public static final String DEFAULT_TASKS_FILE = "profile/default/focus.md";
@@ -26,7 +27,8 @@ public record WorkspaceSettings(
                 DEFAULT_DASHBOARD_TASK_LIMIT,
                 DEFAULT_OPENCODE_HOSTNAME,
                 DEFAULT_OPENCODE_PORT,
-                DEFAULT_OPENCODE_WORKING_DIRECTORY
+                DEFAULT_OPENCODE_WORKING_DIRECTORY,
+                ""
         );
     }
 
@@ -36,6 +38,7 @@ public record WorkspaceSettings(
         openCodeHostname = defaultIfBlank(openCodeHostname, DEFAULT_OPENCODE_HOSTNAME);
         openCodePort = openCodePort > 0 ? openCodePort : DEFAULT_OPENCODE_PORT;
         openCodeWorkingDirectory = defaultIfBlank(openCodeWorkingDirectory, DEFAULT_OPENCODE_WORKING_DIRECTORY);
+        githubToken = githubToken == null ? "" : githubToken.trim();
     }
 
     public WorkspaceSettings withKeepWindowAlwaysOnTop(final boolean value) {
@@ -47,7 +50,8 @@ public record WorkspaceSettings(
                 dashboardTaskLimit,
                 openCodeHostname,
                 openCodePort,
-                openCodeWorkingDirectory
+                openCodeWorkingDirectory,
+                githubToken
         );
     }
 
@@ -60,7 +64,8 @@ public record WorkspaceSettings(
                 dashboardTaskLimit,
                 openCodeHostname,
                 openCodePort,
-                openCodeWorkingDirectory
+                openCodeWorkingDirectory,
+                githubToken
         );
     }
 

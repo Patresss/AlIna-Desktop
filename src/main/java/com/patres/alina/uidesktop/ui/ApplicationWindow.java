@@ -15,6 +15,8 @@ import com.patres.alina.uidesktop.ui.chat.Browser;
 import com.patres.alina.uidesktop.ui.chat.ChatWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.dashboard.DashboardPane;
+import com.patres.alina.uidesktop.ui.dashboard.GitHubWidget;
+import com.patres.alina.uidesktop.ui.dashboard.MediaControlWidget;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -52,6 +54,8 @@ public class ApplicationWindow extends BorderPane {
     private final ApplicationModalPaneContent chatThreadHistoryPane = new ChatThreadHistoryPane(appModalPane::hide, this);
     private final ApplicationModalPaneContent commandPane = new CommandPane(appModalPane::hide, this);
     private final DashboardPane dashboardPane = new DashboardPane();
+    private final MediaControlWidget mediaControlWidget = new MediaControlWidget();
+    private final GitHubWidget gitHubWidget = new GitHubWidget();
 
     public ApplicationWindow() {
         super();
@@ -71,7 +75,8 @@ public class ApplicationWindow extends BorderPane {
     @FXML
     public void initialize() {
         centerPane.setSpacing(14);
-        centerPane.getChildren().add(dashboardPane);
+        centerPane.getChildren().addAll(dashboardPane, mediaControlWidget, gitHubWidget);
+        refreshIntegrationWidgets();
         createAndOpenInitialChatThread();
         rootCenterContainer.getChildren()
                 .add(appModalPane);
@@ -81,6 +86,17 @@ public class ApplicationWindow extends BorderPane {
                 CommandShortcutExecutedEvent.class,
                 this::handleCommandShortcutExecuted
         );
+
+        // Refresh integration widgets when workspace settings change
+        DefaultEventBus.getInstance().subscribe(
+                com.patres.alina.common.event.WorkspaceSettingsUpdatedEvent.class,
+                event -> Platform.runLater(this::refreshIntegrationWidgets)
+        );
+    }
+
+    private void refreshIntegrationWidgets() {
+        var settings = BackendApi.getWorkspaceSettings();
+        gitHubWidget.refresh(settings.githubToken());
     }
 
     private void handleCommandShortcutExecuted(CommandShortcutExecutedEvent event) {

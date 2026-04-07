@@ -382,7 +382,7 @@ public class ChatWindow extends BorderPane {
         if (event.getCode() == KeyCode.ENTER) {
             if (event.isShiftDown()) {
                 chatTextArea.insertText(chatTextArea.getCaretPosition(), System.lineSeparator());
-            } else if (!chatTextArea.getText().isBlank()) {
+            } else if (!chatTextArea.getText().isBlank() || currentCommand != null) {
                 sendMessageFromUi();
             }
         }
@@ -391,7 +391,7 @@ public class ChatWindow extends BorderPane {
     @FXML
     public void sendMessageFromUi() {
         final String message = chatTextArea.getText().trim();
-        if (message.isBlank()) {
+        if (message.isBlank() && currentCommand == null) {
             return;
         }
         final String commandId = getCurrentCommandId();
