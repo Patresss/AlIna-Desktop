@@ -9,8 +9,9 @@ import com.patres.alina.uidesktop.command.settings.CommandPane;
 import com.patres.alina.uidesktop.common.event.CommandShortcutExecutedEvent;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.settings.ui.AssistantSettingsPane;
+import com.patres.alina.uidesktop.settings.ui.DashboardSettingsPane;
+import com.patres.alina.uidesktop.settings.ui.OpenCodeSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.UiSettingsPane;
-import com.patres.alina.uidesktop.settings.ui.WorkspaceSettingsPane;
 import com.patres.alina.uidesktop.ui.chat.Browser;
 import com.patres.alina.uidesktop.ui.chat.ChatWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
@@ -53,7 +54,8 @@ public class ApplicationWindow extends BorderPane {
     private final AppModalPane appModalPane = new AppModalPane();
     private final ApplicationModalPaneContent uiSettingsModalPane = new UiSettingsPane(appModalPane::hide);
     private final ApplicationModalPaneContent assistantServerSettings = new AssistantSettingsPane(appModalPane::hide);
-    private final ApplicationModalPaneContent workspaceSettingsPane = new WorkspaceSettingsPane(appModalPane::hide);
+    private final ApplicationModalPaneContent dashboardSettingsPane = new DashboardSettingsPane(appModalPane::hide);
+    private final ApplicationModalPaneContent openCodeSettingsPane = new OpenCodeSettingsPane(appModalPane::hide);
     private final ApplicationModalPaneContent chatThreadHistoryPane = new ChatThreadHistoryPane(appModalPane::hide, this);
     private final ApplicationModalPaneContent commandPane = new CommandPane(appModalPane::hide, this);
     private final DashboardPane dashboardPane = new DashboardPane();
@@ -176,9 +178,14 @@ public class ApplicationWindow extends BorderPane {
         appModalPane.show(assistantServerSettings);
     }
 
-    public void openWorkspaceSettings() {
-        workspaceSettingsPane.reload();
-        appModalPane.show(workspaceSettingsPane);
+    public void openDashboardSettings() {
+        dashboardSettingsPane.reload();
+        appModalPane.show(dashboardSettingsPane);
+    }
+
+    public void openOpenCodeSettings() {
+        openCodeSettingsPane.reload();
+        appModalPane.show(openCodeSettingsPane);
     }
 
     public void openCommands() {

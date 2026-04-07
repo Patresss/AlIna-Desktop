@@ -68,8 +68,13 @@ public class ApplicationHeaderButtonBox extends HBox {
     }
 
     @FXML
-    public void openWorkspaceSettings() {
-        applicationWindow.openWorkspaceSettings();
+    public void openDashboardSettings() {
+        applicationWindow.openDashboardSettings();
+    }
+
+    @FXML
+    public void openOpenCodeSettings() {
+        applicationWindow.openOpenCodeSettings();
     }
 
     @FXML

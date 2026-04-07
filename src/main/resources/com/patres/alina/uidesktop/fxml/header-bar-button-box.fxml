@@ -39,7 +39,7 @@
             <String fx:value="flat" />
          </styleClass>
       </Button>
-      <Button minWidth="0.0" mnemonicParsing="false" nodeOrientation="LEFT_TO_RIGHT" onAction="#openWorkspaceSettings" text="Button">
+      <Button minWidth="0.0" mnemonicParsing="false" nodeOrientation="LEFT_TO_RIGHT" onAction="#openDashboardSettings" text="Button">
          <graphic>
             <FontIcon iconLiteral="mdoal-info" />
          </graphic>
@@ -61,7 +61,8 @@
          <items>
             <MenuItem mnemonicParsing="false" onAction="#openAssistantSettings" text="%settings.assistant.title" />
             <MenuItem mnemonicParsing="false" onAction="#openUiSettings" text="%settings.ui.title" />
-            <MenuItem mnemonicParsing="false" onAction="#openWorkspaceSettings" text="%settings.workspace.title" />
+             <MenuItem mnemonicParsing="false" onAction="#openDashboardSettings" text="%settings.dashboard.title" />
+             <MenuItem mnemonicParsing="false" onAction="#openOpenCodeSettings" text="%settings.opencode.title" />
             <MenuItem mnemonicParsing="false" onAction="#openCommands" text="%command.title" />
          </items>
          <graphic>
