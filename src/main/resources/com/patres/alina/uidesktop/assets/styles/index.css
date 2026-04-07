@@ -344,7 +344,7 @@ ChatThreadHistoryCard {
 }
 
 .workspace-jira-key {
-    -fx-text-fill: -color-accent-emphasis;
+    -fx-text-fill: -color-fg-default;
     -fx-font-size: 11px;
     -fx-font-family: monospace;
     -fx-font-weight: bold;
@@ -382,7 +382,7 @@ ChatThreadHistoryCard {
 }
 
 .workspace-calendar-time {
-    -fx-text-fill: -color-accent-emphasis;
+    -fx-text-fill: -color-fg-default;
     -fx-font-size: 11px;
     -fx-font-family: monospace;
     -fx-font-weight: bold;
