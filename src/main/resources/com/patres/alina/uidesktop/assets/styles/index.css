@@ -273,6 +273,12 @@ ChatThreadHistoryCard {
     -fx-padding: 4px 0 2px 2px;
 }
 
+.workspace-media-track-info {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 12px;
+    -fx-text-overrun: ellipsis;
+}
+
 /* ── GitHub PR widget ──────────────────────── */
 
 .workspace-pr-item {
@@ -316,25 +322,120 @@ ChatThreadHistoryCard {
 }
 
 .workspace-jira-key {
-    -fx-text-fill: -color-fg-muted;
+    -fx-text-fill: -color-accent-emphasis;
     -fx-font-size: 11px;
     -fx-font-family: monospace;
+    -fx-font-weight: bold;
     -fx-min-width: -fx-pref-width;
+    -fx-cursor: hand;
+}
+
+.workspace-jira-key:hover {
+    -fx-underline: true;
 }
 
 .workspace-jira-status {
-    -fx-text-fill: -color-accent-emphasis;
+    -fx-text-fill: -color-fg-muted;
     -fx-font-size: 10px;
     -fx-min-width: -fx-pref-width;
 }
 
 .workspace-jira-summary {
     -fx-text-fill: -color-fg-default;
-    -fx-cursor: hand;
     -fx-text-overrun: ellipsis;
 }
 
-.workspace-jira-summary:hover {
+/* ── Google Calendar widget ───────────────────── */
+
+.workspace-calendar-item {
+    -fx-alignment: center-left;
+    -fx-padding: 2px 2px;
+}
+
+.workspace-calendar-dot-active {
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 0;
+}
+
+.workspace-calendar-time {
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-font-size: 11px;
+    -fx-font-family: monospace;
+    -fx-font-weight: bold;
+    -fx-min-width: -fx-pref-width;
+}
+
+.workspace-calendar-video-icon {
+    -fx-icon-color: -color-accent-emphasis;
+    -fx-icon-size: 13px;
+}
+
+.workspace-calendar-video-button {
+    -fx-cursor: hand;
+    -fx-padding: 0;
+}
+
+.workspace-calendar-summary {
+    -fx-text-fill: -color-fg-default;
+    -fx-text-overrun: ellipsis;
+}
+
+.workspace-calendar-clickable {
+    -fx-cursor: hand;
+}
+
+.workspace-calendar-clickable:hover {
     -fx-underline: true;
+}
+
+.workspace-calendar-error {
+    -fx-text-fill: -color-danger-fg;
+    -fx-font-size: 11px;
+}
+
+.workspace-calendar-auth-button {
+    -fx-cursor: hand;
+}
+
+.workspace-calendar-time {
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-font-size: 11px;
+    -fx-font-family: monospace;
+    -fx-font-weight: bold;
+    -fx-min-width: -fx-pref-width;
+}
+
+.workspace-calendar-summary {
+    -fx-text-fill: -color-fg-default;
+    -fx-text-overrun: ellipsis;
+}
+
+.workspace-calendar-video-icon {
+    -fx-icon-color: -color-accent-emphasis;
+    -fx-icon-size: 13px;
+}
+
+.workspace-calendar-video-button {
+    -fx-cursor: hand;
+    -fx-padding: 0;
+}
+
+.workspace-calendar-clickable {
+    -fx-cursor: hand;
+}
+
+.workspace-calendar-clickable:hover {
+    -fx-underline: true;
+}
+
+.workspace-calendar-error {
+    -fx-text-fill: -color-danger-fg;
+    -fx-font-size: 11px;
+}
+
+.workspace-calendar-auth-button {
+    -fx-cursor: hand;
 }
 

@@ -17,6 +17,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+import org.kordamp.ikonli.devicons.Devicons;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -39,7 +40,7 @@ public class JiraWidget extends VBox {
     public JiraWidget() {
         getStyleClass().add("workspace-dashboard");
 
-        final FontIcon jiraIcon = new FontIcon(Feather.CLIPBOARD);
+        final FontIcon jiraIcon = new FontIcon(Devicons.JIRA);
         jiraIcon.getStyleClass().add("workspace-dashboard-title");
         titleLabel.setText("Jira Issues");
         titleLabel.setGraphic(jiraIcon);
@@ -144,6 +145,7 @@ public class JiraWidget extends VBox {
         final Label keyLabel = new Label(issue.key());
         keyLabel.getStyleClass().add("workspace-jira-key");
         keyLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        keyLabel.setOnMouseClicked(event -> Browser.openWebpage(issue.url()));
 
         final Label statusLabel = new Label("[" + issue.status() + "]");
         statusLabel.getStyleClass().add("workspace-jira-status");
@@ -154,7 +156,6 @@ public class JiraWidget extends VBox {
         summaryLabel.setMaxWidth(Double.MAX_VALUE);
         summaryLabel.setWrapText(false);
         HBox.setHgrow(summaryLabel, Priority.ALWAYS);
-        summaryLabel.setOnMouseClicked(event -> Browser.openWebpage(issue.url()));
 
         final HBox row = new HBox(8, keyLabel, statusLabel, summaryLabel);
         row.getStyleClass().add("workspace-jira-item");

@@ -17,6 +17,7 @@ import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.dashboard.DashboardPane;
 import com.patres.alina.uidesktop.ui.dashboard.DashboardContainer;
 import com.patres.alina.uidesktop.ui.dashboard.GitHubWidget;
+import com.patres.alina.uidesktop.ui.dashboard.GoogleCalendarWidget;
 import com.patres.alina.uidesktop.ui.dashboard.JiraWidget;
 import com.patres.alina.uidesktop.ui.dashboard.MediaControlWidget;
 import javafx.application.Platform;
@@ -59,7 +60,8 @@ public class ApplicationWindow extends BorderPane {
     private final MediaControlWidget mediaControlWidget = new MediaControlWidget();
     private final GitHubWidget gitHubWidget = new GitHubWidget();
     private final JiraWidget jiraWidget = new JiraWidget();
-    private final DashboardContainer dashboardContainer = new DashboardContainer(mediaControlWidget, dashboardPane, gitHubWidget, jiraWidget);
+    private final GoogleCalendarWidget googleCalendarWidget = new GoogleCalendarWidget();
+    private final DashboardContainer dashboardContainer = new DashboardContainer(mediaControlWidget, dashboardPane, gitHubWidget, jiraWidget, googleCalendarWidget);
 
     public ApplicationWindow() {
         super();
@@ -102,6 +104,7 @@ public class ApplicationWindow extends BorderPane {
         var settings = BackendApi.getWorkspaceSettings();
         gitHubWidget.refresh(settings.githubToken());
         jiraWidget.refresh();
+        googleCalendarWidget.refresh();
     }
 
     private void handleCommandShortcutExecuted(CommandShortcutExecutedEvent event) {

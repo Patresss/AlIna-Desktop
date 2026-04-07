@@ -21,7 +21,11 @@ public record WorkspaceSettings(
         boolean showDashboardMusic,
         boolean showDashboardTasks,
         boolean showDashboardGithub,
-        boolean showDashboardJira
+        boolean showDashboardJira,
+        boolean showDashboardCalendar,
+        int dashboardCalendarRefreshSeconds,
+        boolean calendarHideAllDayEvents,
+        boolean calendarShowOnlyCurrentAndFuture
 ) {
 
     public static final String DEFAULT_TASKS_FILE = "profile/default/focus.md";
@@ -35,6 +39,7 @@ public record WorkspaceSettings(
     public static final int DEFAULT_DASHBOARD_GITHUB_PR_LIMIT = 10;
     public static final int DEFAULT_DASHBOARD_JIRA_REFRESH_SECONDS = 120;
     public static final int DEFAULT_DASHBOARD_JIRA_ISSUE_LIMIT = 10;
+    public static final int DEFAULT_DASHBOARD_CALENDAR_REFRESH_SECONDS = 300;
 
     public WorkspaceSettings() {
         this(
@@ -58,6 +63,10 @@ public record WorkspaceSettings(
                 true,
                 true,
                 true,
+                true,
+                true,
+                DEFAULT_DASHBOARD_CALENDAR_REFRESH_SECONDS,
+                false,
                 true
         );
     }
@@ -77,6 +86,7 @@ public record WorkspaceSettings(
         dashboardJiraIssueLimit = dashboardJiraIssueLimit > 0 ? dashboardJiraIssueLimit : DEFAULT_DASHBOARD_JIRA_ISSUE_LIMIT;
         jiraEmail = jiraEmail == null ? "" : jiraEmail.trim();
         jiraApiToken = jiraApiToken == null ? "" : jiraApiToken.trim();
+        dashboardCalendarRefreshSeconds = dashboardCalendarRefreshSeconds > 0 ? dashboardCalendarRefreshSeconds : DEFAULT_DASHBOARD_CALENDAR_REFRESH_SECONDS;
     }
 
     public WorkspaceSettings withKeepWindowAlwaysOnTop(final boolean value) {
@@ -101,7 +111,11 @@ public record WorkspaceSettings(
                 showDashboardMusic,
                 showDashboardTasks,
                 showDashboardGithub,
-                showDashboardJira
+                showDashboardJira,
+                showDashboardCalendar,
+                dashboardCalendarRefreshSeconds,
+                calendarHideAllDayEvents,
+                calendarShowOnlyCurrentAndFuture
         );
     }
 
@@ -127,7 +141,11 @@ public record WorkspaceSettings(
                 showDashboardMusic,
                 showDashboardTasks,
                 showDashboardGithub,
-                showDashboardJira
+                showDashboardJira,
+                showDashboardCalendar,
+                dashboardCalendarRefreshSeconds,
+                calendarHideAllDayEvents,
+                calendarShowOnlyCurrentAndFuture
         );
     }
 

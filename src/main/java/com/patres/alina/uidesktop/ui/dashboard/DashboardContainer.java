@@ -28,14 +28,16 @@ public class DashboardContainer extends VBox {
     private final DashboardPane dashboardPane;
     private final GitHubWidget gitHubWidget;
     private final JiraWidget jiraWidget;
+    private final GoogleCalendarWidget googleCalendarWidget;
     
     private boolean collapsed = false;
 
-    public DashboardContainer(MediaControlWidget mediaControlWidget, DashboardPane dashboardPane, GitHubWidget gitHubWidget, JiraWidget jiraWidget) {
+    public DashboardContainer(MediaControlWidget mediaControlWidget, DashboardPane dashboardPane, GitHubWidget gitHubWidget, JiraWidget jiraWidget, GoogleCalendarWidget googleCalendarWidget) {
         this.mediaControlWidget = mediaControlWidget;
         this.dashboardPane = dashboardPane;
         this.gitHubWidget = gitHubWidget;
         this.jiraWidget = jiraWidget;
+        this.googleCalendarWidget = googleCalendarWidget;
         
         getStyleClass().add("workspace-dashboard");
         
@@ -49,9 +51,10 @@ public class DashboardContainer extends VBox {
         final HBox header = new HBox(8, titleLabel, spacer, collapseButton);
         header.getStyleClass().add("workspace-dashboard-header");
 
-        widgetsBox.getChildren().addAll(mediaControlWidget, dashboardPane, gitHubWidget, jiraWidget);
+        widgetsBox.getChildren().addAll(mediaControlWidget, googleCalendarWidget, dashboardPane, gitHubWidget, jiraWidget);
         
         // Remove borders from child widgets
+        googleCalendarWidget.getStyleClass().remove("workspace-dashboard");
         mediaControlWidget.getStyleClass().remove("workspace-dashboard");
         dashboardPane.getStyleClass().remove("workspace-dashboard");
         gitHubWidget.getStyleClass().remove("workspace-dashboard");
@@ -91,6 +94,7 @@ public class DashboardContainer extends VBox {
             updateWidgetVisibility(dashboardPane, settings.showDashboardTasks());
             updateWidgetVisibility(gitHubWidget, settings.showDashboardGithub());
             updateWidgetVisibility(jiraWidget, settings.showDashboardJira());
+            updateWidgetVisibility(googleCalendarWidget, settings.showDashboardCalendar());
         });
     }
     

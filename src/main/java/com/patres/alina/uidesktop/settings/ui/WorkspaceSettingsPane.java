@@ -36,6 +36,9 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
     private ToggleSwitch showDashboardTasksToggle;
     private ToggleSwitch showDashboardGithubToggle;
     private ToggleSwitch showDashboardJiraToggle;
+    private ToggleSwitch showDashboardCalendarToggle;
+    private ToggleSwitch calendarHideAllDayToggle;
+    private ToggleSwitch calendarShowOnlyCurrentAndFutureToggle;
 
     private TextField tasksFileField;
     private TextField openCodeHostnameField;
@@ -53,6 +56,7 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
     private Spinner<Integer> dashboardGithubPrLimitSpinner;
     private Spinner<Integer> dashboardJiraRefreshSpinner;
     private Spinner<Integer> dashboardJiraIssueLimitSpinner;
+    private Spinner<Integer> dashboardCalendarRefreshSpinner;
 
     private WorkspaceSettings settings;
 
@@ -70,6 +74,9 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         showDashboardTasksToggle.setSelected(settings.showDashboardTasks());
         showDashboardGithubToggle.setSelected(settings.showDashboardGithub());
         showDashboardJiraToggle.setSelected(settings.showDashboardJira());
+        showDashboardCalendarToggle.setSelected(settings.showDashboardCalendar());
+        calendarHideAllDayToggle.setSelected(settings.calendarHideAllDayEvents());
+        calendarShowOnlyCurrentAndFutureToggle.setSelected(settings.calendarShowOnlyCurrentAndFuture());
         tasksFileField.setText(orEmpty(settings.tasksFile()));
         openCodeHostnameField.setText(orEmpty(settings.openCodeHostname()));
         openCodePortField.setText(String.valueOf(settings.openCodePort()));
@@ -81,6 +88,7 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         dashboardGithubPrLimitSpinner.getValueFactory().setValue(settings.dashboardGithubPrLimit());
         dashboardJiraRefreshSpinner.getValueFactory().setValue(settings.dashboardJiraRefreshSeconds());
         dashboardJiraIssueLimitSpinner.getValueFactory().setValue(settings.dashboardJiraIssueLimit());
+        dashboardCalendarRefreshSpinner.getValueFactory().setValue(settings.dashboardCalendarRefreshSeconds());
         githubTokenField.setText(orEmpty(settings.githubToken()));
         jiraEmailField.setText(orEmpty(settings.jiraEmail()));
         jiraApiTokenField.setText(orEmpty(settings.jiraApiToken()));
@@ -110,7 +118,11 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 showDashboardMusicToggle.isSelected(),
                 showDashboardTasksToggle.isSelected(),
                 showDashboardGithubToggle.isSelected(),
-                showDashboardJiraToggle.isSelected()
+                showDashboardJiraToggle.isSelected(),
+                showDashboardCalendarToggle.isSelected(),
+                dashboardCalendarRefreshSpinner.getValue(),
+                calendarHideAllDayToggle.isSelected(),
+                calendarShowOnlyCurrentAndFutureToggle.isSelected()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;
@@ -133,6 +145,9 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         showDashboardTasksToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         showDashboardGithubToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         showDashboardJiraToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        showDashboardCalendarToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        calendarHideAllDayToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        calendarShowOnlyCurrentAndFutureToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         tasksFileField = createResizableTextField(settingsBox);
         openCodeHostnameField = createResizableTextField(settingsBox);
         openCodePortField = createResizableTextField(settingsBox);
@@ -196,6 +211,13 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         dashboardJiraIssueLimitSpinner = createResizableRegion(() -> new Spinner<>(1, 50, settings.dashboardJiraIssueLimit()), settingsBox);
         jiraIssueLimitTile.setAction(dashboardJiraIssueLimitSpinner);
 
+        final var calendarRefreshTile = createTile(
+                "settings.workspace.calendarRefresh.title",
+                "settings.workspace.calendarRefresh.description"
+        );
+        dashboardCalendarRefreshSpinner = createResizableRegion(() -> new Spinner<>(60, 1800, settings.dashboardCalendarRefreshSeconds()), settingsBox);
+        calendarRefreshTile.setAction(dashboardCalendarRefreshSpinner);
+
         final Button refreshOpenCodeStatusButton = createButton(Feather.REFRESH_CCW, e -> refreshOpenCodeStatus());
         final Node openCodeWorkingDirectoryPicker = createFilePickerField(openCodeWorkingDirectoryField, this::chooseOpenCodeWorkingDirectory);
         final VBox openCodeStatusBox = new VBox(8, openCodeStatusArea, refreshOpenCodeStatusButton);
@@ -209,6 +231,9 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 tileFor(showDashboardTasksToggle, "settings.workspace.showTasks.title", "settings.workspace.showTasks.description"),
                 tileFor(showDashboardGithubToggle, "settings.workspace.showGithub.title", "settings.workspace.showGithub.description"),
                 tileFor(showDashboardJiraToggle, "settings.workspace.showJira.title", "settings.workspace.showJira.description"),
+                tileFor(showDashboardCalendarToggle, "settings.workspace.showCalendar.title", "settings.workspace.showCalendar.description"),
+                tileFor(calendarHideAllDayToggle, "settings.workspace.calendarHideAllDay.title", "settings.workspace.calendarHideAllDay.description"),
+                tileFor(calendarShowOnlyCurrentAndFutureToggle, "settings.workspace.calendarOnlyFuture.title", "settings.workspace.calendarOnlyFuture.description"),
                 tileFor(tasksFileField, "settings.workspace.tasksFile.title", "settings.workspace.tasksFile.description"),
                 taskLimitTile,
                 tasksRefreshTile,
@@ -217,6 +242,7 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 githubPrLimitTile,
                 jiraRefreshTile,
                 jiraIssueLimitTile,
+                calendarRefreshTile,
                 new Separator(),
                 integrationsHeader,
                 tileFor(githubTokenField, "settings.workspace.github.token.title", "settings.workspace.github.token.description"),
