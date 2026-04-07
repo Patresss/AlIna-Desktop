@@ -20,8 +20,9 @@ public final class GitHubService {
 
     private static final String USER_URL = "https://api.github.com/user";
     private static final String SEARCH_URL_TEMPLATE =
-            "https://api.github.com/search/issues?q=type:pr+state:open+review-requested:%s&sort=updated&order=desc&per_page=50";
+            "https://api.github.com/search/issues?q=type:pr+state:open+involves:%s+-author:%s&sort=updated&order=desc&per_page=50";
     private static final String PR_DETAILS_URL_TEMPLATE = "https://api.github.com/repos/%s/pulls/%s";
+    private static final String PR_REVIEWS_URL_TEMPLATE = "https://api.github.com/repos/%s/pulls/%s/reviews";
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
@@ -50,7 +51,7 @@ public final class GitHubService {
             }
             logger.info("GitHub: resolved username = {}", username);
 
-            final String searchUrl = String.format(SEARCH_URL_TEMPLATE, username);
+            final String searchUrl = String.format(SEARCH_URL_TEMPLATE, username, username);
             logger.info("GitHub: search URL = {}", searchUrl);
 
             final HttpRequest request = HttpRequest.newBuilder()
@@ -76,9 +77,9 @@ public final class GitHubService {
             final List<GitHubPullRequest> allPRs = parseResponse(response.body());
             logger.info("GitHub: found {} pull requests from search", allPRs.size());
             
-            // Filter to only PRs where user is directly assigned (not via team)
-            final GitHubPullRequestResult result = filterDirectlyAssignedPRs(client, githubToken, username, allPRs, maxResults);
-            logger.info("GitHub: filtered to {} directly assigned pull requests (total: {})", 
+            // Filter to only PRs that need review from user
+            final GitHubPullRequestResult result = filterPRsNeedingReview(client, githubToken, username, allPRs, maxResults);
+            logger.info("GitHub: filtered to {} pull requests needing review (total: {})", 
                     result.pullRequests().size(), result.totalCount());
             
             return result;
@@ -118,11 +119,12 @@ public final class GitHubService {
     }
 
     /**
-     * Filters PRs to only include those where the user is directly assigned as a reviewer
-     * (not just via team assignment).
+     * Filters PRs to only include those that need review from the user:
+     * - User is directly requested as reviewer (not via team), OR
+     * - User has reviewed but last review is not APPROVED (COMMENTED, CHANGES_REQUESTED, DISMISSED)
      * Returns result with limited number of PRs and total count of all matching PRs.
      */
-    private static GitHubPullRequestResult filterDirectlyAssignedPRs(
+    private static GitHubPullRequestResult filterPRsNeedingReview(
             final HttpClient client,
             final String githubToken,
             final String username,
@@ -134,14 +136,14 @@ public final class GitHubService {
         
         for (final GitHubPullRequest pr : allPRs) {
             try {
-                if (isDirectlyAssignedReviewer(client, githubToken, username, pr)) {
+                if (needsReviewFromUser(client, githubToken, username, pr)) {
                     allMatching.add(pr);
                     if (limited.size() < maxResults) {
                         limited.add(pr);
                     }
                 }
             } catch (Exception e) {
-                logger.warn("Failed to check reviewer status for PR: {}", pr.url(), e);
+                logger.warn("Failed to check review status for PR: {}", pr.url(), e);
                 // Include PR in case of error to be safe
                 allMatching.add(pr);
                 if (limited.size() < maxResults) {
@@ -157,9 +159,11 @@ public final class GitHubService {
     }
 
     /**
-     * Checks if the user is directly assigned as a reviewer for this PR.
+     * Checks if PR needs review from user:
+     * - User is in requested_reviewers (directly, not via team), OR
+     * - User has reviewed but last review state is not APPROVED
      */
-    private static boolean isDirectlyAssignedReviewer(
+    private static boolean needsReviewFromUser(
             final HttpClient client,
             final String githubToken,
             final String username,
@@ -193,18 +197,60 @@ public final class GitHubService {
         }
         
         final JsonNode prDetails = OBJECT_MAPPER.readTree(response.body());
-        final JsonNode requestedReviewers = prDetails.get("requested_reviewers");
         
-        if (requestedReviewers == null || !requestedReviewers.isArray()) {
-            return false;
+        // Check 1: Is user directly requested as reviewer?
+        final JsonNode requestedReviewers = prDetails.get("requested_reviewers");
+        if (requestedReviewers != null && requestedReviewers.isArray()) {
+            for (final JsonNode reviewer : requestedReviewers) {
+                final JsonNode login = reviewer.get("login");
+                if (login != null && login.asText().equals(username)) {
+                    logger.debug("PR {} needs review: user is in requested_reviewers", prNumber);
+                    return true;
+                }
+            }
         }
         
-        // Check if username is in requested_reviewers array
-        for (final JsonNode reviewer : requestedReviewers) {
-            final JsonNode login = reviewer.get("login");
-            if (login != null && login.asText().equals(username)) {
-                return true;
+        // Check 2: Has user reviewed but last review is not APPROVED?
+        final String reviewsUrl = String.format(PR_REVIEWS_URL_TEMPLATE, repo, prNumber);
+        final HttpRequest reviewsRequest = HttpRequest.newBuilder()
+                .uri(URI.create(reviewsUrl))
+                .header("Authorization", "Bearer " + githubToken)
+                .header("Accept", "application/vnd.github+json")
+                .header("X-GitHub-Api-Version", "2022-11-28")
+                .timeout(TIMEOUT)
+                .GET()
+                .build();
+        
+        final HttpResponse<String> reviewsResponse = client.send(reviewsRequest, HttpResponse.BodyHandlers.ofString());
+        if (reviewsResponse.statusCode() != 200) {
+            logger.warn("Failed to fetch reviews for {}: status {}", reviewsUrl, reviewsResponse.statusCode());
+            return false; // If we can't check reviews, assume not needed
+        }
+        
+        final JsonNode reviews = OBJECT_MAPPER.readTree(reviewsResponse.body());
+        if (!reviews.isArray() || reviews.size() == 0) {
+            return false; // No reviews from anyone
+        }
+        
+        // Find last review by user
+        String lastUserReviewState = null;
+        for (final JsonNode review : reviews) {
+            final JsonNode reviewUser = review.get("user");
+            if (reviewUser != null) {
+                final JsonNode reviewLogin = reviewUser.get("login");
+                if (reviewLogin != null && reviewLogin.asText().equals(username)) {
+                    final JsonNode state = review.get("state");
+                    if (state != null) {
+                        lastUserReviewState = state.asText();
+                    }
+                }
             }
+        }
+        
+        // If user has reviewed and last state is not APPROVED, PR needs review
+        if (lastUserReviewState != null && !lastUserReviewState.equals("APPROVED")) {
+            logger.debug("PR {} needs review: last review state = {}", prNumber, lastUserReviewState);
+            return true;
         }
         
         return false;

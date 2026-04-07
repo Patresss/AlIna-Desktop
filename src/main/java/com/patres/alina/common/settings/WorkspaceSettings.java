@@ -13,7 +13,15 @@ public record WorkspaceSettings(
         int dashboardTasksRefreshSeconds,
         int dashboardGithubRefreshSeconds,
         int dashboardMediaRefreshSeconds,
-        int dashboardGithubPrLimit
+        int dashboardGithubPrLimit,
+        int dashboardJiraRefreshSeconds,
+        int dashboardJiraIssueLimit,
+        String jiraEmail,
+        String jiraApiToken,
+        boolean showDashboardMusic,
+        boolean showDashboardTasks,
+        boolean showDashboardGithub,
+        boolean showDashboardJira
 ) {
 
     public static final String DEFAULT_TASKS_FILE = "profile/default/focus.md";
@@ -25,6 +33,8 @@ public record WorkspaceSettings(
     public static final int DEFAULT_DASHBOARD_GITHUB_REFRESH_SECONDS = 60;
     public static final int DEFAULT_DASHBOARD_MEDIA_REFRESH_SECONDS = 5;
     public static final int DEFAULT_DASHBOARD_GITHUB_PR_LIMIT = 10;
+    public static final int DEFAULT_DASHBOARD_JIRA_REFRESH_SECONDS = 120;
+    public static final int DEFAULT_DASHBOARD_JIRA_ISSUE_LIMIT = 10;
 
     public WorkspaceSettings() {
         this(
@@ -40,7 +50,15 @@ public record WorkspaceSettings(
                 DEFAULT_DASHBOARD_TASKS_REFRESH_SECONDS,
                 DEFAULT_DASHBOARD_GITHUB_REFRESH_SECONDS,
                 DEFAULT_DASHBOARD_MEDIA_REFRESH_SECONDS,
-                DEFAULT_DASHBOARD_GITHUB_PR_LIMIT
+                DEFAULT_DASHBOARD_GITHUB_PR_LIMIT,
+                DEFAULT_DASHBOARD_JIRA_REFRESH_SECONDS,
+                DEFAULT_DASHBOARD_JIRA_ISSUE_LIMIT,
+                "",
+                "",
+                true,
+                true,
+                true,
+                true
         );
     }
 
@@ -55,6 +73,10 @@ public record WorkspaceSettings(
         dashboardGithubRefreshSeconds = dashboardGithubRefreshSeconds > 0 ? dashboardGithubRefreshSeconds : DEFAULT_DASHBOARD_GITHUB_REFRESH_SECONDS;
         dashboardMediaRefreshSeconds = dashboardMediaRefreshSeconds > 0 ? dashboardMediaRefreshSeconds : DEFAULT_DASHBOARD_MEDIA_REFRESH_SECONDS;
         dashboardGithubPrLimit = dashboardGithubPrLimit > 0 ? dashboardGithubPrLimit : DEFAULT_DASHBOARD_GITHUB_PR_LIMIT;
+        dashboardJiraRefreshSeconds = dashboardJiraRefreshSeconds > 0 ? dashboardJiraRefreshSeconds : DEFAULT_DASHBOARD_JIRA_REFRESH_SECONDS;
+        dashboardJiraIssueLimit = dashboardJiraIssueLimit > 0 ? dashboardJiraIssueLimit : DEFAULT_DASHBOARD_JIRA_ISSUE_LIMIT;
+        jiraEmail = jiraEmail == null ? "" : jiraEmail.trim();
+        jiraApiToken = jiraApiToken == null ? "" : jiraApiToken.trim();
     }
 
     public WorkspaceSettings withKeepWindowAlwaysOnTop(final boolean value) {
@@ -71,7 +93,15 @@ public record WorkspaceSettings(
                 dashboardTasksRefreshSeconds,
                 dashboardGithubRefreshSeconds,
                 dashboardMediaRefreshSeconds,
-                dashboardGithubPrLimit
+                dashboardGithubPrLimit,
+                dashboardJiraRefreshSeconds,
+                dashboardJiraIssueLimit,
+                jiraEmail,
+                jiraApiToken,
+                showDashboardMusic,
+                showDashboardTasks,
+                showDashboardGithub,
+                showDashboardJira
         );
     }
 
@@ -89,7 +119,15 @@ public record WorkspaceSettings(
                 dashboardTasksRefreshSeconds,
                 dashboardGithubRefreshSeconds,
                 dashboardMediaRefreshSeconds,
-                dashboardGithubPrLimit
+                dashboardGithubPrLimit,
+                dashboardJiraRefreshSeconds,
+                dashboardJiraIssueLimit,
+                jiraEmail,
+                jiraApiToken,
+                showDashboardMusic,
+                showDashboardTasks,
+                showDashboardGithub,
+                showDashboardJira
         );
     }
 

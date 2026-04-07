@@ -34,7 +34,6 @@ public class MediaControlWidget extends VBox {
 
     public MediaControlWidget() {
         getStyleClass().add("workspace-dashboard");
-        setSpacing(10);
         setPadding(new Insets(10, 12, 10, 12));
 
         // Header with title and controls in one line
@@ -67,18 +66,18 @@ public class MediaControlWidget extends VBox {
         final HBox controlsBox = new HBox(8, prevButton, playPauseButton, nextButton);
         controlsBox.setAlignment(Pos.CENTER_LEFT);
 
-        // Header row with everything in one line
-        final HBox header = new HBox(12, titleLabel, controlsBox);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.getStyleClass().add("workspace-dashboard-header");
-
-        // Track info label
+        // Track info label - będzie obok przycisków
         trackInfoLabel.getStyleClass().add("workspace-dashboard-empty");
         trackInfoLabel.setMaxWidth(Double.MAX_VALUE);
         trackInfoLabel.setWrapText(false);
         HBox.setHgrow(trackInfoLabel, Priority.ALWAYS);
 
-        getChildren().addAll(header, trackInfoLabel);
+        // Header row with title, controls, and track info all in one line
+        final HBox header = new HBox(12, titleLabel, controlsBox, trackInfoLabel);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.getStyleClass().add("workspace-dashboard-header");
+
+        getChildren().add(header);
 
         // Auto-refresh with settings
         initializeRefreshTimer();

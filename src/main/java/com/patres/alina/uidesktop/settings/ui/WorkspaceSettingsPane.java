@@ -32,6 +32,10 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
 
     private ToggleSwitch showDashboardToggle;
     private ToggleSwitch alwaysOnTopToggle;
+    private ToggleSwitch showDashboardMusicToggle;
+    private ToggleSwitch showDashboardTasksToggle;
+    private ToggleSwitch showDashboardGithubToggle;
+    private ToggleSwitch showDashboardJiraToggle;
 
     private TextField tasksFileField;
     private TextField openCodeHostnameField;
@@ -39,12 +43,16 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
     private TextField openCodeWorkingDirectoryField;
     private TextArea openCodeStatusArea;
     private TextField githubTokenField;
+    private TextField jiraEmailField;
+    private TextField jiraApiTokenField;
 
     private Spinner<Integer> dashboardTaskLimitSpinner;
     private Spinner<Integer> dashboardTasksRefreshSpinner;
     private Spinner<Integer> dashboardGithubRefreshSpinner;
     private Spinner<Integer> dashboardMediaRefreshSpinner;
     private Spinner<Integer> dashboardGithubPrLimitSpinner;
+    private Spinner<Integer> dashboardJiraRefreshSpinner;
+    private Spinner<Integer> dashboardJiraIssueLimitSpinner;
 
     private WorkspaceSettings settings;
 
@@ -58,6 +66,10 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
 
         showDashboardToggle.setSelected(settings.showDashboard());
         alwaysOnTopToggle.setSelected(settings.keepWindowAlwaysOnTop());
+        showDashboardMusicToggle.setSelected(settings.showDashboardMusic());
+        showDashboardTasksToggle.setSelected(settings.showDashboardTasks());
+        showDashboardGithubToggle.setSelected(settings.showDashboardGithub());
+        showDashboardJiraToggle.setSelected(settings.showDashboardJira());
         tasksFileField.setText(orEmpty(settings.tasksFile()));
         openCodeHostnameField.setText(orEmpty(settings.openCodeHostname()));
         openCodePortField.setText(String.valueOf(settings.openCodePort()));
@@ -67,7 +79,11 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         dashboardGithubRefreshSpinner.getValueFactory().setValue(settings.dashboardGithubRefreshSeconds());
         dashboardMediaRefreshSpinner.getValueFactory().setValue(settings.dashboardMediaRefreshSeconds());
         dashboardGithubPrLimitSpinner.getValueFactory().setValue(settings.dashboardGithubPrLimit());
+        dashboardJiraRefreshSpinner.getValueFactory().setValue(settings.dashboardJiraRefreshSeconds());
+        dashboardJiraIssueLimitSpinner.getValueFactory().setValue(settings.dashboardJiraIssueLimit());
         githubTokenField.setText(orEmpty(settings.githubToken()));
+        jiraEmailField.setText(orEmpty(settings.jiraEmail()));
+        jiraApiTokenField.setText(orEmpty(settings.jiraApiToken()));
         refreshOpenCodeStatus();
     }
 
@@ -86,7 +102,15 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 dashboardTasksRefreshSpinner.getValue(),
                 dashboardGithubRefreshSpinner.getValue(),
                 dashboardMediaRefreshSpinner.getValue(),
-                dashboardGithubPrLimitSpinner.getValue()
+                dashboardGithubPrLimitSpinner.getValue(),
+                dashboardJiraRefreshSpinner.getValue(),
+                dashboardJiraIssueLimitSpinner.getValue(),
+                jiraEmailField.getText(),
+                jiraApiTokenField.getText(),
+                showDashboardMusicToggle.isSelected(),
+                showDashboardTasksToggle.isSelected(),
+                showDashboardGithubToggle.isSelected(),
+                showDashboardJiraToggle.isSelected()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;
@@ -105,11 +129,17 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
 
         showDashboardToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         alwaysOnTopToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        showDashboardMusicToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        showDashboardTasksToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        showDashboardGithubToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        showDashboardJiraToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         tasksFileField = createResizableTextField(settingsBox);
         openCodeHostnameField = createResizableTextField(settingsBox);
         openCodePortField = createResizableTextField(settingsBox);
         openCodeWorkingDirectoryField = createResizableTextField(settingsBox);
         githubTokenField = createResizableTextField(settingsBox);
+        jiraEmailField = createResizableTextField(settingsBox);
+        jiraApiTokenField = createResizableTextField(settingsBox);
 
         openCodeStatusArea = createResizableTextArea(settingsBox);
         openCodeStatusArea.setPrefRowCount(8);
@@ -152,6 +182,20 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         dashboardGithubPrLimitSpinner = createResizableRegion(() -> new Spinner<>(1, 50, settings.dashboardGithubPrLimit()), settingsBox);
         githubPrLimitTile.setAction(dashboardGithubPrLimitSpinner);
 
+        final var jiraRefreshTile = createTile(
+                "settings.workspace.jiraRefresh.title",
+                "settings.workspace.jiraRefresh.description"
+        );
+        dashboardJiraRefreshSpinner = createResizableRegion(() -> new Spinner<>(30, 600, settings.dashboardJiraRefreshSeconds()), settingsBox);
+        jiraRefreshTile.setAction(dashboardJiraRefreshSpinner);
+
+        final var jiraIssueLimitTile = createTile(
+                "settings.workspace.jiraIssueLimit.title",
+                "settings.workspace.jiraIssueLimit.description"
+        );
+        dashboardJiraIssueLimitSpinner = createResizableRegion(() -> new Spinner<>(1, 50, settings.dashboardJiraIssueLimit()), settingsBox);
+        jiraIssueLimitTile.setAction(dashboardJiraIssueLimitSpinner);
+
         final Button refreshOpenCodeStatusButton = createButton(Feather.REFRESH_CCW, e -> refreshOpenCodeStatus());
         final Node openCodeWorkingDirectoryPicker = createFilePickerField(openCodeWorkingDirectoryField, this::chooseOpenCodeWorkingDirectory);
         final VBox openCodeStatusBox = new VBox(8, openCodeStatusArea, refreshOpenCodeStatusButton);
@@ -161,15 +205,23 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 dashboardHeader,
                 tileFor(showDashboardToggle, "settings.workspace.dashboard.title", "settings.workspace.dashboard.description"),
                 tileFor(alwaysOnTopToggle, "settings.workspace.ontop.title", "settings.workspace.ontop.description"),
+                tileFor(showDashboardMusicToggle, "settings.workspace.showMusic.title", "settings.workspace.showMusic.description"),
+                tileFor(showDashboardTasksToggle, "settings.workspace.showTasks.title", "settings.workspace.showTasks.description"),
+                tileFor(showDashboardGithubToggle, "settings.workspace.showGithub.title", "settings.workspace.showGithub.description"),
+                tileFor(showDashboardJiraToggle, "settings.workspace.showJira.title", "settings.workspace.showJira.description"),
                 tileFor(tasksFileField, "settings.workspace.tasksFile.title", "settings.workspace.tasksFile.description"),
                 taskLimitTile,
                 tasksRefreshTile,
                 githubRefreshTile,
                 mediaRefreshTile,
                 githubPrLimitTile,
+                jiraRefreshTile,
+                jiraIssueLimitTile,
                 new Separator(),
                 integrationsHeader,
                 tileFor(githubTokenField, "settings.workspace.github.token.title", "settings.workspace.github.token.description"),
+                tileFor(jiraEmailField, "settings.workspace.jira.email.title", "settings.workspace.jira.email.description"),
+                tileFor(jiraApiTokenField, "settings.workspace.jira.token.title", "settings.workspace.jira.token.description"),
                 new Separator(),
                 runtimeHeader,
                 tileFor(openCodeHostnameField, "settings.workspace.openCode.hostname.title", "settings.workspace.openCode.hostname.description"),

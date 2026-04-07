@@ -307,3 +307,34 @@ ChatThreadHistoryCard {
     -fx-font-style: italic;
     -fx-min-width: -fx-pref-width;
 }
+
+/* ── Jira Issues widget ───────────────────────── */
+
+.workspace-jira-item {
+    -fx-alignment: center-left;
+    -fx-padding: 4px 2px;
+}
+
+.workspace-jira-key {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+    -fx-font-family: monospace;
+    -fx-min-width: -fx-pref-width;
+}
+
+.workspace-jira-status {
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-font-size: 10px;
+    -fx-min-width: -fx-pref-width;
+}
+
+.workspace-jira-summary {
+    -fx-text-fill: -color-fg-default;
+    -fx-cursor: hand;
+    -fx-text-overrun: ellipsis;
+}
+
+.workspace-jira-summary:hover {
+    -fx-underline: true;
+}
+
