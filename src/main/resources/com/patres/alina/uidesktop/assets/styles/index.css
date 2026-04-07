@@ -375,22 +375,24 @@ ChatThreadHistoryCard {
 
 .workspace-calendar-item-current {
     -fx-alignment: top-left;
-}
-
-.workspace-calendar-current-dot {
-    -fx-fill: -color-accent-emphasis;
+    -fx-background-color: -color-accent-subtle;
+    -fx-background-radius: 4px;
 }
 
 .workspace-calendar-remaining {
-    -fx-text-fill: -color-accent-emphasis;
+    -fx-text-fill: -color-fg-muted;
     -fx-min-width: -fx-pref-width;
     -fx-padding: 0;
 }
 
 .workspace-calendar-upcoming {
-    -fx-text-fill: -color-accent-emphasis;
+    -fx-text-fill: -color-fg-muted;
     -fx-min-width: -fx-pref-width;
     -fx-padding: 0;
+}
+
+.workspace-calendar-time-urgent {
+    -fx-text-fill: -color-accent-emphasis;
 }
 
 .workspace-calendar-time {
