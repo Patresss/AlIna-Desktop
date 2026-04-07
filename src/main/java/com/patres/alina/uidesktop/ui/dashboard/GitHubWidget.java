@@ -2,7 +2,9 @@ package com.patres.alina.uidesktop.ui.dashboard;
 
 import atlantafx.base.theme.Styles;
 import com.patres.alina.server.integration.GitHubPullRequest;
+import com.patres.alina.server.integration.GitHubPullRequestResult;
 import com.patres.alina.server.integration.GitHubService;
+import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.chat.Browser;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -31,9 +33,7 @@ public class GitHubWidget extends VBox {
     private boolean collapsed = false;
     private String githubToken;
 
-    private final Timeline refreshTimeline = new Timeline(
-            new KeyFrame(Duration.seconds(60), event -> refreshAsync())
-    );
+    private Timeline refreshTimeline;
 
     public GitHubWidget() {
         getStyleClass().add("workspace-dashboard");
@@ -70,13 +70,17 @@ public class GitHubWidget extends VBox {
 
         setManaged(false);
         setVisible(false);
-
-        refreshTimeline.setCycleCount(Animation.INDEFINITE);
-        refreshTimeline.play();
     }
 
     public void refresh(final String githubToken) {
         this.githubToken = githubToken;
+        if (refreshTimeline != null) {
+            refreshTimeline.stop();
+        }
+        final int refreshSeconds = BackendApi.getWorkspaceSettings().dashboardGithubRefreshSeconds();
+        refreshTimeline = new Timeline(new KeyFrame(Duration.seconds(refreshSeconds), event -> refreshAsync()));
+        refreshTimeline.setCycleCount(Animation.INDEFINITE);
+        refreshTimeline.play();
         refreshAsync();
     }
 
@@ -91,30 +95,36 @@ public class GitHubWidget extends VBox {
         }
 
         Thread.startVirtualThread(() -> {
-            final List<GitHubPullRequest> pullRequests = GitHubService.fetchPendingReviews(token);
-            Platform.runLater(() -> render(pullRequests));
+            final int maxResults = BackendApi.getWorkspaceSettings().dashboardGithubPrLimit();
+            final GitHubPullRequestResult result = GitHubService.fetchPendingReviews(token, maxResults);
+            Platform.runLater(() -> render(result));
         });
     }
 
-    private void render(final List<GitHubPullRequest> pullRequests) {
+    private void render(final GitHubPullRequestResult result) {
         setManaged(true);
         setVisible(true);
 
-        countLabel.setText(String.valueOf(pullRequests.size()));
-        countLabel.setManaged(!pullRequests.isEmpty());
-        countLabel.setVisible(!pullRequests.isEmpty());
+        final int displayedCount = result.pullRequests().size();
+        final int totalCount = result.totalCount();
+        
+        // Format: "10" or "10+" if there are more
+        final String countText = displayedCount < totalCount ? displayedCount + "+" : String.valueOf(displayedCount);
+        countLabel.setText(countText);
+        countLabel.setManaged(!result.pullRequests().isEmpty());
+        countLabel.setVisible(!result.pullRequests().isEmpty());
 
         detailsBox.setManaged(!collapsed);
         detailsBox.setVisible(!collapsed);
 
         contentBox.getChildren().clear();
 
-        if (pullRequests.isEmpty()) {
+        if (result.pullRequests().isEmpty()) {
             renderEmpty();
             return;
         }
 
-        for (final GitHubPullRequest pr : pullRequests) {
+        for (final GitHubPullRequest pr : result.pullRequests()) {
             contentBox.getChildren().add(createPrRow(pr));
         }
     }
@@ -130,13 +140,10 @@ public class GitHubWidget extends VBox {
         final String repoName = extractRepoName(pr.repository());
         final Label repoLabel = new Label(repoName);
         repoLabel.getStyleClass().add("workspace-pr-repo");
-
-        final FontIcon linkIcon = new FontIcon(Feather.EXTERNAL_LINK);
-        linkIcon.getStyleClass().add("workspace-pr-link-icon");
+        repoLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
 
         final Label prTitleLabel = new Label(pr.title());
         prTitleLabel.getStyleClass().add("workspace-pr-title");
-        prTitleLabel.setGraphic(linkIcon);
         prTitleLabel.setMaxWidth(Double.MAX_VALUE);
         prTitleLabel.setWrapText(false);
         HBox.setHgrow(prTitleLabel, Priority.ALWAYS);

@@ -243,12 +243,12 @@ ChatThreadHistoryCard {
 }
 
 .workspace-task-list {
-    -fx-spacing: 8px;
+    -fx-spacing: 4px;
 }
 
 .workspace-task-list .check-box {
     -fx-text-fill: -color-fg-default;
-    -fx-padding: 4px 2px;
+    -fx-padding: 2px 2px;
 }
 
 .workspace-task-list .check-box:selected {
@@ -257,7 +257,7 @@ ChatThreadHistoryCard {
 
 .workspace-task-item {
     -fx-alignment: top-left;
-    -fx-padding: 4px 2px;
+    -fx-padding: 2px 0px;
 }
 
 .workspace-task-label {

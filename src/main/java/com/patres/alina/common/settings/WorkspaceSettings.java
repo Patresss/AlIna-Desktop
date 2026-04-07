@@ -9,7 +9,11 @@ public record WorkspaceSettings(
         String openCodeHostname,
         int openCodePort,
         String openCodeWorkingDirectory,
-        String githubToken
+        String githubToken,
+        int dashboardTasksRefreshSeconds,
+        int dashboardGithubRefreshSeconds,
+        int dashboardMediaRefreshSeconds,
+        int dashboardGithubPrLimit
 ) {
 
     public static final String DEFAULT_TASKS_FILE = "profile/default/focus.md";
@@ -17,6 +21,10 @@ public record WorkspaceSettings(
     public static final String DEFAULT_OPENCODE_HOSTNAME = "127.0.0.1";
     public static final int DEFAULT_OPENCODE_PORT = 4096;
     public static final String DEFAULT_OPENCODE_WORKING_DIRECTORY = System.getProperty("user.home", ".");
+    public static final int DEFAULT_DASHBOARD_TASKS_REFRESH_SECONDS = 15;
+    public static final int DEFAULT_DASHBOARD_GITHUB_REFRESH_SECONDS = 60;
+    public static final int DEFAULT_DASHBOARD_MEDIA_REFRESH_SECONDS = 5;
+    public static final int DEFAULT_DASHBOARD_GITHUB_PR_LIMIT = 10;
 
     public WorkspaceSettings() {
         this(
@@ -28,7 +36,11 @@ public record WorkspaceSettings(
                 DEFAULT_OPENCODE_HOSTNAME,
                 DEFAULT_OPENCODE_PORT,
                 DEFAULT_OPENCODE_WORKING_DIRECTORY,
-                ""
+                "",
+                DEFAULT_DASHBOARD_TASKS_REFRESH_SECONDS,
+                DEFAULT_DASHBOARD_GITHUB_REFRESH_SECONDS,
+                DEFAULT_DASHBOARD_MEDIA_REFRESH_SECONDS,
+                DEFAULT_DASHBOARD_GITHUB_PR_LIMIT
         );
     }
 
@@ -39,6 +51,10 @@ public record WorkspaceSettings(
         openCodePort = openCodePort > 0 ? openCodePort : DEFAULT_OPENCODE_PORT;
         openCodeWorkingDirectory = defaultIfBlank(openCodeWorkingDirectory, DEFAULT_OPENCODE_WORKING_DIRECTORY);
         githubToken = githubToken == null ? "" : githubToken.trim();
+        dashboardTasksRefreshSeconds = dashboardTasksRefreshSeconds > 0 ? dashboardTasksRefreshSeconds : DEFAULT_DASHBOARD_TASKS_REFRESH_SECONDS;
+        dashboardGithubRefreshSeconds = dashboardGithubRefreshSeconds > 0 ? dashboardGithubRefreshSeconds : DEFAULT_DASHBOARD_GITHUB_REFRESH_SECONDS;
+        dashboardMediaRefreshSeconds = dashboardMediaRefreshSeconds > 0 ? dashboardMediaRefreshSeconds : DEFAULT_DASHBOARD_MEDIA_REFRESH_SECONDS;
+        dashboardGithubPrLimit = dashboardGithubPrLimit > 0 ? dashboardGithubPrLimit : DEFAULT_DASHBOARD_GITHUB_PR_LIMIT;
     }
 
     public WorkspaceSettings withKeepWindowAlwaysOnTop(final boolean value) {
@@ -51,7 +67,11 @@ public record WorkspaceSettings(
                 openCodeHostname,
                 openCodePort,
                 openCodeWorkingDirectory,
-                githubToken
+                githubToken,
+                dashboardTasksRefreshSeconds,
+                dashboardGithubRefreshSeconds,
+                dashboardMediaRefreshSeconds,
+                dashboardGithubPrLimit
         );
     }
 
@@ -65,7 +85,11 @@ public record WorkspaceSettings(
                 openCodeHostname,
                 openCodePort,
                 openCodeWorkingDirectory,
-                githubToken
+                githubToken,
+                dashboardTasksRefreshSeconds,
+                dashboardGithubRefreshSeconds,
+                dashboardMediaRefreshSeconds,
+                dashboardGithubPrLimit
         );
     }
 

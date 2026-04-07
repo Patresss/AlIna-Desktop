@@ -2,6 +2,7 @@ package com.patres.alina.uidesktop.ui.dashboard;
 
 import atlantafx.base.theme.Styles;
 import com.patres.alina.server.integration.MediaControlService;
+import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -21,7 +22,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
  * A compact media-controls widget for the dashboard.
  * Displays playback buttons (previous, play/pause, next) and the currently playing track.
  * Controls macOS media players (Spotify / Apple Music) via {@link MediaControlService}.
- * Auto-refreshes track info every 10 seconds and hides itself when no player is active.
+ * Auto-refreshes track info based on settings.
  */
 public class MediaControlWidget extends VBox {
 
@@ -29,24 +30,19 @@ public class MediaControlWidget extends VBox {
     private final Label trackInfoLabel = new Label();
     private boolean currentlyPlaying = false;
 
-    private final Timeline refreshTimeline = new Timeline(
-            new KeyFrame(Duration.seconds(10), event -> refresh())
-    );
+    private Timeline refreshTimeline;
 
     public MediaControlWidget() {
         getStyleClass().add("workspace-dashboard");
         setSpacing(10);
         setPadding(new Insets(10, 12, 10, 12));
 
-        // Header
+        // Header with title and controls in one line
         final FontIcon musicIcon = new FontIcon(Feather.MUSIC);
         final Label titleLabel = new Label("Music");
         titleLabel.setGraphic(musicIcon);
         titleLabel.setGraphicTextGap(6);
         titleLabel.getStyleClass().add("workspace-dashboard-title");
-
-        final HBox header = new HBox(8, titleLabel);
-        header.getStyleClass().add("workspace-dashboard-header");
 
         // Control buttons
         final Button prevButton = createControlButton(Feather.SKIP_BACK);
@@ -68,9 +64,13 @@ public class MediaControlWidget extends VBox {
         final Button nextButton = createControlButton(Feather.SKIP_FORWARD);
         nextButton.setOnAction(event -> executeInBackground(MediaControlService::nextTrack));
 
-        final HBox controlsRow = new HBox(12, prevButton, playPauseButton, nextButton);
-        controlsRow.setAlignment(Pos.CENTER);
-        controlsRow.getStyleClass().add("workspace-dashboard-content");
+        final HBox controlsBox = new HBox(8, prevButton, playPauseButton, nextButton);
+        controlsBox.setAlignment(Pos.CENTER_LEFT);
+
+        // Header row with everything in one line
+        final HBox header = new HBox(12, titleLabel, controlsBox);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.getStyleClass().add("workspace-dashboard-header");
 
         // Track info label
         trackInfoLabel.getStyleClass().add("workspace-dashboard-empty");
@@ -78,14 +78,20 @@ public class MediaControlWidget extends VBox {
         trackInfoLabel.setWrapText(false);
         HBox.setHgrow(trackInfoLabel, Priority.ALWAYS);
 
-        getChildren().addAll(header, controlsRow, trackInfoLabel);
+        getChildren().addAll(header, trackInfoLabel);
 
-        // Auto-refresh
-        refreshTimeline.setCycleCount(Animation.INDEFINITE);
-        refreshTimeline.play();
+        // Auto-refresh with settings
+        initializeRefreshTimer();
 
         // Initial state check
         refresh();
+    }
+
+    private void initializeRefreshTimer() {
+        final int refreshSeconds = BackendApi.getWorkspaceSettings().dashboardMediaRefreshSeconds();
+        refreshTimeline = new Timeline(new KeyFrame(Duration.seconds(refreshSeconds), event -> refresh()));
+        refreshTimeline.setCycleCount(Animation.INDEFINITE);
+        refreshTimeline.play();
     }
 
     /**

@@ -25,19 +25,24 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 public class DashboardPane extends VBox {
 
-    private final Label titleLabel = new Label("Focus");
+    private final Label titleLabel = new Label();
     private final Label countLabel = new Label();
     private final Button collapseButton = new Button();
-    private final VBox tasksBox = new VBox(6);
-    private final VBox detailsBox = new VBox(10);
+    private final VBox tasksBox = new VBox(4);
+    private final VBox detailsBox = new VBox(6);
 
-    private final Timeline refreshTimeline = new Timeline(
-            new KeyFrame(Duration.seconds(15), event -> refreshAsync())
-    );
+    private Timeline refreshTimeline;
 
     public DashboardPane() {
         getStyleClass().add("workspace-dashboard");
+        
+        final FontIcon listIcon = new FontIcon(Feather.LIST);
+        listIcon.getStyleClass().add("workspace-dashboard-title");
+        titleLabel.setText("Tasks");
+        titleLabel.setGraphic(listIcon);
+        titleLabel.setGraphicTextGap(6);
         titleLabel.getStyleClass().add("workspace-dashboard-title");
+        
         countLabel.getStyleClass().add("workspace-dashboard-count");
         collapseButton.getStyleClass().addAll(Styles.BUTTON_CIRCLE, Styles.FLAT, "workspace-collapse-button");
         tasksBox.getStyleClass().add("workspace-task-list");
@@ -54,13 +59,29 @@ public class DashboardPane extends VBox {
         setPadding(new Insets(10, 12, 10, 12));
         getChildren().addAll(header, detailsBox);
 
-        refreshTimeline.setCycleCount(Animation.INDEFINITE);
-        refreshTimeline.play();
+        initializeRefreshTimer();
 
-        DefaultEventBus.getInstance().subscribe(WorkspaceSettingsUpdatedEvent.class, event -> refreshAsync());
+        DefaultEventBus.getInstance().subscribe(WorkspaceSettingsUpdatedEvent.class, event -> {
+            refreshAsync();
+            updateRefreshTimer();
+        });
         DefaultEventBus.getInstance().subscribe(DashboardUpdatedEvent.class, event -> refreshAsync());
 
         refreshAsync();
+    }
+
+    private void initializeRefreshTimer() {
+        final int refreshSeconds = BackendApi.getWorkspaceSettings().dashboardTasksRefreshSeconds();
+        refreshTimeline = new Timeline(new KeyFrame(Duration.seconds(refreshSeconds), event -> refreshAsync()));
+        refreshTimeline.setCycleCount(Animation.INDEFINITE);
+        refreshTimeline.play();
+    }
+
+    private void updateRefreshTimer() {
+        if (refreshTimeline != null) {
+            refreshTimeline.stop();
+        }
+        initializeRefreshTimer();
     }
 
     public void refreshAsync() {

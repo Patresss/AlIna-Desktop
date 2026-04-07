@@ -128,7 +128,10 @@ class OpenCodeConfigurationServiceTest {
                 WorkspaceSettings.DEFAULT_OPENCODE_PORT,
                 workingDirectory.toString(),
                 "",
-                ""
+                WorkspaceSettings.DEFAULT_DASHBOARD_TASKS_REFRESH_SECONDS,
+                WorkspaceSettings.DEFAULT_DASHBOARD_GITHUB_REFRESH_SECONDS,
+                WorkspaceSettings.DEFAULT_DASHBOARD_MEDIA_REFRESH_SECONDS,
+                WorkspaceSettings.DEFAULT_DASHBOARD_GITHUB_PR_LIMIT
         ));
 
         return new OpenCodeConfigurationService(

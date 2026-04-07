@@ -41,6 +41,10 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
     private TextField githubTokenField;
 
     private Spinner<Integer> dashboardTaskLimitSpinner;
+    private Spinner<Integer> dashboardTasksRefreshSpinner;
+    private Spinner<Integer> dashboardGithubRefreshSpinner;
+    private Spinner<Integer> dashboardMediaRefreshSpinner;
+    private Spinner<Integer> dashboardGithubPrLimitSpinner;
 
     private WorkspaceSettings settings;
 
@@ -59,6 +63,10 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         openCodePortField.setText(String.valueOf(settings.openCodePort()));
         openCodeWorkingDirectoryField.setText(orEmpty(settings.openCodeWorkingDirectory()));
         dashboardTaskLimitSpinner.getValueFactory().setValue(settings.dashboardTaskLimit());
+        dashboardTasksRefreshSpinner.getValueFactory().setValue(settings.dashboardTasksRefreshSeconds());
+        dashboardGithubRefreshSpinner.getValueFactory().setValue(settings.dashboardGithubRefreshSeconds());
+        dashboardMediaRefreshSpinner.getValueFactory().setValue(settings.dashboardMediaRefreshSeconds());
+        dashboardGithubPrLimitSpinner.getValueFactory().setValue(settings.dashboardGithubPrLimit());
         githubTokenField.setText(orEmpty(settings.githubToken()));
         refreshOpenCodeStatus();
     }
@@ -74,7 +82,11 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 openCodeHostnameField.getText(),
                 parseInteger(openCodePortField.getText(), WorkspaceSettings.DEFAULT_OPENCODE_PORT),
                 openCodeWorkingDirectoryField.getText(),
-                githubTokenField.getText()
+                githubTokenField.getText(),
+                dashboardTasksRefreshSpinner.getValue(),
+                dashboardGithubRefreshSpinner.getValue(),
+                dashboardMediaRefreshSpinner.getValue(),
+                dashboardGithubPrLimitSpinner.getValue()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;
@@ -112,6 +124,34 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         dashboardTaskLimitSpinner = createResizableRegion(() -> new Spinner<>(1, 12, settings.dashboardTaskLimit()), settingsBox);
         taskLimitTile.setAction(dashboardTaskLimitSpinner);
 
+        final var tasksRefreshTile = createTile(
+                "settings.workspace.tasksRefresh.title",
+                "settings.workspace.tasksRefresh.description"
+        );
+        dashboardTasksRefreshSpinner = createResizableRegion(() -> new Spinner<>(5, 300, settings.dashboardTasksRefreshSeconds()), settingsBox);
+        tasksRefreshTile.setAction(dashboardTasksRefreshSpinner);
+
+        final var githubRefreshTile = createTile(
+                "settings.workspace.githubRefresh.title",
+                "settings.workspace.githubRefresh.description"
+        );
+        dashboardGithubRefreshSpinner = createResizableRegion(() -> new Spinner<>(10, 600, settings.dashboardGithubRefreshSeconds()), settingsBox);
+        githubRefreshTile.setAction(dashboardGithubRefreshSpinner);
+
+        final var mediaRefreshTile = createTile(
+                "settings.workspace.mediaRefresh.title",
+                "settings.workspace.mediaRefresh.description"
+        );
+        dashboardMediaRefreshSpinner = createResizableRegion(() -> new Spinner<>(1, 60, settings.dashboardMediaRefreshSeconds()), settingsBox);
+        mediaRefreshTile.setAction(dashboardMediaRefreshSpinner);
+
+        final var githubPrLimitTile = createTile(
+                "settings.workspace.githubPrLimit.title",
+                "settings.workspace.githubPrLimit.description"
+        );
+        dashboardGithubPrLimitSpinner = createResizableRegion(() -> new Spinner<>(1, 50, settings.dashboardGithubPrLimit()), settingsBox);
+        githubPrLimitTile.setAction(dashboardGithubPrLimitSpinner);
+
         final Button refreshOpenCodeStatusButton = createButton(Feather.REFRESH_CCW, e -> refreshOpenCodeStatus());
         final Node openCodeWorkingDirectoryPicker = createFilePickerField(openCodeWorkingDirectoryField, this::chooseOpenCodeWorkingDirectory);
         final VBox openCodeStatusBox = new VBox(8, openCodeStatusArea, refreshOpenCodeStatusButton);
@@ -123,6 +163,10 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 tileFor(alwaysOnTopToggle, "settings.workspace.ontop.title", "settings.workspace.ontop.description"),
                 tileFor(tasksFileField, "settings.workspace.tasksFile.title", "settings.workspace.tasksFile.description"),
                 taskLimitTile,
+                tasksRefreshTile,
+                githubRefreshTile,
+                mediaRefreshTile,
+                githubPrLimitTile,
                 new Separator(),
                 integrationsHeader,
                 tileFor(githubTokenField, "settings.workspace.github.token.title", "settings.workspace.github.token.description"),

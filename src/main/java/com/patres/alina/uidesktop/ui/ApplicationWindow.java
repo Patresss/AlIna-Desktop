@@ -15,6 +15,7 @@ import com.patres.alina.uidesktop.ui.chat.Browser;
 import com.patres.alina.uidesktop.ui.chat.ChatWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.dashboard.DashboardPane;
+import com.patres.alina.uidesktop.ui.dashboard.DashboardContainer;
 import com.patres.alina.uidesktop.ui.dashboard.GitHubWidget;
 import com.patres.alina.uidesktop.ui.dashboard.MediaControlWidget;
 import javafx.application.Platform;
@@ -56,6 +57,7 @@ public class ApplicationWindow extends BorderPane {
     private final DashboardPane dashboardPane = new DashboardPane();
     private final MediaControlWidget mediaControlWidget = new MediaControlWidget();
     private final GitHubWidget gitHubWidget = new GitHubWidget();
+    private final DashboardContainer dashboardContainer = new DashboardContainer(mediaControlWidget, dashboardPane, gitHubWidget);
 
     public ApplicationWindow() {
         super();
@@ -75,7 +77,7 @@ public class ApplicationWindow extends BorderPane {
     @FXML
     public void initialize() {
         centerPane.setSpacing(14);
-        centerPane.getChildren().addAll(dashboardPane, mediaControlWidget, gitHubWidget);
+        centerPane.getChildren().add(dashboardContainer);
         refreshIntegrationWidgets();
         createAndOpenInitialChatThread();
         rootCenterContainer.getChildren()
