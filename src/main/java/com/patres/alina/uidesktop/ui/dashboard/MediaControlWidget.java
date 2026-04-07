@@ -34,7 +34,7 @@ public class MediaControlWidget extends VBox {
 
     public MediaControlWidget() {
         getStyleClass().add("workspace-dashboard");
-        setPadding(new Insets(10, 12, 10, 12));
+        setPadding(new Insets(2, 0, 2, 0));
 
         // Header with title and controls in one line
         final FontIcon musicIcon = new FontIcon(Feather.MUSIC);

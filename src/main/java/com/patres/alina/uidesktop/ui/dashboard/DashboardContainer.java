@@ -9,6 +9,7 @@ import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -22,7 +23,12 @@ public class DashboardContainer extends VBox {
 
     private final Label titleLabel = new Label("Dashboard");
     private final Button collapseButton = new Button();
-    private final VBox widgetsBox = new VBox(14);
+    private final VBox widgetsBox = new VBox(0);
+    
+    private final Separator separatorAfterMusic = new Separator();
+    private final Separator separatorAfterCalendar = new Separator();
+    private final Separator separatorAfterTasks = new Separator();
+    private final Separator separatorAfterGithub = new Separator();
     
     private final MediaControlWidget mediaControlWidget;
     private final DashboardPane dashboardPane;
@@ -41,7 +47,7 @@ public class DashboardContainer extends VBox {
         
         getStyleClass().add("workspace-dashboard");
         
-        titleLabel.getStyleClass().add("workspace-dashboard-title");
+        titleLabel.getStyleClass().add("workspace-container-title");
         
         collapseButton.getStyleClass().addAll(Styles.BUTTON_CIRCLE, Styles.FLAT, "workspace-collapse-button");
         collapseButton.setOnAction(event -> toggleCollapsed());
@@ -51,17 +57,35 @@ public class DashboardContainer extends VBox {
         final HBox header = new HBox(8, titleLabel, spacer, collapseButton);
         header.getStyleClass().add("workspace-dashboard-header");
 
-        widgetsBox.getChildren().addAll(mediaControlWidget, googleCalendarWidget, dashboardPane, gitHubWidget, jiraWidget);
+        // Style separators
+        for (final Separator sep : new Separator[]{separatorAfterMusic, separatorAfterCalendar, separatorAfterTasks, separatorAfterGithub}) {
+            sep.getStyleClass().add("workspace-widget-separator");
+        }
+
+        widgetsBox.getChildren().addAll(
+                mediaControlWidget, separatorAfterMusic,
+                googleCalendarWidget, separatorAfterCalendar,
+                dashboardPane, separatorAfterTasks,
+                gitHubWidget, separatorAfterGithub,
+                jiraWidget
+        );
         
-        // Remove borders from child widgets
+        // Remove borders from child widgets — container provides the border
         googleCalendarWidget.getStyleClass().remove("workspace-dashboard");
         mediaControlWidget.getStyleClass().remove("workspace-dashboard");
         dashboardPane.getStyleClass().remove("workspace-dashboard");
         gitHubWidget.getStyleClass().remove("workspace-dashboard");
         jiraWidget.getStyleClass().remove("workspace-dashboard");
+        
+        // Add inner-widget style for tighter padding
+        googleCalendarWidget.getStyleClass().add("workspace-widget-inner");
+        mediaControlWidget.getStyleClass().add("workspace-widget-inner");
+        dashboardPane.getStyleClass().add("workspace-widget-inner");
+        gitHubWidget.getStyleClass().add("workspace-widget-inner");
+        jiraWidget.getStyleClass().add("workspace-widget-inner");
 
-        setSpacing(10);
-        setPadding(new Insets(10, 12, 10, 12));
+        setSpacing(4);
+        setPadding(new Insets(10, 14, 10, 14));
         getChildren().addAll(header, widgetsBox);
 
         updateCollapseButton();
@@ -95,6 +119,12 @@ public class DashboardContainer extends VBox {
             updateWidgetVisibility(gitHubWidget, settings.showDashboardGithub());
             updateWidgetVisibility(jiraWidget, settings.showDashboardJira());
             updateWidgetVisibility(googleCalendarWidget, settings.showDashboardCalendar());
+            
+            // Separators follow the widget ABOVE them (hidden if that widget is hidden)
+            updateWidgetVisibility(separatorAfterMusic, settings.showDashboardMusic());
+            updateWidgetVisibility(separatorAfterCalendar, settings.showDashboardCalendar());
+            updateWidgetVisibility(separatorAfterTasks, settings.showDashboardTasks());
+            updateWidgetVisibility(separatorAfterGithub, settings.showDashboardGithub());
         });
     }
     

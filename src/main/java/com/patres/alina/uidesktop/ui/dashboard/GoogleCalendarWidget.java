@@ -38,8 +38,8 @@ public class GoogleCalendarWidget extends VBox {
     private final Label titleLabel = new Label();
     private final Label countLabel = new Label();
     private final Button collapseButton = new Button();
-    private final VBox contentBox = new VBox(4);
-    private final VBox detailsBox = new VBox(10);
+    private final VBox contentBox = new VBox(2);
+    private final VBox detailsBox = new VBox(2);
 
     private boolean collapsed = false;
     private Timeline refreshTimeline;
@@ -70,8 +70,8 @@ public class GoogleCalendarWidget extends VBox {
 
         detailsBox.getChildren().add(contentBox);
 
-        setSpacing(10);
-        setPadding(new Insets(10, 12, 10, 12));
+        setSpacing(4);
+        setPadding(new Insets(6, 0, 4, 0));
         getChildren().addAll(header, detailsBox);
 
         updateCollapseButton();

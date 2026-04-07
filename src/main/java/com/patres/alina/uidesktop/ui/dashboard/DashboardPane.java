@@ -28,8 +28,8 @@ public class DashboardPane extends VBox {
     private final Label titleLabel = new Label();
     private final Label countLabel = new Label();
     private final Button collapseButton = new Button();
-    private final VBox tasksBox = new VBox(4);
-    private final VBox detailsBox = new VBox(6);
+    private final VBox tasksBox = new VBox(2);
+    private final VBox detailsBox = new VBox(2);
 
     private Timeline refreshTimeline;
 
@@ -55,8 +55,8 @@ public class DashboardPane extends VBox {
 
         detailsBox.getChildren().add(tasksBox);
 
-        setSpacing(10);
-        setPadding(new Insets(10, 12, 10, 12));
+        setSpacing(4);
+        setPadding(new Insets(6, 0, 4, 0));
         getChildren().addAll(header, detailsBox);
 
         initializeRefreshTimer();
