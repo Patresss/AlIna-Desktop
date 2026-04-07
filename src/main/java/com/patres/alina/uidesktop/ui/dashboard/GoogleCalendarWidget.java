@@ -12,20 +12,20 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Circle;
 import javafx.util.Duration;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -204,6 +204,10 @@ public class GoogleCalendarWidget extends VBox {
     }
 
     private HBox createEventRow(final GoogleCalendarEvent event) {
+        final boolean isCurrent = getRemainingMinutes(event) >= 0;
+        final long minutesUntilStart = getMinutesUntilStart(event);
+        final boolean isUpcomingSoon = !isCurrent && minutesUntilStart >= 0 && minutesUntilStart <= 15;
+
         final Label timeLabel;
         if (event.allDay()) {
             timeLabel = new Label("All day");
@@ -213,19 +217,29 @@ public class GoogleCalendarWidget extends VBox {
         timeLabel.getStyleClass().add("workspace-calendar-time");
         timeLabel.setMinWidth(Region.USE_PREF_SIZE);
 
-        // Current-event dot: overlaid on the left of the time label so it doesn't shift layout
-        final StackPane timeSlot;
-        if (isCurrentEvent(event)) {
-            final Label dotLabel = new Label("\u2022");
-            dotLabel.getStyleClass().add("workspace-calendar-dot-active");
-            timeSlot = new StackPane(timeLabel, dotLabel);
-            StackPane.setAlignment(dotLabel, Pos.CENTER_LEFT);
-            // Shift dot to the left, outside the time label bounds
-            dotLabel.setTranslateX(-10);
-        } else {
-            timeSlot = new StackPane(timeLabel);
+        // Time column: time label + optional info underneath (right-aligned)
+        final VBox timeColumn = new VBox(0);
+        timeColumn.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+        timeColumn.getChildren().add(timeLabel);
+
+        if (isCurrent) {
+            final long remainingMinutes = getRemainingMinutes(event);
+            final String remainingText = remainingMinutes <= 0
+                    ? "Pozostało < 1 min"
+                    : "Pozostało " + remainingMinutes + " min";
+            final Label remainingLabel = new Label(remainingText);
+            remainingLabel.getStyleClass().add("workspace-calendar-remaining");
+            remainingLabel.setMinWidth(Region.USE_PREF_SIZE);
+            timeColumn.getChildren().add(remainingLabel);
+        } else if (isUpcomingSoon) {
+            final String upcomingText = minutesUntilStart <= 0
+                    ? "Za < 1 min"
+                    : "Za " + minutesUntilStart + " min";
+            final Label upcomingLabel = new Label(upcomingText);
+            upcomingLabel.getStyleClass().add("workspace-calendar-upcoming");
+            upcomingLabel.setMinWidth(Region.USE_PREF_SIZE);
+            timeColumn.getChildren().add(upcomingLabel);
         }
-        timeSlot.setMinWidth(Region.USE_PREF_SIZE);
 
         // Video icon when the event has any conference/meeting URL; placeholder otherwise
         final String meetUrl = resolveClickUrl(event);
@@ -258,29 +272,71 @@ public class GoogleCalendarWidget extends VBox {
             summaryLabel.setOnMouseClicked(e -> Browser.openWebpage(meetUrl));
         }
 
-        final HBox row = new HBox(8, timeSlot, videoSlot, summaryLabel);
+        final HBox row = new HBox(8, timeColumn, videoSlot, summaryLabel);
         row.getStyleClass().add("workspace-calendar-item");
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
+
+        if (isCurrent) {
+            row.getStyleClass().add("workspace-calendar-item-current");
+
+            // Overlay dot – unmanaged Circle so it doesn't shift the row content
+            final Circle dot = new Circle(4);
+            dot.getStyleClass().add("workspace-calendar-current-dot");
+            dot.setManaged(false);
+            dot.setTranslateX(-6);
+            dot.setTranslateY(10);
+            row.getChildren().add(dot);
+        }
+
         return row;
     }
 
-    private boolean isCurrentEvent(final GoogleCalendarEvent event) {
+    /**
+     * Returns the number of minutes remaining for the event, or -1 if it's not the current event.
+     */
+    private long getRemainingMinutes(final GoogleCalendarEvent event) {
         if (event.allDay()) {
-            return false;
+            return -1;
         }
         final String rawStart = event.rawStartDateTime();
         final String rawEnd = event.rawEndDateTime();
         if (rawStart == null || rawStart.isBlank() || rawEnd == null || rawEnd.isBlank()) {
-            return false;
+            return -1;
         }
         try {
             final OffsetDateTime now = OffsetDateTime.now(ZoneId.systemDefault());
             final OffsetDateTime start = OffsetDateTime.parse(rawStart);
             final OffsetDateTime end = OffsetDateTime.parse(rawEnd);
-            return !now.isBefore(start) && now.isBefore(end);
+            if (now.isBefore(start) || !now.isBefore(end)) {
+                return -1;
+            }
+            return ChronoUnit.MINUTES.between(now, end);
         } catch (final Exception e) {
-            return false;
+            return -1;
+        }
+    }
+
+    /**
+     * Returns the number of minutes until the event starts, or -1 if it has already started or is all-day.
+     */
+    private long getMinutesUntilStart(final GoogleCalendarEvent event) {
+        if (event.allDay()) {
+            return -1;
+        }
+        final String rawStart = event.rawStartDateTime();
+        if (rawStart == null || rawStart.isBlank()) {
+            return -1;
+        }
+        try {
+            final OffsetDateTime now = OffsetDateTime.now(ZoneId.systemDefault());
+            final OffsetDateTime start = OffsetDateTime.parse(rawStart);
+            if (!now.isBefore(start)) {
+                return -1; // already started or past
+            }
+            return ChronoUnit.MINUTES.between(now, start);
+        } catch (final Exception e) {
+            return -1;
         }
     }
 
