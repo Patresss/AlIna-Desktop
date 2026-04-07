@@ -348,6 +348,29 @@ public class OpenCodeRuntimeService {
             stream.assistantMessageId = messageId;
         }
 
+        final String modelId = info.path("modelID").asText("");
+        if (!modelId.isBlank()) {
+            final String providerId = info.path("providerID").asText("");
+            stream.modelUsed = providerId.isBlank() ? modelId : providerId + "/" + modelId;
+        }
+        final String agent = info.path("agent").asText("");
+        if (!agent.isBlank()) {
+            stream.agentUsed = agent;
+        }
+
+        final JsonNode tokensNode = info.path("tokens");
+        if (!tokensNode.isMissingNode()) {
+            final long total = tokensNode.path("total").asLong(0);
+            if (total > 0) {
+                stream.tokensTotal = total;
+            }
+        }
+
+        final double costValue = info.path("cost").asDouble(0.0);
+        if (costValue > 0.0) {
+            stream.cost = costValue;
+        }
+
         final String finish = info.path("finish").asText("");
         if ("stop".equalsIgnoreCase(finish)) {
             stream.completed.set(true);
@@ -516,6 +539,26 @@ public class OpenCodeRuntimeService {
         Event.publish(ChatMessageStreamEvent.commentary(threadId, content));
     }
 
+    public String getModelUsedForThread(final String threadId) {
+        final ActiveStream stream = activeStreams.get(threadId);
+        return stream != null ? stream.modelUsed : null;
+    }
+
+    public String getAgentUsedForThread(final String threadId) {
+        final ActiveStream stream = activeStreams.get(threadId);
+        return stream != null ? stream.agentUsed : null;
+    }
+
+    public long getTokensTotalForThread(final String threadId) {
+        final ActiveStream stream = activeStreams.get(threadId);
+        return stream != null ? stream.tokensTotal : 0;
+    }
+
+    public double getCostForThread(final String threadId) {
+        final ActiveStream stream = activeStreams.get(threadId);
+        return stream != null ? stream.cost : 0.0;
+    }
+
     private String threadIdForSession(final String sessionId) {
         return activeStreams.values().stream()
                 .filter(stream -> sessionId.equals(stream.sessionId))
@@ -603,6 +646,10 @@ public class OpenCodeRuntimeService {
         private final Set<String> pendingPermissionRequestIds = ConcurrentHashMap.newKeySet();
         private volatile String sessionId;
         private volatile String assistantMessageId;
+        private volatile String modelUsed;
+        private volatile String agentUsed;
+        private volatile long tokensTotal;
+        private volatile double cost;
         private volatile Closeable eventStream;
 
         private ActiveStream(final String threadId, final FluxSink<String> sink) {

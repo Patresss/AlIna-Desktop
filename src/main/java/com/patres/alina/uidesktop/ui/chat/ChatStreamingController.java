@@ -56,6 +56,7 @@ public class ChatStreamingController {
     private volatile Instant streamingStartedAt = Instant.EPOCH;
     private volatile String latestReasoningContent = "";
     private volatile String latestCommentaryContent = "";
+    private volatile boolean backgroundMode;
     private final List<String> activityLabels = new ArrayList<>();
 
     private enum StreamControlMode {
@@ -115,7 +116,12 @@ public class ChatStreamingController {
     }
 
     public void beginStreaming(boolean isRegeneration) {
+        beginStreaming(isRegeneration, false);
+    }
+
+    public void beginStreaming(boolean isRegeneration, boolean backgroundMode) {
         FxThreadRunner.runAndWait(() -> {
+            this.backgroundMode = backgroundMode;
             beginStreamingUiState(isRegeneration);
             browser.showLoader();
         });
@@ -124,11 +130,14 @@ public class ChatStreamingController {
     public void handleStartError() {
         FxThreadRunner.run(() -> {
             browser.hideLoader();
+            final boolean wasBackground = backgroundMode;
             endStreamingUiState();
             statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.stream.error"));
-            chatTextArea.clear();
-            setChatInputReady();
-            chatTextArea.requestFocus();
+            if (!wasBackground) {
+                chatTextArea.clear();
+                setChatInputReady();
+                chatTextArea.requestFocus();
+            }
         });
     }
 
@@ -151,7 +160,7 @@ public class ChatStreamingController {
             case COMMENTARY -> handleCommentaryEvent(event);
             case ACTIVITY -> handleActivityEvent(event);
             case PERMISSION_REQUEST -> handlePermissionRequestEvent(event);
-            case COMPLETE -> handleCompleteEvent();
+            case COMPLETE -> handleCompleteEvent(event);
             case CANCELLED -> handleCancelledEvent();
             case ERROR -> handleErrorEvent(event);
         }
@@ -188,8 +197,10 @@ public class ChatStreamingController {
         if (!streamingStarted) {
             streamingStarted = true;
             FxThreadRunner.run(() -> {
+                browser.finalizeAssistantActivity();
                 browser.hideLoader();
                 browser.startStreamingAssistantMessage(replaceExistingAssistantMessageOnStart);
+                replaceExistingAssistantMessageOnStart = false;
                 statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.stream.streaming"));
             });
         }
@@ -202,6 +213,11 @@ public class ChatStreamingController {
             activityLabels.add(label);
         }
         FxThreadRunner.run(() -> {
+            if (streamingStarted) {
+                browser.finishStreamingMessage();
+                streamingStarted = false;
+            }
+            browser.showAssistantActivity(label);
             updateComposerProcessStatus();
             statusPrompt.showStatusPrompt(label);
         });
@@ -218,19 +234,24 @@ public class ChatStreamingController {
         });
     }
 
-    private void handleCompleteEvent() {
+    private void handleCompleteEvent(final ChatMessageStreamEvent event) {
         FxThreadRunner.run(() -> {
             browser.hideLoader();
             hidePermissionComposer();
+            browser.finalizeAssistantActivity();
             attachProcessPanelIfNeeded();
             if (regenerating) {
                 browser.discardRegenerationBackup();
             }
             browser.finishStreamingMessage();
+            attachMessageFooter(event.getModelUsed(), event.getAgentUsed(), event.getTokensTotal(), event.getCost());
+            final boolean wasBackground = backgroundMode;
             endStreamingUiState();
-            chatTextArea.clear();
-            setChatInputReady();
-            chatTextArea.requestFocus();
+            if (!wasBackground) {
+                chatTextArea.clear();
+                setChatInputReady();
+                chatTextArea.requestFocus();
+            }
         });
     }
 
@@ -246,11 +267,14 @@ public class ChatStreamingController {
             } else {
                 browser.finishStreamingMessage();
             }
+            final boolean wasBackground = backgroundMode;
             endStreamingUiState();
             statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.stream.cancelled"));
-            chatTextArea.clear();
-            setChatInputReady();
-            chatTextArea.requestFocus();
+            if (!wasBackground) {
+                chatTextArea.clear();
+                setChatInputReady();
+                chatTextArea.requestFocus();
+            }
         });
     }
 
@@ -273,10 +297,13 @@ public class ChatStreamingController {
                 browser.finishStreamingMessage();
             }
             browser.addContent(errorContent, ASSISTANT, ChatMessageStyleType.DANGER);
+            final boolean wasBackground = backgroundMode;
             endStreamingUiState();
-            chatTextArea.clear();
-            setChatInputReady();
-            chatTextArea.requestFocus();
+            if (!wasBackground) {
+                chatTextArea.clear();
+                setChatInputReady();
+                chatTextArea.requestFocus();
+            }
             statusPrompt.showStatusPrompt(errorLabel);
         });
     }
@@ -419,21 +446,26 @@ public class ChatStreamingController {
         browser.clearAssistantReasoning();
         hidePermissionComposer();
         setStreamControlMode(StreamControlMode.STOP);
-        actionNodes.forEach(node -> node.setDisable(true));
-        setChatInputBusy();
-        chatTextArea.setText(LanguageManager.getLanguageString("chat.stream.connecting"));
+        if (!backgroundMode) {
+            actionNodes.forEach(node -> node.setDisable(true));
+            setChatInputBusy();
+            chatTextArea.setText(LanguageManager.getLanguageString("chat.stream.connecting"));
+        }
         statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.stream.connecting"));
     }
 
     private void endStreamingUiState() {
         setStreamControlMode(StreamControlMode.REGENERATE);
-        actionNodes.forEach(node -> node.setDisable(false));
+        if (!backgroundMode) {
+            actionNodes.forEach(node -> node.setDisable(false));
+        }
         statusPrompt.clearStatusPrompt();
         ignoreIncomingTokens = false;
         streamingStarted = false;
         regenerating = false;
         replaceExistingAssistantMessageOnStart = false;
         streamingStartedAt = Instant.EPOCH;
+        backgroundMode = false;
     }
 
     private void setChatInputBusy() {
@@ -462,6 +494,9 @@ public class ChatStreamingController {
     }
 
     private void updateComposerProcessStatus() {
+        if (backgroundMode) {
+            return;
+        }
         final StringBuilder status = new StringBuilder();
         if (latestReasoningContent != null && !latestReasoningContent.isBlank()) {
             status.append(LanguageManager.getLanguageString("chat.reasoning.title"))
@@ -502,35 +537,26 @@ public class ChatStreamingController {
     }
 
     private void attachProcessPanelIfNeeded() {
-        final List<String> activitiesSnapshot;
-        synchronized (activityLabels) {
-            activitiesSnapshot = new ArrayList<>(activityLabels);
-        }
-
         if ((latestReasoningContent == null || latestReasoningContent.isBlank())
-                && (latestCommentaryContent == null || latestCommentaryContent.isBlank())
-                && activitiesSnapshot.isEmpty()) {
+                && (latestCommentaryContent == null || latestCommentaryContent.isBlank())) {
             return;
         }
 
-        final String summary = buildProcessSummary(activitiesSnapshot.size());
+        final String summary = buildProcessSummary();
         browser.attachProcessPanelToLastAssistantMessage(
                 summary,
                 LanguageManager.getLanguageString("chat.reasoning.title"),
                 latestReasoningContent,
                 LanguageManager.getLanguageString("chat.commentary.title"),
                 latestCommentaryContent,
-                buildToolsHtml(activitiesSnapshot)
+                ""
         );
     }
 
-    private String buildProcessSummary(final int toolCount) {
+    private String buildProcessSummary() {
         final List<String> parts = new ArrayList<>();
         if (latestReasoningContent != null && !latestReasoningContent.isBlank()) {
             parts.add(LanguageManager.getLanguageString("chat.reasoning.title"));
-        }
-        if (toolCount > 0) {
-            parts.add(toolCount + " tools");
         }
         if (latestCommentaryContent != null && !latestCommentaryContent.isBlank()) {
             parts.add(LanguageManager.getLanguageString("chat.commentary.title"));
@@ -539,6 +565,56 @@ public class ChatStreamingController {
             parts.add(Duration.between(streamingStartedAt, Instant.now()).toSeconds() + "s");
         }
         return String.join(" · ", parts);
+    }
+
+    private void attachMessageFooter(final String modelUsed,
+                                        final String agentUsed,
+                                        final long tokensTotal,
+                                        final double cost) {
+        if (modelUsed == null || modelUsed.isBlank()) {
+            return;
+        }
+        final List<String> parts = new ArrayList<>();
+
+        if (agentUsed != null && !agentUsed.isBlank()) {
+            parts.add(agentUsed);
+        }
+
+        parts.add(formatModelDisplay(modelUsed));
+
+        if (tokensTotal > 0) {
+            parts.add(tokensTotal + " tokens");
+        }
+
+        if (cost > 0.0) {
+            parts.add("$" + formatCost(cost));
+        }
+
+        final long durationSeconds = (streamingStartedAt != null && !Instant.EPOCH.equals(streamingStartedAt))
+                ? Duration.between(streamingStartedAt, Instant.now()).toSeconds()
+                : 0;
+        parts.add(durationSeconds + "s");
+
+        final String footerText = String.join(" · ", parts);
+        browser.attachMessageFooter(footerText);
+    }
+
+    private String formatCost(final double cost) {
+        if (cost >= 0.01) {
+            return String.format("%.2f", cost);
+        }
+        if (cost >= 0.001) {
+            return String.format("%.3f", cost);
+        }
+        return String.format("%.4f", cost);
+    }
+
+    private String formatModelDisplay(final String modelIdentifier) {
+        if (modelIdentifier == null || modelIdentifier.isBlank()) {
+            return "unknown";
+        }
+        final int slashIndex = modelIdentifier.lastIndexOf('/');
+        return slashIndex >= 0 ? modelIdentifier.substring(slashIndex + 1) : modelIdentifier;
     }
 
     private String buildToolsHtml(final List<String> activitiesSnapshot) {

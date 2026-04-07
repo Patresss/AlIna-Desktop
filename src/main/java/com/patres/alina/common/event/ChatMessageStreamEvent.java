@@ -43,6 +43,10 @@ public final class ChatMessageStreamEvent extends Event {
     private final String permissionMessage;
     private final String permissionConfigPath;
     private final String permissionMatchedRule;
+    private final String modelUsed;
+    private final String agentUsed;
+    private final long tokensOutput;
+    private final double cost;
 
     public ChatMessageStreamEvent(String threadId, String token) {
         this.threadId = threadId;
@@ -61,6 +65,10 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.modelUsed = null;
+        this.agentUsed = null;
+        this.tokensOutput = 0;
+        this.cost = 0.0;
     }
 
     public ChatMessageStreamEvent(String threadId, StreamEventType eventType) {
@@ -80,6 +88,10 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.modelUsed = null;
+        this.agentUsed = null;
+        this.tokensOutput = 0;
+        this.cost = 0.0;
     }
 
     public ChatMessageStreamEvent(String threadId, StreamEventType eventType, String errorMessage) {
@@ -99,6 +111,10 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.modelUsed = null;
+        this.agentUsed = null;
+        this.tokensOutput = 0;
+        this.cost = 0.0;
     }
 
     public ChatMessageStreamEvent(String threadId,
@@ -121,6 +137,10 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.modelUsed = null;
+        this.agentUsed = null;
+        this.tokensOutput = 0;
+        this.cost = 0.0;
     }
 
     public ChatMessageStreamEvent(String threadId,
@@ -147,6 +167,10 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = permissionMessage;
         this.permissionConfigPath = permissionConfigPath;
         this.permissionMatchedRule = permissionMatchedRule;
+        this.modelUsed = null;
+        this.agentUsed = null;
+        this.tokensOutput = 0;
+        this.cost = 0.0;
     }
 
     public ChatMessageStreamEvent(final String threadId, final String reasoningContent, final boolean reasoning) {
@@ -166,10 +190,22 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.modelUsed = null;
+        this.agentUsed = null;
+        this.tokensOutput = 0;
+        this.cost = 0.0;
     }
 
     public static ChatMessageStreamEvent commentary(final String threadId, final String commentaryContent) {
         return new ChatMessageStreamEvent(threadId, commentaryContent, StreamEventType.COMMENTARY);
+    }
+
+    public static ChatMessageStreamEvent complete(final String threadId,
+                                                     final String modelUsed,
+                                                     final String agentUsed,
+                                                     final long tokensOutput,
+                                                     final double cost) {
+        return new ChatMessageStreamEvent(threadId, StreamEventType.COMPLETE, modelUsed, agentUsed, tokensOutput, cost);
     }
 
     private ChatMessageStreamEvent(final String threadId,
@@ -191,6 +227,38 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.modelUsed = null;
+        this.agentUsed = null;
+        this.tokensOutput = 0;
+        this.cost = 0.0;
+    }
+
+    private ChatMessageStreamEvent(final String threadId,
+                                   final StreamEventType eventType,
+                                   final String modelUsed,
+                                   final String agentUsed,
+                                   final long tokensOutput,
+                                   final double cost) {
+        this.threadId = threadId;
+        this.token = null;
+        this.eventType = eventType;
+        this.errorMessage = null;
+        this.reasoningContent = null;
+        this.commentaryContent = null;
+        this.activityType = null;
+        this.activityName = null;
+        this.activityDetail = null;
+        this.permissionType = null;
+        this.permissionRequestId = null;
+        this.permissionValue = null;
+        this.permissionTitle = null;
+        this.permissionMessage = null;
+        this.permissionConfigPath = null;
+        this.permissionMatchedRule = null;
+        this.modelUsed = modelUsed;
+        this.agentUsed = agentUsed;
+        this.tokensOutput = tokensOutput;
+        this.cost = cost;
     }
 
     public String getThreadId() {
@@ -255,5 +323,21 @@ public final class ChatMessageStreamEvent extends Event {
 
     public String getPermissionMatchedRule() {
         return permissionMatchedRule;
+    }
+
+    public String getModelUsed() {
+        return modelUsed;
+    }
+
+    public String getAgentUsed() {
+        return agentUsed;
+    }
+
+    public long getTokensTotal() {
+        return tokensOutput;
+    }
+
+    public double getCost() {
+        return cost;
     }
 }

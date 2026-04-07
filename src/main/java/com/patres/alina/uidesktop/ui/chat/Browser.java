@@ -74,7 +74,7 @@ public class Browser extends StackPane {
             }
         });
 
-        webEngine.loadContent(initHtml());
+        webEngine.loadContent(initHtml(), "text/html");
         getChildren().add(webView);
 
         updateCssColors();
@@ -370,6 +370,10 @@ public class Browser extends StackPane {
         executeJavaScript("finalizeAssistantCommentary()");
     }
 
+    public void attachMessageFooter(final String footerText) {
+        safeJavaScriptCall("attachMessageFooter", footerText);
+    }
+
     public void clearAssistantActivity() {
         executeJavaScript("clearAssistantActivity()");
     }
@@ -445,8 +449,10 @@ public class Browser extends StackPane {
 
     private String initHtml() {
         return """
-                <html>
+                <!DOCTYPE html>
+                <html lang="en">
                 <head>
+                <meta charset="UTF-8">
                 %s
                 %s
                 </head>
@@ -504,6 +510,14 @@ public class Browser extends StackPane {
                 a:active {
                   color: var(--color-accent-fg);
                 }
+                .emoji {
+                  display: inline-block;
+                  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+                  font-style: normal;
+                  font-weight: normal;
+                  line-height: 1;
+                  vertical-align: middle;
+                }
                 table {
                   width: 100%;
                   border-collapse: collapse;
@@ -513,6 +527,9 @@ public class Browser extends StackPane {
                   padding: 8px;
                   text-align: left;
                   border-bottom: 1px solid var(--color-border-default);
+                  color: var(--color-fg-default);
+                  word-break: break-word;
+                  overflow-wrap: break-word;
                 }
                 .chat-message {
                   background-color: var(--color-bg-subtle);
@@ -915,6 +932,16 @@ public class Browser extends StackPane {
                   from { transform: scale(1); }
                   to { transform: scale(0.5); }
                 }
+                .message-footer {
+                  margin-top: 2px;
+                  font-size: 11px;
+                  color: var(--color-fg-muted);
+                  opacity: 0;
+                  transition: opacity 0.2s ease;
+                }
+                .chat-message:hover .message-footer {
+                  opacity: 1;
+                }
                 </style>
                 """);
     }
@@ -1056,7 +1083,22 @@ public class Browser extends StackPane {
                             toggleButton.textContent = '▸';
                             toggleButton.setAttribute('aria-label', 'Pokaż szczegóły');
                             toggleButton.onclick = function() {
-                                toggleAssistantActivity();
+                                var shell = this.parentElement ? this.parentElement.parentElement : null;
+                                var activityEl = shell ? shell.parentElement : null;
+                                var bodyEl = shell ? shell.querySelector('.activity-body') : null;
+                                if (!activityEl || !bodyEl) return;
+                                var expanded = activityEl.dataset.expanded === 'true';
+                                if (expanded) {
+                                    bodyEl.classList.remove('open');
+                                    activityEl.dataset.expanded = 'false';
+                                    this.textContent = '\u25b8';
+                                    this.setAttribute('aria-label', 'Show details');
+                                } else {
+                                    bodyEl.classList.add('open');
+                                    activityEl.dataset.expanded = 'true';
+                                    this.textContent = '\u25be';
+                                    this.setAttribute('aria-label', 'Hide details');
+                                }
                             };
 
                             summaryMain.appendChild(summaryText);
@@ -1112,6 +1154,12 @@ public class Browser extends StackPane {
                             return;
                         }
                         activity.removeAttribute('id');
+                        var childIds = ['assistant-activity-body', 'assistant-activity-toggle',
+                                        'assistant-activity-summary-text', 'assistant-activity-summary-badge'];
+                        childIds.forEach(function(cid) {
+                            var el = document.getElementById(cid);
+                            if (el) el.removeAttribute('id');
+                        });
                         if (activity.dataset) {
                             delete activity.dataset.lastEntry;
                         }
@@ -1545,6 +1593,29 @@ public class Browser extends StackPane {
 
                     function scrollToBottom() {
                         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }
+
+                    function attachMessageFooter(footerText) {
+                        var chatContainer = document.getElementById('chat-container');
+                        if (!chatContainer || !chatContainer.children) return;
+                        var target = null;
+                        for (var i = chatContainer.children.length - 1; i >= 0; i--) {
+                            var node = chatContainer.children[i];
+                            if (!node || !node.classList) continue;
+                            if (node.classList.contains('chat-message')
+                                && node.classList.contains('assistant')
+                                && (!node.dataset || node.dataset.transient !== 'true')) {
+                                target = node;
+                                break;
+                            }
+                        }
+                        if (!target) return;
+                        var existing = target.querySelector('.message-footer');
+                        if (existing) existing.remove();
+                        var footer = document.createElement('div');
+                        footer.className = 'message-footer';
+                        footer.textContent = footerText;
+                        target.appendChild(footer);
                     }
 
                     function prepareRegenerationTarget() {

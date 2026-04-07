@@ -409,14 +409,16 @@ public class ChatWindow extends BorderPane {
         final String commandId = getCurrentCommandId();
         chatTextArea.clear();
         PreparedMessage prepared = prepareMessageToSend(message, commandId);
-        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE, prepared.commandUsageInfo());
+        final String displayText = resolveDisplayText(message, prepared.commandUsageInfo());
+        displayMessage(displayText, ChatMessageRole.USER, ChatMessageStyleType.NONE, prepared.commandUsageInfo());
         streamingController.markUserMessageSent();
         sendMessageToService(prepared.messageToSend(), commandId);
     }
 
     public void sendMessage(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
         PreparedMessage prepared = prepareMessageToSend(message, commandId);
-        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE, prepared.commandUsageInfo());
+        final String displayText = resolveDisplayText(message, prepared.commandUsageInfo());
+        displayMessage(displayText, ChatMessageRole.USER, ChatMessageStyleType.NONE, prepared.commandUsageInfo());
         streamingController.markUserMessageSent();
         sendMessageToService(prepared.messageToSend(), commandId, onComplete);
     }
@@ -429,6 +431,16 @@ public class ChatWindow extends BorderPane {
                                 final ChatMessageRole chatMessageRole,
                                 final ChatMessageStyleType chatMessageStyleType) {
         displayMessage(text, chatMessageRole, chatMessageStyleType, null);
+    }
+
+    private String resolveDisplayText(final String message, final CommandUsageInfo commandUsageInfo) {
+        if (!message.isBlank()) {
+            return message;
+        }
+        if (commandUsageInfo != null && commandUsageInfo.commandName() != null && !commandUsageInfo.commandName().isBlank()) {
+            return commandUsageInfo.commandName();
+        }
+        return message;
     }
 
     private void displayMessage(final String text,
@@ -453,7 +465,8 @@ public class ChatWindow extends BorderPane {
     private void sendMessageToService(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
         Thread.startVirtualThread(() -> {
             try {
-                streamingController.beginStreaming(false);
+                final boolean backgroundMode = onComplete != null;
+                streamingController.beginStreaming(false, backgroundMode);
                 final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(message, chatThread.id(), commandId, onComplete);
 
                 BackendApi.sendChatMessagesStream(chatMessageSendModel);

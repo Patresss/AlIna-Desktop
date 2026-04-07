@@ -50,6 +50,7 @@ public class ChatMessageService {
         private final StreamPurpose purpose;
         private final List<String> messageIdsToDeleteOnComplete;
         private final StringBuilder fullResponse = new StringBuilder();
+        private String effectiveModel;
         private Disposable disposable;
         private volatile boolean cancelled = false;
 
@@ -237,6 +238,9 @@ public class ChatMessageService {
             final String systemPrompt = buildOpenCodeSystemPrompt(contextMessages);
             final String historySummary = summarizeHistoryForOpenCode(contextMessages);
             final String modelOverride = resolveCommandModelOverride(chatMessageSendModel.commandId());
+            session.effectiveModel = (modelOverride == null || modelOverride.isBlank())
+                    ? assistantSettingsManager.getSettings().resolveModelIdentifier()
+                    : modelOverride.trim();
             final String currentUserMessage = contextMessages.isEmpty()
                     ? chatMessageSendModel.content()
                     : contextMessages.getLast().getText();
@@ -275,6 +279,10 @@ public class ChatMessageService {
                         );
                     },
                     () -> {
+                        final String openCodeModel = openCodeRuntimeService.getModelUsedForThread(chatThreadId);
+                        final String openCodeAgent = openCodeRuntimeService.getAgentUsedForThread(chatThreadId);
+                        final long openCodeTokensTotal = openCodeRuntimeService.getTokensTotalForThread(chatThreadId);
+                        final double openCodeCost = openCodeRuntimeService.getCostForThread(chatThreadId);
                         activeStreams.remove(chatThreadId, session);
                         if (session.cancelled) {
                             return;
@@ -291,9 +299,12 @@ public class ChatMessageService {
                         storeMessageManager.storeMessage(assistantMessage, chatMessageSendModel, aiResponse);
 
                         DefaultEventBus.getInstance().publish(
-                                new ChatMessageStreamEvent(
+                                ChatMessageStreamEvent.complete(
                                         chatThreadId,
-                                        ChatMessageStreamEvent.StreamEventType.COMPLETE
+                                        openCodeModel,
+                                        openCodeAgent,
+                                        openCodeTokensTotal,
+                                        openCodeCost
                                 )
                         );
 
