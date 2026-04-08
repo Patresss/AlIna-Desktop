@@ -6,6 +6,7 @@ import com.patres.alina.server.integration.JiraIssueResult;
 import com.patres.alina.server.integration.JiraService;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.chat.Browser;
+import com.patres.alina.uidesktop.util.EmojiLabelHelper;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -151,7 +152,8 @@ public class JiraWidget extends VBox {
         statusLabel.getStyleClass().add("workspace-jira-status");
         statusLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
 
-        final Label summaryLabel = new Label(issue.summary());
+        final Label summaryLabel = new Label();
+        EmojiLabelHelper.applyEmojiText(summaryLabel, issue.summary());
         summaryLabel.getStyleClass().add("workspace-jira-summary");
         summaryLabel.setMaxWidth(Double.MAX_VALUE);
         summaryLabel.setWrapText(false);

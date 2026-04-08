@@ -6,6 +6,7 @@ import com.patres.alina.server.integration.GitHubPullRequestResult;
 import com.patres.alina.server.integration.GitHubService;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.chat.Browser;
+import com.patres.alina.uidesktop.util.EmojiLabelHelper;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -142,7 +143,8 @@ public class GitHubWidget extends VBox {
         repoLabel.getStyleClass().add("workspace-pr-repo");
         repoLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
 
-        final Label prTitleLabel = new Label(pr.title());
+        final Label prTitleLabel = new Label();
+        EmojiLabelHelper.applyEmojiText(prTitleLabel, pr.title());
         prTitleLabel.getStyleClass().add("workspace-pr-title");
         prTitleLabel.setMaxWidth(Double.MAX_VALUE);
         prTitleLabel.setWrapText(false);

@@ -8,6 +8,7 @@ import com.patres.alina.common.event.DashboardUpdatedEvent;
 import com.patres.alina.common.event.WorkspaceSettingsUpdatedEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.uidesktop.backend.BackendApi;
+import com.patres.alina.uidesktop.util.EmojiLabelHelper;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -120,7 +121,8 @@ public class DashboardPane extends VBox {
             checkBox.getStyleClass().add("workspace-task-checkbox");
             checkBox.setOnAction(event -> updateTask(task, checkBox.isSelected()));
 
-            final Label taskLabel = new Label(task.title());
+            final Label taskLabel = new Label();
+            EmojiLabelHelper.applyEmojiText(taskLabel, task.title());
             taskLabel.getStyleClass().add("workspace-task-label");
             taskLabel.setMaxWidth(Double.MAX_VALUE);
             taskLabel.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
@@ -128,7 +130,7 @@ public class DashboardPane extends VBox {
             HBox.setHgrow(taskLabel, Priority.ALWAYS);
 
             taskLabel.setOnMouseClicked(event -> {
-                taskLabel.setWrapText(!taskLabel.isWrapText());
+                EmojiLabelHelper.toggleWrap(taskLabel);
             });
 
             final HBox row = new HBox(8, checkBox, taskLabel);

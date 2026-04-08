@@ -10,6 +10,7 @@ import com.patres.alina.server.integration.GoogleCalendarService;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.chat.Browser;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
+import com.patres.alina.uidesktop.util.EmojiLabelHelper;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -293,7 +294,8 @@ public class GoogleCalendarWidget extends VBox {
     }
 
     private Label createSummaryLabel(final GoogleCalendarEvent event) {
-        final Label summaryLabel = new Label(event.summary());
+        final Label summaryLabel = new Label();
+        EmojiLabelHelper.applyEmojiText(summaryLabel, event.summary());
         summaryLabel.getStyleClass().add(STYLE_CALENDAR_SUMMARY);
         summaryLabel.setMaxWidth(Double.MAX_VALUE);
         summaryLabel.setWrapText(false);
