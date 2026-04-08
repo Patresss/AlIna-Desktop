@@ -20,8 +20,10 @@ public final class SystemNotification {
 
     /**
      * Sends a notification asynchronously. Never blocks or steals focus.
+     * Also plays a notification sound if enabled in settings.
      */
     public static void send(String title, String message) {
+        NotificationSoundPlayer.playIfEnabled();
         CompletableFuture.runAsync(() -> {
             try {
                 if (OsUtils.isMacOS()) {

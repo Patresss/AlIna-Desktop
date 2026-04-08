@@ -143,7 +143,9 @@ class OpenCodeConfigurationServiceTest {
                 true,
                 WorkspaceSettings.DEFAULT_DASHBOARD_CALENDAR_REFRESH_SECONDS,
                 false,
-                true
+                true,
+                false,
+                WorkspaceSettings.DEFAULT_CALENDAR_NOTIFICATION_MINUTES_BEFORE
         ));
 
         return new OpenCodeConfigurationService(

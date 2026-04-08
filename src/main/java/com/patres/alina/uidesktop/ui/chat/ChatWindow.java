@@ -25,6 +25,7 @@ import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.util.FxThreadRunner;
+import com.patres.alina.uidesktop.ui.util.NotificationSoundPlayer;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -451,6 +452,7 @@ public class ChatWindow extends BorderPane {
     }
 
     private void handleChatNotification(final ChatNotificationEvent event) {
+        NotificationSoundPlayer.playIfEnabled();
         displayMessage(event.getMessage(), ASSISTANT, event.getStyleType());
     }
 

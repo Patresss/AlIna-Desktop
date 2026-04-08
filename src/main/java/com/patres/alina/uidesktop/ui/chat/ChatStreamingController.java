@@ -6,6 +6,7 @@ import com.patres.alina.common.permission.PermissionApprovalAction;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.util.FxThreadRunner;
+import com.patres.alina.uidesktop.ui.util.NotificationSoundPlayer;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -235,6 +236,7 @@ public class ChatStreamingController {
     }
 
     private void handleCompleteEvent(final ChatMessageStreamEvent event) {
+        NotificationSoundPlayer.playIfEnabled();
         FxThreadRunner.run(() -> {
             browser.hideLoader();
             hidePermissionComposer();

@@ -10,10 +10,15 @@ import com.patres.alina.uidesktop.ui.language.ApplicationLanguage;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.theme.SamplerTheme;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
+import com.patres.alina.uidesktop.ui.util.NotificationSound;
+import com.patres.alina.uidesktop.ui.util.NotificationSoundPlayer;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Separator;
+import javafx.scene.layout.HBox;
 import javafx.util.StringConverter;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.List;
 import java.util.Locale;
@@ -34,6 +39,8 @@ public class UiSettingsPane extends SettingsModalPaneContent {
     private ShortcutKeyPane speechShortcutKeyPane;
     private ShortcutKeyPane focusShortcutKeyPane;
     private ShortcutKeyPane contextMenuShortcutKeyPane;
+    private ToggleSwitch soundNotificationToggle;
+    private ChoiceBox<NotificationSound> soundTypeSelector;
 
     private UiSettings uiSettings;
 
@@ -50,6 +57,8 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         speechShortcutKeyPane.setValues(uiSettings.shortcutKeysSettings().speechShortcutKeys());
         focusShortcutKeyPane.setValues(uiSettings.shortcutKeysSettings().focusShortcutKeys());
         contextMenuShortcutKeyPane.setValues(uiSettings.shortcutKeysSettings().contextMenuShortcutKeys());
+        soundNotificationToggle.setSelected(uiSettings.isSoundNotificationEnabled());
+        soundTypeSelector.setValue(uiSettings.resolveNotificationSound());
         LanguageManager.setLanguage(uiSettings.language());
     }
 
@@ -69,7 +78,10 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         final ShortcutKeys focusShortcutKeys = focusShortcutKeyPane.getShortcutKeys();
         final ShortcutKeys contextMenuShortcutKeys = contextMenuShortcutKeyPane.getShortcutKeys();
         final ShortcutKeysSettings shortcutKeysSettings = new ShortcutKeysSettings(speechShortcutKeys, focusShortcutKeys, contextMenuShortcutKeys);
-        UI_SETTINGS.saveDocument(new UiSettings(theme, language, shortcutKeysSettings));
+        final boolean soundEnabled = soundNotificationToggle.isSelected();
+        final NotificationSound selectedSound = soundTypeSelector.getValue();
+        final String soundType = selectedSound != null ? selectedSound.name() : null;
+        UI_SETTINGS.saveDocument(new UiSettings(theme, language, shortcutKeysSettings, soundEnabled, soundType));
     }
 
     private void loadDataFromSettings() {
@@ -117,10 +129,38 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         );
         contextMenuShortcut.setAction(contextMenuShortcutKeyPane.createPane());
 
+        soundNotificationToggle = new ToggleSwitch();
+        soundNotificationToggle.setSelected(uiSettings.isSoundNotificationEnabled());
+        var soundNotification = createTile(
+                "settings.sound.notification.title",
+                "settings.sound.notification.description"
+        );
+        soundNotification.setAction(soundNotificationToggle);
+
+        soundTypeSelector = createResizableRegion(this::createSoundTypeSelector, settingsBox);
+        var soundTypeTile = createTile(
+                "settings.sound.type.title",
+                "settings.sound.type.description"
+        );
+        var previewButton = new Button();
+        previewButton.setGraphic(new FontIcon("fth-play"));
+        previewButton.getStyleClass().addAll(Styles.BUTTON_ICON, Styles.FLAT);
+        previewButton.setOnAction(_ -> {
+            NotificationSound selected = soundTypeSelector.getValue();
+            if (selected != null) {
+                NotificationSoundPlayer.playPreview(selected);
+            }
+        });
+        var soundActionBox = new HBox(6, soundTypeSelector, previewButton);
+        soundActionBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        soundTypeTile.setAction(soundActionBox);
+
         return List.of(
                 header, theme, language,
                 new Separator(),
-                speechShortcut, focusShortcut, contextMenuShortcut
+                speechShortcut, focusShortcut, contextMenuShortcut,
+                new Separator(),
+                soundNotification, soundTypeTile
         );
     }
 
@@ -164,6 +204,13 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         });
 
 
+        return choiceBox;
+    }
+
+    private ChoiceBox<NotificationSound> createSoundTypeSelector() {
+        var choiceBox = new ChoiceBox<NotificationSound>();
+        choiceBox.getItems().setAll(NotificationSound.values());
+        choiceBox.setValue(uiSettings.resolveNotificationSound());
         return choiceBox;
     }
 
