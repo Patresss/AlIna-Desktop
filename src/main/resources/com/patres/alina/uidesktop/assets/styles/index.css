@@ -250,12 +250,12 @@ ChatThreadHistoryCard {
     -fx-border-color: -color-glass-border;
     -fx-border-width: 1px;
     -fx-padding: 10px 12px;
-    -fx-effect: dropshadow(three-pass-box, -color-glass-shadow, 4, 0, 0, 2);
+    -fx-effect: dropshadow(three-pass-box, -color-glass-shadow, 2, 0, 0, 2);
 }
 
 .workspace-dashboard:hover {
     -fx-border-color: -color-glass-border-hover;
-    -fx-effect: dropshadow(three-pass-box, -color-glass-shadow-hover, 8, 0, 0, 3);
+    -fx-effect: dropshadow(three-pass-box, -color-glass-shadow-hover, 4, 0, 0, 3);
 }
 
 .workspace-dashboard-header {
@@ -460,31 +460,27 @@ ChatThreadHistoryCard {
 
 .workspace-calendar-item-current {
     -fx-alignment: top-left;
-    -fx-background-color: -color-accent-subtle;
+    -fx-background-color: -color-accent-muted;
     -fx-background-radius: 6px;
     -fx-padding: 4px 4px;
 }
 
-.workspace-calendar-item-current:hover {
-    -fx-background-color: -color-accent-muted;
-}
-
 .workspace-calendar-remaining {
     -fx-text-fill: -color-fg-muted;
-    -fx-font-size: 10px;
+    -fx-font-size: 12px;
     -fx-min-width: -fx-pref-width;
     -fx-padding: 0;
 }
 
 .workspace-calendar-upcoming {
     -fx-text-fill: -color-fg-muted;
-    -fx-font-size: 10px;
+    -fx-font-size: 12px;
     -fx-min-width: -fx-pref-width;
     -fx-padding: 0;
 }
 
 .workspace-calendar-time-urgent {
-    -fx-text-fill: -color-accent-emphasis;
+    -fx-text-fill: -color-fg-default;
 }
 
 .workspace-calendar-time {

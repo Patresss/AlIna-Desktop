@@ -503,6 +503,8 @@ public class Browser extends StackPane {
                     color: var(--color-fg-default);
                     font-family: Söhne, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
                     font-size: 14px;
+                    margin: 0;
+                    padding: 0;
                 }
                 a:link,
                 a:hover,
@@ -537,9 +539,9 @@ public class Browser extends StackPane {
                   color: var(--color-fg-default);
                   box-shadow: 0 2px 4px var(--color-neutral-muted);
                   border-radius: 4px;
-                  padding: 2px 15px;
-                  margin: 10px 5px;
-                  max-width: 85%;
+                  padding: 2px 12px;
+                  margin: 6px 0;
+                  max-width: 95%;
                   word-wrap: break-word;
                   align-items: center;
                   overflow-y: auto;
