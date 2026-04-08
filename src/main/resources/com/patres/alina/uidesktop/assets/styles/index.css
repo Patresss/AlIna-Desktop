@@ -210,22 +210,29 @@ ChatThreadHistoryCard {
     -fx-underline: true;
 }
 
+/* ══════════════════════════════════════════════════
+   Dashboard — Card-based design
+   ══════════════════════════════════════════════════ */
+
+/* Container — transparent wrapper, no border */
+.workspace-dashboard-container {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+/* Each widget is a card */
 .workspace-dashboard {
-    -fx-background-color: -color-bg-default;
-    -fx-background-radius: 12px;
-    -fx-border-radius: 12px;
-    -fx-border-color: -color-border-default;
+    -fx-background-color: -color-bg-inset;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-border-color: -color-border-muted;
     -fx-border-width: 1px;
+    -fx-padding: 10px 12px;
     -fx-effect: none;
 }
 
-.workspace-widget-inner {
-    -fx-padding: 4px 0 4px 0;
-}
-
-.workspace-widget-separator {
-    -fx-padding: 2px 0 2px 0;
-    -fx-opacity: 0.4;
+.workspace-dashboard:hover {
+    -fx-border-color: -color-border-default;
 }
 
 .workspace-dashboard-header {
@@ -241,21 +248,24 @@ ChatThreadHistoryCard {
 
 .workspace-dashboard-title {
     -fx-text-fill: -color-fg-default;
-    -fx-font-size: 14px;
+    -fx-font-size: 13px;
     -fx-font-weight: 700;
 }
 
 .workspace-dashboard-title .ikonli-font-icon {
-    -fx-icon-size: 15px;
+    -fx-icon-size: 14px;
+    -fx-icon-color: -color-accent-fg;
+    -fx-fill: -color-accent-fg;
 }
 
+/* Count badge — subtle accent bg instead of solid */
 .workspace-dashboard-count {
-    -fx-background-color: -color-accent-emphasis;
+    -fx-background-color: -color-accent-subtle;
     -fx-background-radius: 999px;
     -fx-font-size: 10px;
     -fx-font-weight: 700;
-    -fx-padding: 1px 6px;
-    -fx-text-fill: -color-fg-emphasis;
+    -fx-padding: 1px 7px;
+    -fx-text-fill: -color-accent-fg;
 }
 
 .workspace-dashboard-content {
@@ -268,8 +278,10 @@ ChatThreadHistoryCard {
 }
 
 .workspace-collapse-button .ikonli-font-icon {
-    -fx-icon-size: 14px;
+    -fx-icon-size: 13px;
 }
+
+/* ── Task list ─────────────────────────────────── */
 
 .workspace-task-list {
     -fx-spacing: 2px;
@@ -286,7 +298,12 @@ ChatThreadHistoryCard {
 
 .workspace-task-item {
     -fx-alignment: top-left;
-    -fx-padding: 1px 0px;
+    -fx-padding: 2px 4px;
+    -fx-background-radius: 6px;
+}
+
+.workspace-task-item:hover {
+    -fx-background-color: -color-bg-subtle;
 }
 
 .workspace-task-label {
@@ -299,25 +316,36 @@ ChatThreadHistoryCard {
 .workspace-dashboard-empty {
     -fx-text-fill: -color-fg-muted;
     -fx-font-size: 11px;
-    -fx-padding: 2px 0 2px 2px;
+    -fx-padding: 4px 2px;
 }
 
+/* ── Media / Music widget ─────────────────────── */
+
 .workspace-media-track-info {
-    -fx-text-fill: -color-fg-default;
+    -fx-text-fill: -color-fg-muted;
     -fx-font-size: 12px;
     -fx-text-overrun: ellipsis;
 }
 
-/* ── GitHub PR widget ──────────────────────── */
+/* ── GitHub PR widget ──────────────────────────── */
 
 .workspace-pr-item {
     -fx-alignment: center-left;
-    -fx-padding: 2px 2px;
+    -fx-padding: 3px 4px;
+    -fx-background-radius: 6px;
+}
+
+.workspace-pr-item:hover {
+    -fx-background-color: -color-bg-subtle;
 }
 
 .workspace-pr-repo {
     -fx-text-fill: -color-fg-muted;
-    -fx-font-size: 11px;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 4px;
+    -fx-padding: 1px 5px;
     -fx-min-width: -fx-pref-width;
 }
 
@@ -328,6 +356,7 @@ ChatThreadHistoryCard {
 }
 
 .workspace-pr-title:hover {
+    -fx-text-fill: -color-accent-fg;
     -fx-underline: true;
 }
 
@@ -337,9 +366,12 @@ ChatThreadHistoryCard {
 }
 
 .workspace-pr-draft {
-    -fx-text-fill: -color-fg-muted;
-    -fx-font-size: 11px;
+    -fx-text-fill: -color-fg-subtle;
+    -fx-font-size: 10px;
     -fx-font-style: italic;
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 4px;
+    -fx-padding: 1px 5px;
     -fx-min-width: -fx-pref-width;
 }
 
@@ -347,25 +379,43 @@ ChatThreadHistoryCard {
 
 .workspace-jira-item {
     -fx-alignment: center-left;
-    -fx-padding: 2px 2px;
+    -fx-padding: 3px 4px;
+    -fx-background-radius: 6px;
+}
+
+.workspace-jira-item:hover {
+    -fx-background-color: -color-bg-subtle;
 }
 
 .workspace-jira-key {
     -fx-text-fill: -color-fg-default;
     -fx-font-family: monospace;
+    -fx-font-size: 12px;
     -fx-font-weight: bold;
     -fx-min-width: -fx-pref-width;
     -fx-cursor: hand;
 }
 
 .workspace-jira-key:hover {
+    -fx-text-fill: -color-accent-fg;
     -fx-underline: true;
 }
 
+/* Jira status badge — base */
 .workspace-jira-status {
-    -fx-text-fill: -color-fg-muted;
     -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-background-radius: 4px;
+    -fx-padding: 1px 5px;
     -fx-min-width: -fx-pref-width;
+    -fx-text-fill: -color-info-fg;
+    -fx-background-color: -color-info-subtle;
+}
+
+/* Jira status: in progress — warning color */
+.workspace-jira-status-progress {
+    -fx-text-fill: -color-warning-fg;
+    -fx-background-color: -color-warning-subtle;
 }
 
 .workspace-jira-summary {
@@ -377,24 +427,35 @@ ChatThreadHistoryCard {
 
 .workspace-calendar-item {
     -fx-alignment: center-left;
-    -fx-padding: 1px 2px;
+    -fx-padding: 2px 4px;
+    -fx-background-radius: 6px;
+}
+
+.workspace-calendar-item:hover {
+    -fx-background-color: -color-bg-subtle;
 }
 
 .workspace-calendar-item-current {
     -fx-alignment: top-left;
     -fx-background-color: -color-accent-subtle;
-    -fx-background-radius: 4px;
-    -fx-padding: 4px 2px;
+    -fx-background-radius: 6px;
+    -fx-padding: 4px 4px;
+}
+
+.workspace-calendar-item-current:hover {
+    -fx-background-color: -color-accent-muted;
 }
 
 .workspace-calendar-remaining {
     -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 10px;
     -fx-min-width: -fx-pref-width;
     -fx-padding: 0;
 }
 
 .workspace-calendar-upcoming {
     -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 10px;
     -fx-min-width: -fx-pref-width;
     -fx-padding: 0;
 }
@@ -406,12 +467,13 @@ ChatThreadHistoryCard {
 .workspace-calendar-time {
     -fx-text-fill: -color-fg-default;
     -fx-font-family: monospace;
+    -fx-font-size: 12px;
     -fx-font-weight: bold;
     -fx-min-width: -fx-pref-width;
 }
 
 .workspace-calendar-video-icon {
-    -fx-icon-color: -color-accent-emphasis;
+    -fx-icon-color: -color-accent-fg;
     -fx-icon-size: 13px;
 }
 
@@ -430,6 +492,7 @@ ChatThreadHistoryCard {
 }
 
 .workspace-calendar-clickable:hover {
+    -fx-text-fill: -color-accent-fg;
     -fx-underline: true;
 }
 

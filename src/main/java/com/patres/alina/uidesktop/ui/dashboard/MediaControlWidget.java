@@ -7,7 +7,6 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -34,7 +33,6 @@ public class MediaControlWidget extends VBox {
 
     public MediaControlWidget() {
         getStyleClass().add("workspace-dashboard");
-        setPadding(new Insets(2, 0, 2, 0));
 
         // Header with title and controls in one line
         final FontIcon musicIcon = new FontIcon(Feather.MUSIC);

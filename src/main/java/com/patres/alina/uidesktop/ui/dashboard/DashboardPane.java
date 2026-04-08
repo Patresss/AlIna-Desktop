@@ -13,7 +13,6 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
@@ -57,7 +56,6 @@ public class DashboardPane extends VBox {
         detailsBox.getChildren().add(tasksBox);
 
         setSpacing(4);
-        setPadding(new Insets(6, 0, 4, 0));
         getChildren().addAll(header, detailsBox);
 
         initializeRefreshTimer();

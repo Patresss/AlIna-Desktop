@@ -11,7 +11,6 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
@@ -65,7 +64,6 @@ public class JiraWidget extends VBox {
         detailsBox.getChildren().add(contentBox);
 
         setSpacing(4);
-        setPadding(new Insets(6, 0, 4, 0));
         getChildren().addAll(header, detailsBox);
 
         updateCollapseButton();
@@ -148,9 +146,15 @@ public class JiraWidget extends VBox {
         keyLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
         keyLabel.setOnMouseClicked(event -> Browser.openWebpage(issue.url()));
 
-        final Label statusLabel = new Label("[" + issue.status() + "]");
+        final Label statusLabel = new Label(issue.status());
         statusLabel.getStyleClass().add("workspace-jira-status");
         statusLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+
+        // Apply color class based on status
+        final String statusLower = issue.status().toLowerCase();
+        if (statusLower.contains("progress") || statusLower.contains("review") || statusLower.contains("w toku")) {
+            statusLabel.getStyleClass().add("workspace-jira-status-progress");
+        }
 
         final Label summaryLabel = new Label();
         EmojiLabelHelper.applyEmojiText(summaryLabel, issue.summary());

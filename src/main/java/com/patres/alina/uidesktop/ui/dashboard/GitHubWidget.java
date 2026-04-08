@@ -11,7 +11,6 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
@@ -63,7 +62,6 @@ public class GitHubWidget extends VBox {
         detailsBox.getChildren().add(contentBox);
 
         setSpacing(4);
-        setPadding(new Insets(6, 0, 4, 0));
         getChildren().addAll(header, detailsBox);
 
         updateCollapseButton();
