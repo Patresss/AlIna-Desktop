@@ -3,6 +3,28 @@
     -color-info-emphasis: #58a6ff;
     -color-info-muted: rgba(88, 166, 255, 0.3);
     -color-info-subtle: rgba(88, 166, 255, 0.12);
+
+    /* Glass card variables — light theme defaults (dark tints on light bg) */
+    -color-glass-bg: rgba(0, 0, 0, 0.03);
+    -color-glass-bg-hover: rgba(0, 0, 0, 0.05);
+    -color-glass-border: rgba(0, 0, 0, 0.08);
+    -color-glass-border-hover: rgba(0, 0, 0, 0.14);
+    -color-glass-shadow: rgba(0, 0, 0, 0.08);
+    -color-glass-shadow-hover: rgba(0, 0, 0, 0.14);
+    -color-glass-item-hover: rgba(0, 0, 0, 0.04);
+    -color-glass-pill-bg: rgba(0, 0, 0, 0.05);
+}
+
+/* Glass card variables — dark theme overrides (white tints on dark bg) */
+.root:dark {
+    -color-glass-bg: rgba(255, 255, 255, 0.04);
+    -color-glass-bg-hover: rgba(255, 255, 255, 0.07);
+    -color-glass-border: rgba(255, 255, 255, 0.08);
+    -color-glass-border-hover: rgba(255, 255, 255, 0.14);
+    -color-glass-shadow: rgba(0, 0, 0, 0.25);
+    -color-glass-shadow-hover: rgba(0, 0, 0, 0.35);
+    -color-glass-item-hover: rgba(255, 255, 255, 0.06);
+    -color-glass-pill-bg: rgba(255, 255, 255, 0.06);
 }
 
 .body {
@@ -211,7 +233,7 @@ ChatThreadHistoryCard {
 }
 
 /* ══════════════════════════════════════════════════
-   Dashboard — Card-based design
+   Dashboard — Glassmorphism design
    ══════════════════════════════════════════════════ */
 
 /* Container — transparent wrapper, no border */
@@ -220,19 +242,20 @@ ChatThreadHistoryCard {
     -fx-padding: 0;
 }
 
-/* Each widget is a card */
+/* Each widget is a frosted glass card */
 .workspace-dashboard {
-    -fx-background-color: -color-bg-inset;
-    -fx-background-radius: 10px;
-    -fx-border-radius: 10px;
-    -fx-border-color: -color-border-muted;
+    -fx-background-color: -color-glass-bg;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-color: -color-glass-border;
     -fx-border-width: 1px;
     -fx-padding: 10px 12px;
-    -fx-effect: none;
+    -fx-effect: dropshadow(three-pass-box, -color-glass-shadow, 4, 0, 0, 2);
 }
 
 .workspace-dashboard:hover {
-    -fx-border-color: -color-border-default;
+    -fx-border-color: -color-glass-border-hover;
+    -fx-effect: dropshadow(three-pass-box, -color-glass-shadow-hover, 8, 0, 0, 3);
 }
 
 .workspace-dashboard-header {
