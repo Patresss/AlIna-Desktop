@@ -239,7 +239,6 @@ public class ChatStreamingController {
             browser.hideLoader();
             hidePermissionComposer();
             browser.finalizeAssistantActivity();
-            attachProcessPanelIfNeeded();
             if (regenerating) {
                 browser.discardRegenerationBackup();
             }
@@ -575,6 +574,13 @@ public class ChatStreamingController {
             return;
         }
         final List<String> parts = new ArrayList<>();
+
+        if (latestReasoningContent != null && !latestReasoningContent.isBlank()) {
+            parts.add(LanguageManager.getLanguageString("chat.reasoning.title"));
+        }
+        if (latestCommentaryContent != null && !latestCommentaryContent.isBlank()) {
+            parts.add(LanguageManager.getLanguageString("chat.commentary.title"));
+        }
 
         if (agentUsed != null && !agentUsed.isBlank()) {
             parts.add(agentUsed);

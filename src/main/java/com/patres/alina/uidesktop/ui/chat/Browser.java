@@ -938,7 +938,7 @@ public class Browser extends StackPane {
                   margin-top: 2px;
                   font-size: 11px;
                   color: var(--color-fg-muted);
-                  opacity: 0;
+                  opacity: 0.6;
                   transition: opacity 0.2s ease;
                 }
                 .chat-message:hover .message-footer {
