@@ -449,7 +449,7 @@ ChatThreadHistoryCard {
 /* ── Google Calendar widget ───────────────────── */
 
 .workspace-calendar-item {
-    -fx-alignment: center-left;
+    -fx-alignment: top-left;
     -fx-padding: 2px 4px;
     -fx-background-radius: 6px;
 }
