@@ -60,6 +60,7 @@ public class SearchCommandPopup extends Popup {
 
         DefaultEventBus.getInstance().subscribe(CommandUpdateEvent.class, e -> fetchAllCommands());
         DefaultEventBus.getInstance().subscribe(QuickActionSettingsUpdateEvent.class, e -> fetchAllQuickActions());
+        LanguageManager.localeProperty().addListener((obs, oldLocale, newLocale) -> Platform.runLater(this::fetchAllQuickActions));
     }
 
     private void fetchAllCommands() {

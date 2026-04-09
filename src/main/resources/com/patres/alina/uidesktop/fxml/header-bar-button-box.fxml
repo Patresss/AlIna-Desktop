@@ -59,12 +59,12 @@
       </Button>
       <MenuButton mnemonicParsing="false"  styleClass="button-circle">
          <items>
-            <MenuItem mnemonicParsing="false" onAction="#openAssistantSettings" text="%settings.assistant.title" />
-            <MenuItem mnemonicParsing="false" onAction="#openUiSettings" text="%settings.ui.title" />
-             <MenuItem mnemonicParsing="false" onAction="#openDashboardSettings" text="%settings.dashboard.title" />
-             <MenuItem mnemonicParsing="false" onAction="#openOpenCodeSettings" text="%settings.opencode.title" />
-            <MenuItem mnemonicParsing="false" onAction="#openCommands" text="%command.title" />
-            <MenuItem mnemonicParsing="false" onAction="#openQuickActionSettings" text="%quickaction.settings.title" />
+            <MenuItem fx:id="assistantSettingsMenuItem" mnemonicParsing="false" onAction="#openAssistantSettings" text="%settings.assistant.title" />
+            <MenuItem fx:id="uiSettingsMenuItem" mnemonicParsing="false" onAction="#openUiSettings" text="%settings.ui.title" />
+            <MenuItem fx:id="dashboardSettingsMenuItem" mnemonicParsing="false" onAction="#openDashboardSettings" text="%settings.dashboard.title" />
+            <MenuItem fx:id="openCodeSettingsMenuItem" mnemonicParsing="false" onAction="#openOpenCodeSettings" text="%settings.opencode.title" />
+            <MenuItem fx:id="commandsMenuItem" mnemonicParsing="false" onAction="#openCommands" text="%command.title" />
+            <MenuItem fx:id="quickActionSettingsMenuItem" mnemonicParsing="false" onAction="#openQuickActionSettings" text="%quickaction.settings.title" />
          </items>
          <graphic>
             <FontIcon iconLiteral="mdmz-settings" />

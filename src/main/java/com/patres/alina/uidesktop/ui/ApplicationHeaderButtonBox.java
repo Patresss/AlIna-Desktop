@@ -6,6 +6,7 @@ import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -16,8 +17,20 @@ public class ApplicationHeaderButtonBox extends HBox {
 
     @FXML
     private ToggleButton pinToggleButton;
+    @FXML
+    private MenuItem assistantSettingsMenuItem;
+    @FXML
+    private MenuItem uiSettingsMenuItem;
+    @FXML
+    private MenuItem dashboardSettingsMenuItem;
+    @FXML
+    private MenuItem openCodeSettingsMenuItem;
+    @FXML
+    private MenuItem commandsMenuItem;
+    @FXML
+    private MenuItem quickActionSettingsMenuItem;
 
-    private ApplicationWindow applicationWindow;;
+    private ApplicationWindow applicationWindow;
 
     public ApplicationHeaderButtonBox(ApplicationWindow applicationWindow) {
         super();
@@ -44,6 +57,13 @@ public class ApplicationHeaderButtonBox extends HBox {
                     final WorkspaceSettings settings = BackendApi.getWorkspaceSettings();
                     BackendApi.updateWorkspaceSettings(settings.withKeepWindowAlwaysOnTop(newValue));
                 });
+
+        assistantSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("settings.assistant.title"));
+        uiSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("settings.ui.title"));
+        dashboardSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("settings.dashboard.title"));
+        openCodeSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("settings.opencode.title"));
+        commandsMenuItem.textProperty().bind(LanguageManager.createStringBinding("command.title"));
+        quickActionSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("quickaction.settings.title"));
     }
 
 
