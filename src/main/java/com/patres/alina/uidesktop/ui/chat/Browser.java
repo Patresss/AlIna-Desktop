@@ -4,6 +4,7 @@ import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.common.message.CommandUsageInfo;
+import com.patres.alina.common.message.TodoItem;
 import com.patres.alina.uidesktop.common.event.ThemeEvent;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import javafx.application.Platform;
@@ -352,6 +353,41 @@ public class Browser extends StackPane {
         safeJavaScriptCall("showAssistantActivity", label);
     }
 
+    /**
+     * Displays or updates the todo list panel in the chat.
+     * Serialises the list of {@link TodoItem}s into a JSON array string
+     * and passes it to the JavaScript side for rendering.
+     *
+     * @param items the current todo items
+     * @param title the localised title for the panel header
+     */
+    public void showTodoList(final java.util.List<TodoItem> items, final String title) {
+        final StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < items.size(); i++) {
+            final TodoItem item = items.get(i);
+            if (i > 0) {
+                json.append(",");
+            }
+            json.append("{\"content\":\"").append(escapeJsonString(item.content()))
+                    .append("\",\"status\":\"").append(escapeJsonString(item.status()))
+                    .append("\",\"priority\":\"").append(escapeJsonString(item.priority()))
+                    .append("\"}");
+        }
+        json.append("]");
+        safeJavaScriptCall("showTodoList", json.toString(), title == null ? "Todo" : title);
+    }
+
+    private static String escapeJsonString(final String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
+    }
+
     public void showAssistantReasoning(final String title, final String markdownContent) {
         final String htmlContent = convertMarkdownToHtml(markdownContent);
         safeJavaScriptCall("showAssistantReasoning", title, htmlContent);
@@ -364,6 +400,10 @@ public class Browser extends StackPane {
 
     public void finalizeAssistantActivity() {
         executeJavaScript("finalizeAssistantActivity()");
+    }
+
+    public void finalizeTodoList() {
+        executeJavaScript("finalizeTodoList()");
     }
 
     public void finalizeAssistantReasoning() {
@@ -380,6 +420,10 @@ public class Browser extends StackPane {
 
     public void clearAssistantActivity() {
         executeJavaScript("clearAssistantActivity()");
+    }
+
+    public void clearTodoList() {
+        executeJavaScript("clearTodoList()");
     }
 
     public void clearAssistantReasoning() {

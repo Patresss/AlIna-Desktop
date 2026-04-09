@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.Event;
+import com.patres.alina.common.message.TodoItem;
 import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
 import com.patres.alina.common.permission.PermissionApprovalAction;
 import com.patres.alina.common.permission.PermissionResolutionModel;
@@ -25,6 +26,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -473,6 +475,10 @@ public class OpenCodeRuntimeService {
             if (stream.seenActivity.add(dedupeKey)) {
                 publishActivity(stream.threadId, part.path("tool").asText(), state);
             }
+            final String toolName = part.path("tool").asText("");
+            if ("todowrite".equalsIgnoreCase(toolName)) {
+                publishTodoUpdate(stream.threadId, part);
+            }
         }
     }
 
@@ -537,6 +543,99 @@ public class OpenCodeRuntimeService {
 
     private void publishCommentary(final String threadId, final String content) {
         Event.publish(ChatMessageStreamEvent.commentary(threadId, content));
+    }
+
+    private void publishTodoUpdate(final String threadId, final JsonNode part) {
+        try {
+            final JsonNode todosNode = extractTodosFromPart(part);
+            if (todosNode == null || !todosNode.isArray()) {
+                return;
+            }
+            final List<TodoItem> items = new ArrayList<>();
+            for (final JsonNode item : todosNode) {
+                items.add(new TodoItem(
+                        item.path("content").asText(""),
+                        item.path("status").asText("pending"),
+                        item.path("priority").asText("medium")
+                ));
+            }
+            if (!items.isEmpty()) {
+                logger.debug("TodoWrite: publishing {} todo items", items.size());
+                Event.publish(ChatMessageStreamEvent.todoUpdate(threadId, items));
+            }
+        } catch (Exception e) {
+            logger.warn("Cannot parse todowrite input from tool part", e);
+        }
+    }
+
+    /**
+     * Attempts to extract the todos JSON array from a todowrite tool part.
+     * OpenCode places tool arguments inside {@code state.input} (and results
+     * inside {@code state.metadata} / {@code state.output}).
+     * This method probes all known locations.
+     */
+    private JsonNode extractTodosFromPart(final JsonNode part) {
+        // Primary location: state.input.todos (present in "running" and "completed" states)
+        final JsonNode state = part.path("state");
+        final JsonNode stateInput = state.path("input");
+        if (stateInput.isObject() && stateInput.has("todos")) {
+            return stateInput.path("todos");
+        }
+        if (stateInput.isTextual()) {
+            final JsonNode parsed = parseJsonQuietly(stateInput.asText());
+            if (parsed != null && parsed.has("todos")) {
+                return parsed.path("todos");
+            }
+        }
+        // state.metadata.todos (present in "completed" state)
+        final JsonNode metadata = state.path("metadata");
+        if (metadata.isObject() && metadata.has("todos")) {
+            return metadata.path("todos");
+        }
+        // state.output as stringified JSON array of todos (present in "completed" state)
+        final JsonNode stateOutput = state.path("output");
+        if (stateOutput.isTextual()) {
+            final JsonNode parsed = parseJsonQuietly(stateOutput.asText());
+            if (parsed != null && parsed.isArray()) {
+                return parsed;
+            }
+        }
+        if (stateOutput.isArray()) {
+            return stateOutput;
+        }
+        // Fallbacks: part-level input/output/arguments
+        final JsonNode input = part.path("input");
+        if (input.isObject() && input.has("todos")) {
+            return input.path("todos");
+        }
+        if (input.isTextual()) {
+            final JsonNode parsed = parseJsonQuietly(input.asText());
+            if (parsed != null && parsed.has("todos")) {
+                return parsed.path("todos");
+            }
+        }
+        final JsonNode output = part.path("output");
+        if (output.isObject() && output.has("todos")) {
+            return output.path("todos");
+        }
+        if (output.isTextual()) {
+            final JsonNode parsed = parseJsonQuietly(output.asText());
+            if (parsed != null && parsed.has("todos")) {
+                return parsed.path("todos");
+            }
+        }
+        return null;
+    }
+
+    private JsonNode parseJsonQuietly(final String json) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readTree(json);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public String getModelUsedForThread(final String threadId) {

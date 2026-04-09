@@ -2,6 +2,7 @@ package com.patres.alina.uidesktop.ui.chat;
 
 import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.message.ChatMessageStyleType;
+import com.patres.alina.common.message.TodoItem;
 import com.patres.alina.common.permission.PermissionApprovalAction;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
@@ -160,6 +161,7 @@ public class ChatStreamingController {
             case REASONING -> handleReasoningEvent(event);
             case COMMENTARY -> handleCommentaryEvent(event);
             case ACTIVITY -> handleActivityEvent(event);
+            case TODO_UPDATE -> handleTodoUpdateEvent(event);
             case PERMISSION_REQUEST -> handlePermissionRequestEvent(event);
             case COMPLETE -> handleCompleteEvent(event);
             case CANCELLED -> handleCancelledEvent();
@@ -224,6 +226,17 @@ public class ChatStreamingController {
         });
     }
 
+    private void handleTodoUpdateEvent(final ChatMessageStreamEvent event) {
+        final List<TodoItem> items = event.getTodoItems();
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        FxThreadRunner.run(() -> {
+            browser.showTodoList(items, LanguageManager.getLanguageString("chat.todo.title"));
+            statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.todo.status"));
+        });
+    }
+
     private void handlePermissionRequestEvent(final ChatMessageStreamEvent event) {
         final String title = formatPermissionTitle(event);
         final String message = formatPermissionMessage(event);
@@ -241,6 +254,7 @@ public class ChatStreamingController {
             browser.hideLoader();
             hidePermissionComposer();
             browser.finalizeAssistantActivity();
+            browser.finalizeTodoList();
             if (regenerating) {
                 browser.discardRegenerationBackup();
             }
@@ -261,6 +275,7 @@ public class ChatStreamingController {
             browser.clearAssistantActivity();
             browser.clearAssistantCommentary();
             browser.clearAssistantReasoning();
+            browser.clearTodoList();
             browser.hideLoader();
             hidePermissionComposer();
             if (regenerating) {
@@ -290,6 +305,7 @@ public class ChatStreamingController {
             browser.clearAssistantActivity();
             browser.clearAssistantCommentary();
             browser.clearAssistantReasoning();
+            browser.clearTodoList();
             browser.hideLoader();
             hidePermissionComposer();
             if (regenerating) {
@@ -445,6 +461,7 @@ public class ChatStreamingController {
         browser.clearAssistantActivity();
         browser.clearAssistantCommentary();
         browser.clearAssistantReasoning();
+        browser.clearTodoList();
         hidePermissionComposer();
         setStreamControlMode(StreamControlMode.STOP);
         if (!backgroundMode) {

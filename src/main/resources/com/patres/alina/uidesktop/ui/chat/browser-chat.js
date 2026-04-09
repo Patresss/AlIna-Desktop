@@ -681,3 +681,196 @@
             delete node.dataset.prevHtml;
         }
     }
+
+    function showTodoList(jsonString, title) {
+        var items;
+        try {
+            items = JSON.parse(jsonString);
+        } catch (e) {
+            return;
+        }
+        if (!items || items.length === 0) {
+            return;
+        }
+
+        var container = document.getElementById('todo-sticky-container');
+        if (!container) {
+            return;
+        }
+
+        // Store latest data for finalize
+        container.dataset.todoJson = jsonString;
+        container.dataset.todoTitle = title;
+
+        var card = document.getElementById('assistant-todo-sticky');
+        if (!card) {
+            card = document.createElement('div');
+            card.className = 'todo-sticky';
+            card.id = 'assistant-todo-sticky';
+            container.appendChild(card);
+        }
+
+        card.innerHTML = buildTodoHtml(items, title);
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function buildTodoHtml(items, title) {
+        var completed = 0;
+        var total = items.length;
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].status === 'completed') completed++;
+        }
+
+        var html = '';
+
+        // Header with title and progress
+        html += '<div class="todo-header">';
+        html += '<div class="todo-title">' + escapeHtmlTodo(title) + '</div>';
+        html += '<div class="todo-progress-info">' + completed + '/' + total + '</div>';
+        html += '</div>';
+
+        // Progress bar
+        var percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+        html += '<div class="todo-progress-bar-track">';
+        html += '<div class="todo-progress-bar-fill" style="width:' + percent + '%"></div>';
+        html += '</div>';
+
+        // Items
+        html += '<div class="todo-items">';
+        for (var j = 0; j < items.length; j++) {
+            var item = items[j];
+            var statusClass = 'todo-status-' + (item.status || 'pending');
+            var priorityClass = 'todo-priority-' + (item.priority || 'medium');
+            var icon = getTodoStatusIcon(item.status);
+
+            html += '<div class="todo-item ' + statusClass + ' ' + priorityClass + '">';
+            html += '<span class="todo-item-icon">' + icon + '</span>';
+            html += '<span class="todo-item-content">' + escapeHtmlTodo(item.content) + '</span>';
+            html += '</div>';
+        }
+        html += '</div>';
+
+        return html;
+    }
+
+    function getTodoStatusIcon(status) {
+        switch (status) {
+            case 'completed':   return '\u2714';  // checkmark
+            case 'in_progress': return '\u25b6';  // play triangle
+            case 'cancelled':   return '\u2716';  // heavy X
+            default:            return '\u25cb';   // circle
+        }
+    }
+
+    function escapeHtmlTodo(text) {
+        if (!text) return '';
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function finalizeTodoList() {
+        var container = document.getElementById('todo-sticky-container');
+        if (!container) {
+            return;
+        }
+        var card = document.getElementById('assistant-todo-sticky');
+        if (!card) {
+            return;
+        }
+        var jsonString = container.dataset.todoJson;
+        var title = container.dataset.todoTitle || 'Todo';
+        // Remove the sticky card
+        card.remove();
+        delete container.dataset.todoJson;
+        delete container.dataset.todoTitle;
+
+        // Parse the items to build the collapsed panel
+        var items;
+        try {
+            items = JSON.parse(jsonString);
+        } catch (e) {
+            return;
+        }
+        if (!items || items.length === 0) {
+            return;
+        }
+
+        // Attach as collapsible panel to the last assistant message
+        var chatContainer = document.getElementById('chat-container');
+        if (!chatContainer || !chatContainer.children) {
+            return;
+        }
+        var target = null;
+        for (var i = chatContainer.children.length - 1; i >= 0; i--) {
+            var node = chatContainer.children[i];
+            if (!node || !node.classList) continue;
+            if (node.id === 'streaming-message') {
+                target = node;
+                break;
+            }
+            if (node.classList.contains('chat-message')
+                && node.classList.contains('assistant')
+                && (!node.dataset || node.dataset.transient !== 'true')) {
+                target = node;
+                break;
+            }
+        }
+        if (!target) {
+            return;
+        }
+
+        // Remove old todo panel if exists on this message
+        var existing = target.querySelector('.todo-finalized');
+        if (existing) existing.remove();
+
+        // Build collapsible panel
+        var completed = 0;
+        for (var k = 0; k < items.length; k++) {
+            if (items[k].status === 'completed') completed++;
+        }
+
+        var shell = document.createElement('div');
+        shell.className = 'todo-finalized';
+
+        var toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'todo-finalized-toggle';
+
+        var summary = document.createElement('span');
+        summary.className = 'todo-finalized-summary';
+        summary.textContent = title + ' (' + completed + '/' + items.length + ')';
+
+        var chevron = document.createElement('span');
+        chevron.className = 'todo-finalized-chevron';
+        chevron.textContent = '\u25b8';
+
+        toggle.appendChild(summary);
+        toggle.appendChild(chevron);
+
+        var body = document.createElement('div');
+        body.className = 'todo-finalized-body';
+        body.innerHTML = buildTodoHtml(items, title);
+
+        toggle.onclick = function() {
+            var expanded = body.classList.contains('open');
+            if (expanded) {
+                body.classList.remove('open');
+                chevron.textContent = '\u25b8';
+            } else {
+                body.classList.add('open');
+                chevron.textContent = '\u25be';
+            }
+        };
+
+        shell.appendChild(toggle);
+        shell.appendChild(body);
+        target.appendChild(shell);
+    }
+
+    function clearTodoList() {
+        var container = document.getElementById('todo-sticky-container');
+        if (container) {
+            container.innerHTML = '';
+            delete container.dataset.todoJson;
+            delete container.dataset.todoTitle;
+        }
+    }

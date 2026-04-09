@@ -1,6 +1,9 @@
 package com.patres.alina.common.event;
 
 import com.patres.alina.common.event.Event;
+import com.patres.alina.common.message.TodoItem;
+
+import java.util.List;
 
 public final class ChatMessageStreamEvent extends Event {
 
@@ -9,6 +12,7 @@ public final class ChatMessageStreamEvent extends Event {
         REASONING,  // A thinking/reasoning update arrived
         COMMENTARY, // A non-final commentary update arrived
         ACTIVITY,   // A tool or MCP activity is in progress
+        TODO_UPDATE,// The AI updated its todo list (via TodoWrite tool)
         PERMISSION_REQUEST, // A tool or bash command requires user approval
         COMPLETE,   // The stream is complete
         CANCELLED,  // The stream was cancelled by the user
@@ -43,6 +47,7 @@ public final class ChatMessageStreamEvent extends Event {
     private final String permissionMessage;
     private final String permissionConfigPath;
     private final String permissionMatchedRule;
+    private final List<TodoItem> todoItems;
     private final String modelUsed;
     private final String agentUsed;
     private final long tokensOutput;
@@ -65,6 +70,7 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.todoItems = null;
         this.modelUsed = null;
         this.agentUsed = null;
         this.tokensOutput = 0;
@@ -88,6 +94,7 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.todoItems = null;
         this.modelUsed = null;
         this.agentUsed = null;
         this.tokensOutput = 0;
@@ -111,6 +118,7 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.todoItems = null;
         this.modelUsed = null;
         this.agentUsed = null;
         this.tokensOutput = 0;
@@ -137,6 +145,7 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.todoItems = null;
         this.modelUsed = null;
         this.agentUsed = null;
         this.tokensOutput = 0;
@@ -167,6 +176,7 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = permissionMessage;
         this.permissionConfigPath = permissionConfigPath;
         this.permissionMatchedRule = permissionMatchedRule;
+        this.todoItems = null;
         this.modelUsed = null;
         this.agentUsed = null;
         this.tokensOutput = 0;
@@ -190,6 +200,7 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.todoItems = null;
         this.modelUsed = null;
         this.agentUsed = null;
         this.tokensOutput = 0;
@@ -206,6 +217,34 @@ public final class ChatMessageStreamEvent extends Event {
                                                      final long tokensOutput,
                                                      final double cost) {
         return new ChatMessageStreamEvent(threadId, StreamEventType.COMPLETE, modelUsed, agentUsed, tokensOutput, cost);
+    }
+
+    public static ChatMessageStreamEvent todoUpdate(final String threadId, final List<TodoItem> todoItems) {
+        return new ChatMessageStreamEvent(threadId, todoItems);
+    }
+
+    private ChatMessageStreamEvent(final String threadId, final List<TodoItem> todoItems) {
+        this.threadId = threadId;
+        this.token = null;
+        this.eventType = StreamEventType.TODO_UPDATE;
+        this.errorMessage = null;
+        this.reasoningContent = null;
+        this.commentaryContent = null;
+        this.activityType = null;
+        this.activityName = null;
+        this.activityDetail = null;
+        this.permissionType = null;
+        this.permissionRequestId = null;
+        this.permissionValue = null;
+        this.permissionTitle = null;
+        this.permissionMessage = null;
+        this.permissionConfigPath = null;
+        this.permissionMatchedRule = null;
+        this.todoItems = todoItems == null ? List.of() : List.copyOf(todoItems);
+        this.modelUsed = null;
+        this.agentUsed = null;
+        this.tokensOutput = 0;
+        this.cost = 0.0;
     }
 
     private ChatMessageStreamEvent(final String threadId,
@@ -227,6 +266,7 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.todoItems = null;
         this.modelUsed = null;
         this.agentUsed = null;
         this.tokensOutput = 0;
@@ -255,6 +295,7 @@ public final class ChatMessageStreamEvent extends Event {
         this.permissionMessage = null;
         this.permissionConfigPath = null;
         this.permissionMatchedRule = null;
+        this.todoItems = null;
         this.modelUsed = modelUsed;
         this.agentUsed = agentUsed;
         this.tokensOutput = tokensOutput;
@@ -323,6 +364,10 @@ public final class ChatMessageStreamEvent extends Event {
 
     public String getPermissionMatchedRule() {
         return permissionMatchedRule;
+    }
+
+    public List<TodoItem> getTodoItems() {
+        return todoItems;
     }
 
     public String getModelUsed() {
