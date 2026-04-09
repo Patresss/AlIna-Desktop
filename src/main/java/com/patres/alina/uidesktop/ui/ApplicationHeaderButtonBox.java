@@ -83,6 +83,11 @@ public class ApplicationHeaderButtonBox extends HBox {
     }
 
     @FXML
+    public void openQuickActionSettings() {
+        applicationWindow.openQuickActionSettings();
+    }
+
+    @FXML
     public void openOpenCodeSession() {
         applicationWindow.openCurrentOpenCodeSession();
     }

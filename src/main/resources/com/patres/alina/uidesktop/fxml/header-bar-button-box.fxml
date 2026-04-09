@@ -64,6 +64,7 @@
              <MenuItem mnemonicParsing="false" onAction="#openDashboardSettings" text="%settings.dashboard.title" />
              <MenuItem mnemonicParsing="false" onAction="#openOpenCodeSettings" text="%settings.opencode.title" />
             <MenuItem mnemonicParsing="false" onAction="#openCommands" text="%command.title" />
+            <MenuItem mnemonicParsing="false" onAction="#openQuickActionSettings" text="%quickaction.settings.title" />
          </items>
          <graphic>
             <FontIcon iconLiteral="mdmz-settings" />

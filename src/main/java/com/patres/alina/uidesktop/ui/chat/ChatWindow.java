@@ -16,6 +16,7 @@ import com.patres.alina.server.command.CommandConstants;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.messagecontext.MessageContextException;
 import com.patres.alina.uidesktop.messagecontext.MessageWithContextGenerator;
+import com.patres.alina.uidesktop.quickaction.QuickActionType;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.common.event.shortcut.FocusShortcutTriggeredEvent;
 import com.patres.alina.uidesktop.common.event.shortcut.SpeechShortcutTriggeredEvent;
@@ -387,6 +388,11 @@ public class ChatWindow extends BorderPane {
         popup.getSelectedCommandProperty().addListener((observable, oldValue, newValue) -> {
             setCurrentCommand(newValue);
         });
+        popup.getSelectedQuickActionProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                executeQuickAction(newValue);
+            }
+        });
     }
 
 
@@ -549,6 +555,26 @@ public class ChatWindow extends BorderPane {
             return commandContent.replace(CommandConstants.ARGUMENTS_PLACEHOLDER, message);
         }
         return commandContent + System.lineSeparator() + message;
+    }
+
+    private void executeQuickAction(QuickActionType actionType) {
+        FxThreadRunner.run(() -> {
+            switch (actionType) {
+                case NEW_CHAT -> applicationWindow.createNewChatThread();
+                case MODELS -> {
+                    if (modelMenu != null) {
+                        refreshModelMenu();
+                        modelMenu.show(modelLabel, javafx.geometry.Side.TOP, 0, 0);
+                    }
+                }
+                case HISTORY -> applicationWindow.openThreadHistories();
+                case COMMANDS -> applicationWindow.openCommands();
+                case UI_SETTINGS -> applicationWindow.openUiSettings();
+                case ASSISTANT_SETTINGS -> applicationWindow.openAssistantSettings();
+                case DASHBOARD_SETTINGS -> applicationWindow.openDashboardSettings();
+                case OPENCODE_SETTINGS -> applicationWindow.openOpenCodeSettings();
+            }
+        });
     }
 
     private void setCurrentCommand(final CardListItem currentCommand) {
