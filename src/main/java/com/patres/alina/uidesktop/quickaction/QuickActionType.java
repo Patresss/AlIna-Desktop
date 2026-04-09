@@ -11,7 +11,8 @@ public enum QuickActionType {
     THEME("theme", "quickaction.theme.title", "quickaction.theme.description", "mdmz-palette"),
     LANGUAGE("language", "quickaction.language.title", "quickaction.language.description", "fth-globe"),
     DASHBOARD_SETTINGS("dashboard-settings", "quickaction.dashboardSettings.title", "quickaction.dashboardSettings.description", "mdal-dashboard"),
-    OPENCODE_SETTINGS("opencode-settings", "quickaction.opencodeSettings.title", "quickaction.opencodeSettings.description", "mdal-code");
+    OPENCODE_SETTINGS("opencode-settings", "quickaction.opencodeSettings.title", "quickaction.opencodeSettings.description", "mdal-code"),
+    ADD_TASK("add-task", "quickaction.addTask.title", "quickaction.addTask.description", "bi-check2-square");
 
     private final String id;
     private final String titleKey;

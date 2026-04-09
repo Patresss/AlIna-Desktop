@@ -20,4 +20,8 @@ public class DashboardController {
     public void updateTask(final DashboardTaskUpdateRequest request) {
         dashboardService.updateTask(request);
     }
+
+    public void addTask(final String taskContent) {
+        dashboardService.addTask(taskContent);
+    }
 }

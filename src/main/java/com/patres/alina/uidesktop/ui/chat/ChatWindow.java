@@ -77,6 +77,7 @@ public class ChatWindow extends BorderPane {
     private SearchCommandPopup popup;
     private CardListItem currentCommand;
     private volatile Command currentCommandDetails;
+    private ChatInputMode inputMode = ChatInputMode.CHAT;
 
     @FXML
     private StackPane chatAnswersPane;
@@ -426,9 +427,17 @@ public class ChatWindow extends BorderPane {
 
     @FXML
     public void chatTextAreaOnKeyPressed(KeyEvent event) {
+        if (event.getCode() == KeyCode.ESCAPE && inputMode != ChatInputMode.CHAT) {
+            exitInputMode();
+            event.consume();
+            return;
+        }
         if (event.getCode() == KeyCode.ENTER) {
             if (event.isShiftDown()) {
                 chatTextArea.insertText(chatTextArea.getCaretPosition(), System.lineSeparator());
+            } else if (inputMode == ChatInputMode.ADD_TASK) {
+                submitAddTask();
+                event.consume();
             } else if (!chatTextArea.getText().isBlank() || currentCommand != null) {
                 sendMessageFromUi();
             }
@@ -609,6 +618,38 @@ public class ChatWindow extends BorderPane {
                 case ASSISTANT_SETTINGS -> applicationWindow.openAssistantSettings();
                 case DASHBOARD_SETTINGS -> applicationWindow.openDashboardSettings();
                 case OPENCODE_SETTINGS -> applicationWindow.openOpenCodeSettings();
+                case ADD_TASK -> enterAddTaskMode();
+            }
+        });
+    }
+
+    private void enterAddTaskMode() {
+        inputMode = ChatInputMode.ADD_TASK;
+        statusPrompt.setBasePromptText(LanguageManager.getLanguageString("quickaction.addTask.prompt"));
+        commandLabel.setText(LanguageManager.getLanguageString("quickaction.addTask.title"));
+        commandLabel.setGraphic(new FontIcon("mdal-add_task"));
+        chatTextArea.requestFocus();
+    }
+
+    private void exitInputMode() {
+        inputMode = ChatInputMode.CHAT;
+        chatTextArea.clear();
+        setCurrentCommand(currentCommand);
+    }
+
+    private void submitAddTask() {
+        final String taskContent = chatTextArea.getText().trim();
+        if (taskContent.isBlank()) {
+            return;
+        }
+        chatTextArea.clear();
+        inputMode = ChatInputMode.CHAT;
+        setCurrentCommand(currentCommand);
+        Thread.startVirtualThread(() -> {
+            try {
+                BackendApi.addDashboardTask(taskContent);
+            } catch (Exception e) {
+                logger.error("Cannot add dashboard task", e);
             }
         });
     }

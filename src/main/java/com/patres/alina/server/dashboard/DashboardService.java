@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -30,6 +31,7 @@ public class DashboardService {
     private static final Logger logger = LoggerFactory.getLogger(DashboardService.class);
     private static final Pattern ACTIVE_TASK_PATTERN = Pattern.compile("^(.*?- \\[ \\]\\s+)(.+)$");
     private static final Pattern TOGGLE_TASK_PATTERN = Pattern.compile("^(.*?- \\[)( |x|X)(\\]\\s+.*)$");
+    private static final Pattern COMPLETION_DATE_PATTERN = Pattern.compile("\\s*✅\\s*\\d{4}-\\d{2}-\\d{2}\\s*$");
 
     private final FileManager<WorkspaceSettings> workspaceSettingsManager;
 
@@ -57,6 +59,16 @@ public class DashboardService {
             return;
         }
         setTaskCompleted(Paths.get(request.sourceFile()).normalize(), request.lineNumber(), request.completed());
+    }
+
+    public void addTask(final String taskContent) {
+        if (taskContent == null || taskContent.isBlank()) {
+            return;
+        }
+        final WorkspaceSettings settings = workspaceSettingsManager.getSettings();
+        final Path tasksFile = resolveTasksFile(settings);
+        ensureTextFile(tasksFile, defaultTasksContent());
+        appendTaskLine(tasksFile, taskContent.trim());
     }
 
     private List<DashboardTask> readActiveTasks(final Path tasksFile, final int limit) {
@@ -93,10 +105,31 @@ public class DashboardService {
                 return;
             }
             lines.set(lineNumber - 1, matcher.group(1) + (completed ? "x" : " ") + matcher.group(3));
+            if (completed) {
+                final String line = lines.get(lineNumber - 1);
+                if (!COMPLETION_DATE_PATTERN.matcher(line).find()) {
+                    lines.set(lineNumber - 1, line + " ✅ " + LocalDate.now());
+                }
+            } else {
+                lines.set(lineNumber - 1, COMPLETION_DATE_PATTERN.matcher(lines.get(lineNumber - 1)).replaceFirst(""));
+            }
             Files.write(sourceFile, lines, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
             Event.publish(new DashboardUpdatedEvent());
         } catch (IOException e) {
             logger.warn("Cannot update dashboard task at {}:{}", sourceFile, lineNumber, e);
+        }
+    }
+
+    private void appendTaskLine(final Path tasksFile, final String taskContent) {
+        try {
+            final String dateSuffix = " ➕ " + LocalDate.now();
+            final String taskLine = "- [ ] " + taskContent + dateSuffix + System.lineSeparator();
+            final String existing = Files.readString(tasksFile, StandardCharsets.UTF_8);
+            final String separator = existing.endsWith("\n") || existing.endsWith(System.lineSeparator()) ? "" : System.lineSeparator();
+            Files.writeString(tasksFile, separator + taskLine, StandardCharsets.UTF_8, StandardOpenOption.APPEND);
+            Event.publish(new DashboardUpdatedEvent());
+        } catch (IOException e) {
+            logger.warn("Cannot append task to {}", tasksFile, e);
         }
     }
 

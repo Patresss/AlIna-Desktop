@@ -155,6 +155,10 @@ public class BackendApi {
         AppLauncher.getBean(DashboardController.class).updateTask(request);
     }
 
+    public static void addDashboardTask(final String taskContent) {
+        AppLauncher.getBean(DashboardController.class).addTask(taskContent);
+    }
+
     public static OpenCodeRuntimeStatus getOpenCodeRuntimeStatus() {
         return AppLauncher.getBean(WorkspaceController.class).getOpenCodeRuntimeStatus();
     }
