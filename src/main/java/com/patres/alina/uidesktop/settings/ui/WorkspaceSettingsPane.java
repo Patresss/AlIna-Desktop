@@ -7,6 +7,7 @@ import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextArea;
@@ -24,6 +25,8 @@ import java.util.List;
 
 import static com.patres.alina.uidesktop.ui.util.TranslatedComponentUtils.createTextSeparator;
 import static com.patres.alina.uidesktop.ui.util.TranslatedComponentUtils.createTile;
+import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableEditableSpinner;
+import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizablePasswordField;
 import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableRegion;
 import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableTextArea;
 import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableTextField;
@@ -45,9 +48,9 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
     private TextField openCodePortField;
     private TextField openCodeWorkingDirectoryField;
     private TextArea openCodeStatusArea;
-    private TextField githubTokenField;
+    private PasswordField githubTokenField;
     private TextField jiraEmailField;
-    private TextField jiraApiTokenField;
+    private PasswordField jiraApiTokenField;
 
     private Spinner<Integer> dashboardTaskLimitSpinner;
     private Spinner<Integer> dashboardTasksRefreshSpinner;
@@ -154,9 +157,9 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         openCodeHostnameField = createResizableTextField(settingsBox);
         openCodePortField = createResizableTextField(settingsBox);
         openCodeWorkingDirectoryField = createResizableTextField(settingsBox);
-        githubTokenField = createResizableTextField(settingsBox);
+        githubTokenField = createResizablePasswordField(settingsBox);
         jiraEmailField = createResizableTextField(settingsBox);
-        jiraApiTokenField = createResizableTextField(settingsBox);
+        jiraApiTokenField = createResizablePasswordField(settingsBox);
 
         openCodeStatusArea = createResizableTextArea(settingsBox);
         openCodeStatusArea.setPrefRowCount(8);
@@ -168,56 +171,56 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 "settings.workspace.taskLimit.title",
                 "settings.workspace.taskLimit.description"
         );
-        dashboardTaskLimitSpinner = createResizableRegion(() -> new Spinner<>(1, 12, settings.dashboardTaskLimit()), settingsBox);
+        dashboardTaskLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardTaskLimit(), settingsBox);
         taskLimitTile.setAction(dashboardTaskLimitSpinner);
 
         final var tasksRefreshTile = createTile(
                 "settings.workspace.tasksRefresh.title",
                 "settings.workspace.tasksRefresh.description"
         );
-        dashboardTasksRefreshSpinner = createResizableRegion(() -> new Spinner<>(5, 300, settings.dashboardTasksRefreshSeconds()), settingsBox);
+        dashboardTasksRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardTasksRefreshSeconds(), settingsBox);
         tasksRefreshTile.setAction(dashboardTasksRefreshSpinner);
 
         final var githubRefreshTile = createTile(
                 "settings.workspace.githubRefresh.title",
                 "settings.workspace.githubRefresh.description"
         );
-        dashboardGithubRefreshSpinner = createResizableRegion(() -> new Spinner<>(10, 600, settings.dashboardGithubRefreshSeconds()), settingsBox);
+        dashboardGithubRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardGithubRefreshSeconds(), settingsBox);
         githubRefreshTile.setAction(dashboardGithubRefreshSpinner);
 
         final var mediaRefreshTile = createTile(
                 "settings.workspace.mediaRefresh.title",
                 "settings.workspace.mediaRefresh.description"
         );
-        dashboardMediaRefreshSpinner = createResizableRegion(() -> new Spinner<>(1, 60, settings.dashboardMediaRefreshSeconds()), settingsBox);
+        dashboardMediaRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardMediaRefreshSeconds(), settingsBox);
         mediaRefreshTile.setAction(dashboardMediaRefreshSpinner);
 
         final var githubPrLimitTile = createTile(
                 "settings.workspace.githubPrLimit.title",
                 "settings.workspace.githubPrLimit.description"
         );
-        dashboardGithubPrLimitSpinner = createResizableRegion(() -> new Spinner<>(1, 50, settings.dashboardGithubPrLimit()), settingsBox);
+        dashboardGithubPrLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardGithubPrLimit(), settingsBox);
         githubPrLimitTile.setAction(dashboardGithubPrLimitSpinner);
 
         final var jiraRefreshTile = createTile(
                 "settings.workspace.jiraRefresh.title",
                 "settings.workspace.jiraRefresh.description"
         );
-        dashboardJiraRefreshSpinner = createResizableRegion(() -> new Spinner<>(30, 600, settings.dashboardJiraRefreshSeconds()), settingsBox);
+        dashboardJiraRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardJiraRefreshSeconds(), settingsBox);
         jiraRefreshTile.setAction(dashboardJiraRefreshSpinner);
 
         final var jiraIssueLimitTile = createTile(
                 "settings.workspace.jiraIssueLimit.title",
                 "settings.workspace.jiraIssueLimit.description"
         );
-        dashboardJiraIssueLimitSpinner = createResizableRegion(() -> new Spinner<>(1, 50, settings.dashboardJiraIssueLimit()), settingsBox);
+        dashboardJiraIssueLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardJiraIssueLimit(), settingsBox);
         jiraIssueLimitTile.setAction(dashboardJiraIssueLimitSpinner);
 
         final var calendarRefreshTile = createTile(
                 "settings.workspace.calendarRefresh.title",
                 "settings.workspace.calendarRefresh.description"
         );
-        dashboardCalendarRefreshSpinner = createResizableRegion(() -> new Spinner<>(60, 1800, settings.dashboardCalendarRefreshSeconds()), settingsBox);
+        dashboardCalendarRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardCalendarRefreshSeconds(), settingsBox);
         calendarRefreshTile.setAction(dashboardCalendarRefreshSpinner);
 
         final Button refreshOpenCodeStatusButton = createButton(Feather.REFRESH_CCW, e -> refreshOpenCodeStatus());

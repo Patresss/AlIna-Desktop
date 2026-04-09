@@ -7,6 +7,7 @@ import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.common.message.CommandUsageInfo;
+import com.patres.alina.common.message.ContextMessage;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
 import com.patres.alina.common.thread.ChatThread;
@@ -19,11 +20,6 @@ import com.patres.alina.server.thread.ChatThreadFacade;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.AbstractMessage;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -132,7 +128,7 @@ public class ChatMessageService {
                         ChatMessageStyleType.WARNING,
                         null
                 );
-                storeMessageManager.storeMessage(new AssistantMessage(partial), warnModel, partial);
+                storeMessageManager.storeMessage(ContextMessage.assistant(partial), warnModel, partial);
             }
         }
 
@@ -145,7 +141,7 @@ public class ChatMessageService {
         cancelStreamingSilently(chatThreadId);
 
         final List<ChatMessage> allMessages = chatMessageRepository.findAllByThreadId(chatThreadId);
-        final int lastUserIndex = findLastIndexByRole(allMessages, MessageType.USER);
+        final int lastUserIndex = findLastIndexByRole(allMessages, ChatMessageRole.USER);
         if (lastUserIndex < 0) {
             DefaultEventBus.getInstance().publish(
                     new ChatMessageStreamEvent(
@@ -159,11 +155,11 @@ public class ChatMessageService {
 
         final List<String> messageIdsToDeleteOnComplete = allMessages.subList(lastUserIndex + 1, allMessages.size())
                 .stream()
-                .filter(msg -> msg.role() == MessageType.ASSISTANT)
+                .filter(msg -> msg.role() == ChatMessageRole.ASSISTANT)
                 .map(ChatMessage::id)
                 .toList();
 
-        final List<AbstractMessage> contextMessages = loadMessagesForRegeneration(allMessages, lastUserIndex);
+        final List<ContextMessage> contextMessages = loadMessagesForRegeneration(allMessages, lastUserIndex);
 
         final ChatMessage lastUser = allMessages.get(lastUserIndex);
         final ChatMessageSendModel regenerateModel = new ChatMessageSendModel(
@@ -179,7 +175,7 @@ public class ChatMessageService {
         cancelStreamingSilently(chatThreadId);
 
         final List<ChatMessage> allMessages = chatMessageRepository.findAllByThreadId(chatThreadId);
-        final int lastUserIndex = findLastIndexByRole(allMessages, MessageType.USER);
+        final int lastUserIndex = findLastIndexByRole(allMessages, ChatMessageRole.USER);
         if (lastUserIndex < 0) {
             DefaultEventBus.getInstance().publish(
                     new ChatMessageStreamEvent(
@@ -191,7 +187,7 @@ public class ChatMessageService {
             return;
         }
 
-        final List<AbstractMessage> contextMessages = loadMessagesForRegeneration(allMessages, lastUserIndex);
+        final List<ContextMessage> contextMessages = loadMessagesForRegeneration(allMessages, lastUserIndex);
         final ChatMessage lastUser = allMessages.get(lastUserIndex);
         final ChatMessageSendModel retryModel = new ChatMessageSendModel(
                 lastUser.content(),
@@ -208,9 +204,9 @@ public class ChatMessageService {
 
         cancelStreamingSilently(chatThreadId);
 
-        final List<AbstractMessage> contextMessages = loadMessages(chatThreadId);
+        final List<ContextMessage> contextMessages = loadMessages(chatThreadId);
         final String chatContent = calculateContentWithCommandPrompt(chatMessageSendModel.content(), chatMessageSendModel.commandId());
-        final AbstractMessage userChatMessage = new UserMessage(chatContent);
+        final ContextMessage userChatMessage = ContextMessage.user(chatContent);
 
         // Store the user message first
         storeMessageManager.storeMessage(userChatMessage, chatMessageSendModel, chatMessageSendModel.content());
@@ -218,14 +214,14 @@ public class ChatMessageService {
         sendStreamingMessage(contextMessages, userChatMessage, chatMessageSendModel);
     }
 
-    private void sendStreamingMessage(final List<AbstractMessage> contextMessages,
-                                      final AbstractMessage message,
+    private void sendStreamingMessage(final List<ContextMessage> contextMessages,
+                                      final ContextMessage message,
                                       final ChatMessageSendModel chatMessageSendModel) {
         contextMessages.add(message);
         sendStreamingAssistantResponse(contextMessages, chatMessageSendModel, StreamPurpose.NORMAL, List.of());
     }
 
-    private void sendStreamingAssistantResponse(final List<AbstractMessage> contextMessages,
+    private void sendStreamingAssistantResponse(final List<ContextMessage> contextMessages,
                                                 final ChatMessageSendModel chatMessageSendModel,
                                                 final StreamPurpose purpose,
                                                 final List<String> messageIdsToDeleteOnComplete) {
@@ -246,7 +242,7 @@ public class ChatMessageService {
                     : modelOverride.trim();
             final String currentUserMessage = contextMessages.isEmpty()
                     ? chatMessageSendModel.content()
-                    : contextMessages.getLast().getText();
+                    : contextMessages.getLast().text();
             final Flux<String> stream = openCodeRuntimeService.sendMessageStream(
                     chatThreadId,
                     chatThreadId,
@@ -293,7 +289,7 @@ public class ChatMessageService {
                         logger.info("Streaming completed for threadId: {}", chatMessageSendModel.chatThreadId());
 
                         final String aiResponse = session.fullResponse.toString();
-                        final AbstractMessage assistantMessage = new AssistantMessage(aiResponse);
+                        final ContextMessage assistantMessage = ContextMessage.assistant(aiResponse);
                         if (session.purpose == StreamPurpose.REGENERATE) {
                             for (final String messageId : session.messageIdsToDeleteOnComplete) {
                                 chatMessageRepository.deleteMessage(chatThreadId, messageId);
@@ -342,7 +338,7 @@ public class ChatMessageService {
         return messages.stream()
                 .map(msg -> new ChatMessageResponseModel(
                         msg.content(),
-                        ChatMessageRole.findChatMessageRoleByValue(msg.role().getValue()),
+                        msg.role(),
                         msg.createdAt(),
                         msg.styleType(),
                         chatThreadId,
@@ -352,7 +348,7 @@ public class ChatMessageService {
     }
 
     private CommandUsageInfo buildCommandUsageInfo(final ChatMessage message, final Map<String, Command> commandCache) {
-        if (message.role() != MessageType.USER) {
+        if (message.role() != ChatMessageRole.USER) {
             return null;
         }
         final String commandId = message.commandId();
@@ -397,44 +393,39 @@ public class ChatMessageService {
                 .orElse(null);
     }
 
-    private List<AbstractMessage> loadMessages(final String chatThreadId) {
+    private List<ContextMessage> loadMessages(final String chatThreadId) {
         final List<ChatMessage> messages = chatMessageRepository.findLastMessagesForContext(
                 chatThreadId,
                 Set.of(ChatMessageRole.USER, ChatMessageRole.ASSISTANT, ChatMessageRole.SYSTEM),
                 DEFAULT_NUMBER_OF_CONTEXT_MESSAGES
         );
         return messages.stream()
-                .map(this::toAbstractMessage)
+                .map(this::toContextMessage)
                 .collect(Collectors.toList());
     }
 
-    private List<AbstractMessage> loadMessagesForRegeneration(final List<ChatMessage> allMessages,
+    private List<ContextMessage> loadMessagesForRegeneration(final List<ChatMessage> allMessages,
                                                              final int lastUserIndex) {
         final List<ChatMessage> prefix = allMessages.subList(0, lastUserIndex + 1).stream()
-                .filter(msg -> msg.role() == MessageType.USER || msg.role() == MessageType.ASSISTANT || msg.role() == MessageType.SYSTEM)
+                .filter(msg -> msg.role() == ChatMessageRole.USER || msg.role() == ChatMessageRole.ASSISTANT || msg.role() == ChatMessageRole.SYSTEM)
                 .toList();
 
         final int from = Math.max(0, prefix.size() - DEFAULT_NUMBER_OF_CONTEXT_MESSAGES);
         final List<ChatMessage> window = prefix.subList(from, prefix.size());
-        final List<AbstractMessage> context = window.stream().map(this::toAbstractMessage).collect(Collectors.toList());
+        final List<ContextMessage> context = window.stream().map(this::toContextMessage).collect(Collectors.toList());
 
-        if (!context.isEmpty() && context.getLast().getMessageType() == MessageType.USER) {
+        if (!context.isEmpty() && context.getLast().role() == ChatMessageRole.USER) {
             return context;
         }
 
         // Safety net: ensure the last user prompt is included and last.
         final ChatMessage lastUser = allMessages.get(lastUserIndex);
-        context.add(new UserMessage(lastUser.contentWithContext()));
+        context.add(ContextMessage.user(lastUser.contentWithContext()));
         return context;
     }
 
-    private AbstractMessage toAbstractMessage(final ChatMessage message) {
-        return switch (message.role()) {
-            case USER -> new UserMessage(message.contentWithContext());
-            case ASSISTANT -> new AssistantMessage(message.contentWithContext());
-            case SYSTEM -> new SystemMessage(message.contentWithContext());
-            default -> throw new IllegalArgumentException("Unsupported message role: " + message.role());
-        };
+    private ContextMessage toContextMessage(final ChatMessage message) {
+        return new ContextMessage(message.contentWithContext(), message.role());
     }
 
     private void cancelStreamingSilently(final String chatThreadId) {
@@ -449,11 +440,11 @@ public class ChatMessageService {
         disposeQuietly(session.disposable);
     }
 
-    private String buildOpenCodeSystemPrompt(final List<AbstractMessage> enhancedMessages) {
+    private String buildOpenCodeSystemPrompt(final List<ContextMessage> enhancedMessages) {
         final String assistantPrompt = assistantPromptService.buildSystemPrompt(assistantSettingsManager.getSettings());
         final String storedSystemMessages = enhancedMessages.stream()
-                .filter(message -> message.getMessageType() == MessageType.SYSTEM)
-                .map(AbstractMessage::getText)
+                .filter(message -> message.role() == ChatMessageRole.SYSTEM)
+                .map(ContextMessage::text)
                 .filter(text -> text != null && !text.isBlank())
                 .collect(Collectors.joining(System.lineSeparator() + System.lineSeparator()));
         if (storedSystemMessages.isBlank()) {
@@ -462,10 +453,10 @@ public class ChatMessageService {
         return assistantPrompt + System.lineSeparator() + System.lineSeparator() + storedSystemMessages;
     }
 
-    private String summarizeHistoryForOpenCode(final List<AbstractMessage> contextMessages) {
+    private String summarizeHistoryForOpenCode(final List<ContextMessage> contextMessages) {
         final String history = contextMessages.stream()
-                .filter(message -> message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.ASSISTANT)
-                .map(message -> (message.getMessageType() == MessageType.USER ? "User: " : "Assistant: ") + compact(message.getText(), 800))
+                .filter(message -> message.role() == ChatMessageRole.USER || message.role() == ChatMessageRole.ASSISTANT)
+                .map(message -> (message.role() == ChatMessageRole.USER ? "User: " : "Assistant: ") + compact(message.text(), 800))
                 .collect(Collectors.joining(System.lineSeparator()));
         if (history.isBlank()) {
             return "";
@@ -500,7 +491,7 @@ public class ChatMessageService {
         }
     }
 
-    private static int findLastIndexByRole(final List<ChatMessage> messages, final MessageType role) {
+    private static int findLastIndexByRole(final List<ChatMessage> messages, final ChatMessageRole role) {
         for (int i = messages.size() - 1; i >= 0; i--) {
             if (messages.get(i).role() == role) {
                 return i;

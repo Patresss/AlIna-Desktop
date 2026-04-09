@@ -60,8 +60,9 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.19.0")
 
     // server module
-    implementation("org.springframework.ai:spring-ai-starter-model-anthropic:1.0.3")
-    implementation("org.springframework.ai:spring-ai-starter-mcp-client:1.0.3")
+    implementation("org.springframework.boot:spring-boot-starter")
+    implementation("org.springframework:spring-web")
+    implementation("io.projectreactor:reactor-core")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 

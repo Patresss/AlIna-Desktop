@@ -43,14 +43,14 @@ public class ConversationRepository implements ChatMessageStorageRepository {
     public List<ChatMessage> findMessagesWithContent(final String chatThreadId, final Set<ChatMessageRole> roles) {
         return getConversationMessages(chatThreadId).stream()
                 .filter(this::hasContent)
-                .filter(msg -> hasMatchingRole(msg, roles))
+                .filter(msg -> roles.contains(msg.role()))
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<ChatMessage> findLastMessagesForContext(final String chatThreadId, final Set<ChatMessageRole> roles, final int limit) {
         return getConversationMessages(chatThreadId).stream()
-                .filter(msg -> hasMatchingRole(msg, roles))
+                .filter(msg -> roles.contains(msg.role()))
                 .collect(Collectors.collectingAndThen(Collectors.toList(), list -> {
                     if (limit <= 0) {
                         return List.of();
@@ -90,10 +90,5 @@ public class ConversationRepository implements ChatMessageStorageRepository {
 
     private boolean hasContent(final ChatMessage message) {
         return message.content() != null && !message.content().trim().isEmpty();
-    }
-
-    private boolean hasMatchingRole(final ChatMessage message, final Set<ChatMessageRole> roles) {
-        return message.role() != null && roles.stream()
-                .anyMatch(role -> role.getChatMessageRole().equals(message.role().getValue()));
     }
 }

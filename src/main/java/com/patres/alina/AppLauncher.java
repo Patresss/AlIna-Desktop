@@ -5,13 +5,10 @@ import com.patres.alina.server.message.ChatMessageController;
 import com.patres.alina.uidesktop.Launcher;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
-@SpringBootApplication(exclude = {
-        AnthropicChatAutoConfiguration.class
-})
+@SpringBootApplication
 public class AppLauncher {
 
     public static ConfigurableApplicationContext SPRING_CONTEXT;

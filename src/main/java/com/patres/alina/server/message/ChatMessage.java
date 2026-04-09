@@ -1,9 +1,9 @@
 package com.patres.alina.server.message;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.server.storage.Entity;
-import org.springframework.ai.chat.messages.MessageType;
 
 import java.time.LocalDateTime;
 
@@ -12,7 +12,7 @@ public record ChatMessage(
         String id,
         String chatThreadId,
         String content,
-        MessageType role,
+        ChatMessageRole role,
         ChatMessageStyleType styleType,
         LocalDateTime createdAt,
         String contentWithContext,
@@ -25,4 +25,3 @@ public record ChatMessage(
         return id;
     }
 }
-

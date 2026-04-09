@@ -5,6 +5,7 @@ import atlantafx.base.theme.Styles;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.scene.Node;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextField;
@@ -13,6 +14,8 @@ import java.util.List;
 
 import static com.patres.alina.uidesktop.ui.util.TranslatedComponentUtils.createTextSeparator;
 import static com.patres.alina.uidesktop.ui.util.TranslatedComponentUtils.createTile;
+import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableEditableSpinner;
+import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizablePasswordField;
 import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableRegion;
 import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableTextField;
 
@@ -45,14 +48,14 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
 
     // GitHub
     private ToggleSwitch showDashboardGithubToggle;
-    private TextField githubTokenField;
+    private PasswordField githubTokenField;
     private Spinner<Integer> dashboardGithubRefreshSpinner;
     private Spinner<Integer> dashboardGithubPrLimitSpinner;
 
     // Jira
     private ToggleSwitch showDashboardJiraToggle;
     private TextField jiraEmailField;
-    private TextField jiraApiTokenField;
+    private PasswordField jiraApiTokenField;
     private Spinner<Integer> dashboardJiraRefreshSpinner;
     private Spinner<Integer> dashboardJiraIssueLimitSpinner;
 
@@ -151,7 +154,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         // ── Music ──
         final var musicHeader = createTextSeparator("settings.dashboard.music.section", Styles.TITLE_4);
         showDashboardMusicToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
-        dashboardMediaRefreshSpinner = createResizableRegion(() -> new Spinner<>(1, 60, settings.dashboardMediaRefreshSeconds()), settingsBox);
+        dashboardMediaRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardMediaRefreshSeconds(), settingsBox);
         final var mediaRefreshTile = createTile("settings.workspace.mediaRefresh.title", "settings.workspace.mediaRefresh.description");
         mediaRefreshTile.setAction(dashboardMediaRefreshSpinner);
 
@@ -160,11 +163,11 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         showDashboardCalendarToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         calendarHideAllDayToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         calendarShowOnlyCurrentAndFutureToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
-        dashboardCalendarRefreshSpinner = createResizableRegion(() -> new Spinner<>(60, 1800, settings.dashboardCalendarRefreshSeconds()), settingsBox);
+        dashboardCalendarRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardCalendarRefreshSeconds(), settingsBox);
         final var calendarRefreshTile = createTile("settings.workspace.calendarRefresh.title", "settings.workspace.calendarRefresh.description");
         calendarRefreshTile.setAction(dashboardCalendarRefreshSpinner);
         calendarNotificationsToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
-        calendarNotificationMinutesSpinner = createResizableRegion(() -> new Spinner<>(1, 30, settings.calendarNotificationMinutesBefore()), settingsBox);
+        calendarNotificationMinutesSpinner = createResizableEditableSpinner(1, 30, settings.calendarNotificationMinutesBefore(), settingsBox);
         final var calendarNotificationMinutesTile = createTile("settings.workspace.calendarNotificationMinutes.title", "settings.workspace.calendarNotificationMinutes.description");
         calendarNotificationMinutesTile.setAction(calendarNotificationMinutesSpinner);
 
@@ -172,21 +175,21 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         final var tasksHeader = createTextSeparator("settings.dashboard.tasks.section", Styles.TITLE_4);
         showDashboardTasksToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         tasksFileField = createResizableTextField(settingsBox);
-        dashboardTaskLimitSpinner = createResizableRegion(() -> new Spinner<>(1, 12, settings.dashboardTaskLimit()), settingsBox);
+        dashboardTaskLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardTaskLimit(), settingsBox);
         final var taskLimitTile = createTile("settings.workspace.taskLimit.title", "settings.workspace.taskLimit.description");
         taskLimitTile.setAction(dashboardTaskLimitSpinner);
-        dashboardTasksRefreshSpinner = createResizableRegion(() -> new Spinner<>(5, 300, settings.dashboardTasksRefreshSeconds()), settingsBox);
+        dashboardTasksRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardTasksRefreshSeconds(), settingsBox);
         final var tasksRefreshTile = createTile("settings.workspace.tasksRefresh.title", "settings.workspace.tasksRefresh.description");
         tasksRefreshTile.setAction(dashboardTasksRefreshSpinner);
 
         // ── GitHub ──
         final var githubHeader = createTextSeparator("settings.dashboard.github.section", Styles.TITLE_4);
         showDashboardGithubToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
-        githubTokenField = createResizableTextField(settingsBox);
-        dashboardGithubRefreshSpinner = createResizableRegion(() -> new Spinner<>(10, 600, settings.dashboardGithubRefreshSeconds()), settingsBox);
+        githubTokenField = createResizablePasswordField(settingsBox);
+        dashboardGithubRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardGithubRefreshSeconds(), settingsBox);
         final var githubRefreshTile = createTile("settings.workspace.githubRefresh.title", "settings.workspace.githubRefresh.description");
         githubRefreshTile.setAction(dashboardGithubRefreshSpinner);
-        dashboardGithubPrLimitSpinner = createResizableRegion(() -> new Spinner<>(1, 50, settings.dashboardGithubPrLimit()), settingsBox);
+        dashboardGithubPrLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardGithubPrLimit(), settingsBox);
         final var githubPrLimitTile = createTile("settings.workspace.githubPrLimit.title", "settings.workspace.githubPrLimit.description");
         githubPrLimitTile.setAction(dashboardGithubPrLimitSpinner);
 
@@ -194,11 +197,11 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         final var jiraHeader = createTextSeparator("settings.dashboard.jira.section", Styles.TITLE_4);
         showDashboardJiraToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         jiraEmailField = createResizableTextField(settingsBox);
-        jiraApiTokenField = createResizableTextField(settingsBox);
-        dashboardJiraRefreshSpinner = createResizableRegion(() -> new Spinner<>(30, 600, settings.dashboardJiraRefreshSeconds()), settingsBox);
+        jiraApiTokenField = createResizablePasswordField(settingsBox);
+        dashboardJiraRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardJiraRefreshSeconds(), settingsBox);
         final var jiraRefreshTile = createTile("settings.workspace.jiraRefresh.title", "settings.workspace.jiraRefresh.description");
         jiraRefreshTile.setAction(dashboardJiraRefreshSpinner);
-        dashboardJiraIssueLimitSpinner = createResizableRegion(() -> new Spinner<>(1, 50, settings.dashboardJiraIssueLimit()), settingsBox);
+        dashboardJiraIssueLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardJiraIssueLimit(), settingsBox);
         final var jiraIssueLimitTile = createTile("settings.workspace.jiraIssueLimit.title", "settings.workspace.jiraIssueLimit.description");
         jiraIssueLimitTile.setAction(dashboardJiraIssueLimitSpinner);
 
