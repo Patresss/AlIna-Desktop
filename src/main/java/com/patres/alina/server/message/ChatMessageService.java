@@ -46,6 +46,8 @@ public class ChatMessageService {
         REGENERATE
     }
 
+    private static final int DEFAULT_NUMBER_OF_CONTEXT_MESSAGES = 5;
+
     private static final class StreamSession {
         private final ChatMessageSendModel chatMessageSendModel;
         private final StreamPurpose purpose;
@@ -396,11 +398,10 @@ public class ChatMessageService {
     }
 
     private List<AbstractMessage> loadMessages(final String chatThreadId) {
-        final int numberOfMessagesInContext = assistantSettingsManager.getSettings().numberOfMessagesInContext();
         final List<ChatMessage> messages = chatMessageRepository.findLastMessagesForContext(
                 chatThreadId,
                 Set.of(ChatMessageRole.USER, ChatMessageRole.ASSISTANT, ChatMessageRole.SYSTEM),
-                numberOfMessagesInContext
+                DEFAULT_NUMBER_OF_CONTEXT_MESSAGES
         );
         return messages.stream()
                 .map(this::toAbstractMessage)
@@ -409,12 +410,11 @@ public class ChatMessageService {
 
     private List<AbstractMessage> loadMessagesForRegeneration(final List<ChatMessage> allMessages,
                                                              final int lastUserIndex) {
-        final int numberOfMessagesInContext = Math.max(0, assistantSettingsManager.getSettings().numberOfMessagesInContext());
         final List<ChatMessage> prefix = allMessages.subList(0, lastUserIndex + 1).stream()
                 .filter(msg -> msg.role() == MessageType.USER || msg.role() == MessageType.ASSISTANT || msg.role() == MessageType.SYSTEM)
                 .toList();
 
-        final int from = Math.max(0, prefix.size() - numberOfMessagesInContext);
+        final int from = Math.max(0, prefix.size() - DEFAULT_NUMBER_OF_CONTEXT_MESSAGES);
         final List<ChatMessage> window = prefix.subList(from, prefix.size());
         final List<AbstractMessage> context = window.stream().map(this::toAbstractMessage).collect(Collectors.toList());
 

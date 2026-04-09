@@ -49,12 +49,7 @@ public class OpenCodeConfigurationService {
     }
 
     public Map<String, String> buildServerEnvironment() {
-        final AssistantSettings assistant = assistantSettings();
-        final Map<String, String> env = new java.util.HashMap<>();
-        putIfPresent(env, "OPENAI_API_KEY", assistant.openAiApiKey(), AssistantSettings.DEFAULT_OPENAI_API_KEY);
-        putIfPresent(env, "ANTHROPIC_API_KEY", assistant.anthropicApiKey(), null);
-        putIfPresent(env, "GOOGLE_GENERATIVE_AI_API_KEY", assistant.googleApiKey(), null);
-        return env;
+        return Map.of();
     }
 
     public static final String OPENCODE_COMMAND = "opencode";
@@ -65,19 +60,6 @@ public class OpenCodeConfigurationService {
 
     private String resolveModelIdentifier(final AssistantSettings settings) {
         return settings.resolveModelIdentifier();
-    }
-
-    private void putIfPresent(final Map<String, String> env,
-                              final String key,
-                              final String value,
-                              final String ignoredValue) {
-        if (value == null || value.isBlank()) {
-            return;
-        }
-        if (ignoredValue != null && ignoredValue.equals(value)) {
-            return;
-        }
-        env.put(key, value);
     }
 
     private Path resolveConfigPath() {

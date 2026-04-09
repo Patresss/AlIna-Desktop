@@ -172,10 +172,7 @@ public class OpenCodeServerManager {
                 workspace.openCodeHostname(),
                 String.valueOf(workspace.openCodePort()),
                 workspace.openCodeWorkingDirectory(),
-                assistant.chatModel(),
-                assistant.openAiApiKey(),
-                String.valueOf(assistant.anthropicApiKey()),
-                String.valueOf(assistant.googleApiKey())
+                assistant.chatModel()
         );
     }
 

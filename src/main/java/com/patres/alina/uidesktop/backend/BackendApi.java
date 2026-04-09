@@ -6,8 +6,6 @@ import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
 import com.patres.alina.common.permission.PermissionResolutionModel;
-import com.patres.alina.common.message.SpeechToTextErrorType;
-import com.patres.alina.common.message.SpeechToTextResponse;
 import com.patres.alina.common.permission.PermissionApprovalAction;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.server.command.Command;
@@ -20,7 +18,6 @@ import com.patres.alina.server.dashboard.DashboardController;
 import com.patres.alina.server.message.ChatMessageController;
 import com.patres.alina.server.command.CommandController;
 import com.patres.alina.server.settings.SettingsController;
-import com.patres.alina.server.speech.SpeechToTextController;
 import com.patres.alina.server.assistant.PermissionRequestController;
 import com.patres.alina.server.thread.ChatThreadController;
 import com.patres.alina.server.integration.GitHubPullRequestResult;
@@ -29,12 +26,8 @@ import com.patres.alina.server.integration.JiraIssueResult;
 import com.patres.alina.server.integration.JiraService;
 import com.patres.alina.server.workspace.WorkspaceController;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
-import com.patres.alina.server.message.exception.CannotConvertSpeechToTextException;
 
 
 public class BackendApi {
@@ -111,19 +104,6 @@ public class BackendApi {
 
     public static void updateCommandState(UpdateStateRequest updateStateRequest) {
         AppLauncher.getBean(CommandController.class).updateCommandState(updateStateRequest);
-    }
-
-    public static SpeechToTextResponse sendChatMessagesAsAudio(File file) {
-        try {
-            byte[] bytes = Files.readAllBytes(file.toPath());
-            return AppLauncher.getBean(SpeechToTextController.class).speechToText(bytes);
-        } catch (IOException e) {
-            throw new CannotConvertSpeechToTextException(
-                    SpeechToTextErrorType.UNKNOWN,
-                    "Cannot read recorded audio.",
-                    e
-            );
-        }
     }
 
 

@@ -31,15 +31,6 @@
                                     <String fx:value="flat" />
                                  </styleClass>
                               </Button>
-                              <Button fx:id="recordButton" alignment="CENTER" mnemonicParsing="false" text="Button">
-                                 <graphic>
-                                    <FontIcon iconLiteral="fth-mic" />
-                                 </graphic>
-                                 <styleClass>
-                                    <String fx:value="button-circle" />
-                                    <String fx:value="flat" />
-                                 </styleClass>
-                              </Button>
                               <Button fx:id="streamControlButton" alignment="CENTER" mnemonicParsing="false" onAction="#streamControlFromUi" text="Button">
                                  <styleClass>
                                     <String fx:value="button-circle" />

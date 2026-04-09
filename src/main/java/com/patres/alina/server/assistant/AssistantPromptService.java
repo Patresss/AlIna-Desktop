@@ -7,9 +7,7 @@ import org.springframework.stereotype.Service;
 public class AssistantPromptService {
 
     public String buildSystemPrompt(final AssistantSettings settings) {
-        final String customPrompt = settings.systemPrompt() == null ? "" : settings.systemPrompt().trim();
-
-        final String basePrompt = """
+        return """
                 <identity>
                 You are Alina, a personal AI work assistant embedded in a desktop chat used daily by one technical user.
                 Your role is to reduce friction, help complete real work, and keep the user oriented in current priorities.
@@ -48,15 +46,5 @@ public class AssistantPromptService {
                 - Surface blockers, tradeoffs and next steps clearly.
                 </output>
                 """;
-
-        if (customPrompt.isBlank()) {
-            return basePrompt;
-        }
-
-        return basePrompt + System.lineSeparator() + """
-                <custom-instructions>
-                %s
-                </custom-instructions>
-                """.formatted(customPrompt);
     }
 }

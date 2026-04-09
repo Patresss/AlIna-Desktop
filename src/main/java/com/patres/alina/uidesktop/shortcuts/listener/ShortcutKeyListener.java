@@ -7,7 +7,6 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import com.patres.alina.common.event.Event;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.uidesktop.common.event.shortcut.FocusShortcutTriggeredEvent;
-import com.patres.alina.uidesktop.common.event.shortcut.SpeechShortcutTriggeredEvent;
 import com.patres.alina.uidesktop.common.event.UiSettingsUpdateEvent;
 import com.patres.alina.uidesktop.settings.ShortcutKeysSettings;
 import com.patres.alina.uidesktop.shortcuts.key.KeyboardKey;
@@ -71,7 +70,6 @@ public class ShortcutKeyListener extends Listener implements NativeKeyListener {
     }
 
     private void checkKeys() {
-        checkKeysToTriggerAction(shortcutKeysSettings.speechShortcutKeys(), SpeechShortcutTriggeredEvent::new);
         checkKeysToTriggerAction(shortcutKeysSettings.focusShortcutKeys(), FocusShortcutTriggeredEvent::new);
     }
 

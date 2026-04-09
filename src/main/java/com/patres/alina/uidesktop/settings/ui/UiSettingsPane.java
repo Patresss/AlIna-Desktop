@@ -36,7 +36,6 @@ public class UiSettingsPane extends SettingsModalPaneContent {
     private ChoiceBox<SamplerTheme> themeSelector;
     private ChoiceBox<ApplicationLanguage> applicationLanguageSelector;
 
-    private ShortcutKeyPane speechShortcutKeyPane;
     private ShortcutKeyPane focusShortcutKeyPane;
     private ShortcutKeyPane contextMenuShortcutKeyPane;
     private ToggleSwitch soundNotificationToggle;
@@ -54,7 +53,6 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         themeSelector.setValue(TM.fromString(uiSettings.theme()));
         applicationLanguageSelector.setValue(ApplicationLanguage.getApplicationLanguage(uiSettings.language()));
         TM.setTheme(uiSettings.theme());
-        speechShortcutKeyPane.setValues(uiSettings.shortcutKeysSettings().speechShortcutKeys());
         focusShortcutKeyPane.setValues(uiSettings.shortcutKeysSettings().focusShortcutKeys());
         contextMenuShortcutKeyPane.setValues(uiSettings.shortcutKeysSettings().contextMenuShortcutKeys());
         soundNotificationToggle.setSelected(uiSettings.isSoundNotificationEnabled());
@@ -74,10 +72,9 @@ public class UiSettingsPane extends SettingsModalPaneContent {
                 .map(Locale::getLanguage)
                 .orElse(null);
 
-        final ShortcutKeys speechShortcutKeys = speechShortcutKeyPane.getShortcutKeys();
         final ShortcutKeys focusShortcutKeys = focusShortcutKeyPane.getShortcutKeys();
         final ShortcutKeys contextMenuShortcutKeys = contextMenuShortcutKeyPane.getShortcutKeys();
-        final ShortcutKeysSettings shortcutKeysSettings = new ShortcutKeysSettings(speechShortcutKeys, focusShortcutKeys, contextMenuShortcutKeys);
+        final ShortcutKeysSettings shortcutKeysSettings = new ShortcutKeysSettings(focusShortcutKeys, contextMenuShortcutKeys);
         final boolean soundEnabled = soundNotificationToggle.isSelected();
         final NotificationSound selectedSound = soundTypeSelector.getValue();
         final String soundType = selectedSound != null ? selectedSound.name() : null;
@@ -107,13 +104,6 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         );
         applicationLanguageSelector.getSelectionModel().selectLast();
         language.setAction(applicationLanguageSelector);
-
-        speechShortcutKeyPane = new ShortcutKeyPane();
-        var speechShortcut = createTile(
-                "settings.shortcut.speech.title",
-                "settings.shortcut.speech.description"
-        );
-        speechShortcut.setAction(speechShortcutKeyPane.createPane());
 
         focusShortcutKeyPane = new ShortcutKeyPane();
         var focusShortcut = createTile(
@@ -158,7 +148,7 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         return List.of(
                 header, theme, language,
                 new Separator(),
-                speechShortcut, focusShortcut, contextMenuShortcut,
+                focusShortcut, contextMenuShortcut,
                 new Separator(),
                 soundNotification, soundTypeTile
         );

@@ -19,9 +19,7 @@ import com.patres.alina.uidesktop.messagecontext.MessageWithContextGenerator;
 import com.patres.alina.uidesktop.quickaction.QuickActionType;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.common.event.shortcut.FocusShortcutTriggeredEvent;
-import com.patres.alina.uidesktop.common.event.shortcut.SpeechShortcutTriggeredEvent;
 import com.patres.alina.uidesktop.command.SearchCommandPopup;
-import com.patres.alina.uidesktop.microphone.AudioRecorder;
 import com.patres.alina.uidesktop.settings.UiSettings;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.common.settings.AssistantSettings;
@@ -69,7 +67,6 @@ public class ChatWindow extends BorderPane {
     private final List<ChatMessageResponseModel> messages;
     private final ApplicationWindow applicationWindow;
 
-    private Consumer<SpeechShortcutTriggeredEvent> speechShortcutTriggeredEventConsumer;
     private final Consumer<FocusShortcutTriggeredEvent> focusShortcutTriggeredEventConsumer = event -> triggerFocusAction();
     private Consumer<ChatMessageStreamEvent> chatMessageStreamEventConsumer;
     private final Consumer<ChatNotificationEvent> chatNotificationEventConsumer = this::handleChatNotification;
@@ -93,9 +90,6 @@ public class ChatWindow extends BorderPane {
 
     @FXML
     private Button sendButton;
-
-    @FXML
-    private Button recordButton;
 
     @FXML
     private Button streamControlButton;
@@ -140,11 +134,9 @@ public class ChatWindow extends BorderPane {
 
     private Browser browser;
     private ChatStatusPrompt statusPrompt;
-    private ChatRecordingController recordingController;
     private ChatStreamingController streamingController;
 
     private List<Node> actionNodes;
-    private List<Node> nonRecordingActionNodes;
 
     public ChatWindow(ChatThread chatThread, ApplicationWindow applicationWindow) {
         this(chatThread, applicationWindow, BackendApi.getMessagesByThreadId(chatThread.id()));
@@ -170,13 +162,6 @@ public class ChatWindow extends BorderPane {
     }
 
     private void initEventsSubscriptions() {
-        if (speechShortcutTriggeredEventConsumer != null) {
-            DefaultEventBus.getInstance().subscribe(
-                    SpeechShortcutTriggeredEvent.class,
-                    speechShortcutTriggeredEventConsumer
-            );
-        }
-
         DefaultEventBus.getInstance().subscribe(
                 FocusShortcutTriggeredEvent.class,
                 focusShortcutTriggeredEventConsumer
@@ -196,13 +181,6 @@ public class ChatWindow extends BorderPane {
     }
 
     public void unsubscribeEvents() {
-        if (speechShortcutTriggeredEventConsumer != null) {
-            DefaultEventBus.getInstance().unsubscribe(
-                    SpeechShortcutTriggeredEvent.class,
-                    speechShortcutTriggeredEventConsumer
-            );
-        }
-
         DefaultEventBus.getInstance().unsubscribe(
                 FocusShortcutTriggeredEvent.class,
                 focusShortcutTriggeredEventConsumer
@@ -227,10 +205,7 @@ public class ChatWindow extends BorderPane {
         browser = new Browser();
         chatAnswersPane.getChildren().add(browser);
 
-        actionNodes = List.of(sendButton, recordButton);
-        nonRecordingActionNodes = actionNodes.stream()
-                .filter(it -> it != recordButton)
-                .toList();
+        actionNodes = List.of(sendButton);
 
         browser.whenReady(() -> messages.forEach(this::displayMessage));
         boolean hasAnyUserMessages = messages.stream().anyMatch(m -> m.sender() == ChatMessageRole.USER);
@@ -254,25 +229,12 @@ public class ChatWindow extends BorderPane {
         );
         streamingController.initialize();
 
-        recordingController = new ChatRecordingController(
-                recordButton,
-                chatTextArea,
-                actionNodes,
-                nonRecordingActionNodes,
-                new AudioRecorder(),
-                statusPrompt,
-                this::handleTranscriptionReady,
-                this::displaySpeechError
-        );
-        recordingController.bind();
-
         initializeInputHandler();
         initModelSelector();
         setCurrentCommand(null);
         bindInputHeightToButtonsBox();
         initLanguageListener();
 
-        speechShortcutTriggeredEventConsumer = event -> triggerSpeechAction();
         chatMessageStreamEventConsumer = streamingController::handleStreamEvent;
         initEventsSubscriptions();
     }
@@ -337,15 +299,7 @@ public class ChatWindow extends BorderPane {
             AssistantSettings current = BackendApi.getAssistantSettings();
             if (model.equals(current.resolveModelIdentifier())) return;
 
-            AssistantSettings updated = new AssistantSettings(
-                    model,
-                    current.systemPrompt(),
-                    current.numberOfMessagesInContext(),
-                    current.openAiApiKey(),
-                    current.anthropicApiKey(),
-                    current.googleApiKey(),
-                    current.timeoutSeconds()
-            );
+            AssistantSettings updated = new AssistantSettings(model);
             BackendApi.updateAssistantSettings(updated);
         });
     }
@@ -370,12 +324,6 @@ public class ChatWindow extends BorderPane {
         );
     }
 
-    private void triggerSpeechAction() {
-        if (recordingController != null) {
-            recordingController.toggleRecording();
-        }
-    }
-
     private void triggerFocusAction() {
         final Window window = chatTextArea.getScene().getWindow();
         if (window instanceof Stage stage) {
@@ -396,17 +344,6 @@ public class ChatWindow extends BorderPane {
         logger.error(message);
         displayMessage(message, ASSISTANT, ChatMessageStyleType.DANGER);
         FxThreadRunner.run(() -> actionNodes.forEach(node -> node.setDisable(false)));
-    }
-
-    private void handleTranscriptionReady(String message) {
-        CommandUsageInfo commandUsageInfo = buildCommandUsageInfo(getCurrentCommandId(), message);
-        displayMessage(message, ChatMessageRole.USER, ChatMessageStyleType.NONE, commandUsageInfo);
-        streamingController.markUserMessageSent();
-        sendMessageToService(message);
-    }
-
-    private void displaySpeechError(String message) {
-        displayMessage(message, ASSISTANT, ChatMessageStyleType.DANGER);
     }
 
     private void initializeInputHandler() {
@@ -497,10 +434,6 @@ public class ChatWindow extends BorderPane {
     private void handleChatNotification(final ChatNotificationEvent event) {
         NotificationSoundPlayer.playIfEnabled();
         displayMessage(event.getMessage(), ASSISTANT, event.getStyleType());
-    }
-
-    private void sendMessageToService(final String message) {
-        sendMessageToService(message, getCurrentCommandId());
     }
 
     private void sendMessageToService(final String message, final String commandId) {
