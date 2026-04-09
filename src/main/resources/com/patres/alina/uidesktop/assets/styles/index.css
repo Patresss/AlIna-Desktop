@@ -5,26 +5,18 @@
     -color-info-subtle: rgba(88, 166, 255, 0.12);
 
     /* Glass card variables — light theme defaults (dark tints on light bg) */
-    -color-glass-bg: rgba(0, 0, 0, 0.03);
+    -color-glass-bg: rgba(0, 0, 0, 0.02);
     -color-glass-bg-hover: rgba(0, 0, 0, 0.05);
     -color-glass-border: rgba(0, 0, 0, 0.08);
     -color-glass-border-hover: rgba(0, 0, 0, 0.14);
-    -color-glass-shadow: rgba(0, 0, 0, 0.08);
-    -color-glass-shadow-hover: rgba(0, 0, 0, 0.14);
-    -color-glass-item-hover: rgba(0, 0, 0, 0.04);
-    -color-glass-pill-bg: rgba(0, 0, 0, 0.05);
 }
 
 /* Glass card variables — dark theme overrides (white tints on dark bg) */
 .root:dark {
-    -color-glass-bg: rgba(255, 255, 255, 0.04);
-    -color-glass-bg-hover: rgba(255, 255, 255, 0.07);
+    -color-glass-bg: rgba(255, 255, 255, 0.02);
+    -color-glass-bg-hover: rgba(255, 255, 255, 0.05);
     -color-glass-border: rgba(255, 255, 255, 0.08);
     -color-glass-border-hover: rgba(255, 255, 255, 0.14);
-    -color-glass-shadow: rgba(0, 0, 0, 0.25);
-    -color-glass-shadow-hover: rgba(0, 0, 0, 0.35);
-    -color-glass-item-hover: rgba(255, 255, 255, 0.06);
-    -color-glass-pill-bg: rgba(255, 255, 255, 0.06);
 }
 
 .body {
@@ -250,12 +242,10 @@ ChatThreadHistoryCard {
     -fx-border-color: -color-glass-border;
     -fx-border-width: 1px;
     -fx-padding: 10px 12px;
-    -fx-effect: dropshadow(three-pass-box, -color-glass-shadow, 2, 0, 0, 2);
 }
 
 .workspace-dashboard:hover {
     -fx-border-color: -color-glass-border-hover;
-    -fx-effect: dropshadow(three-pass-box, -color-glass-shadow-hover, 4, 0, 0, 3);
 }
 
 .workspace-dashboard-header {
@@ -326,7 +316,7 @@ ChatThreadHistoryCard {
 }
 
 .workspace-task-item:hover {
-    -fx-background-color: -color-bg-subtle;
+    -fx-background-color: -color-glass-bg-hover;
 }
 
 .workspace-task-label {
@@ -359,7 +349,7 @@ ChatThreadHistoryCard {
 }
 
 .workspace-pr-item:hover {
-    -fx-background-color: -color-bg-subtle;
+    -fx-background-color: -color-glass-bg-hover;
 }
 
 .workspace-pr-repo {
@@ -407,7 +397,7 @@ ChatThreadHistoryCard {
 }
 
 .workspace-jira-item:hover {
-    -fx-background-color: -color-bg-subtle;
+    -fx-background-color: -color-glass-bg-hover;
 }
 
 .workspace-jira-key {
@@ -415,7 +405,6 @@ ChatThreadHistoryCard {
     -fx-font-family: monospace;
     -fx-font-size: 12px;
     -fx-font-weight: bold;
-    -fx-min-width: -fx-pref-width;
     -fx-cursor: hand;
 }
 
@@ -430,7 +419,6 @@ ChatThreadHistoryCard {
     -fx-font-weight: 700;
     -fx-background-radius: 4px;
     -fx-padding: 1px 5px;
-    -fx-min-width: -fx-pref-width;
     -fx-text-fill: -color-info-fg;
     -fx-background-color: -color-info-subtle;
 }
@@ -468,14 +456,12 @@ ChatThreadHistoryCard {
 .workspace-calendar-remaining {
     -fx-text-fill: -color-fg-muted;
     -fx-font-size: 12px;
-    -fx-min-width: -fx-pref-width;
     -fx-padding: 0;
 }
 
 .workspace-calendar-upcoming {
     -fx-text-fill: -color-fg-muted;
     -fx-font-size: 12px;
-    -fx-min-width: -fx-pref-width;
     -fx-padding: 0;
 }
 
@@ -488,7 +474,6 @@ ChatThreadHistoryCard {
     -fx-font-family: monospace;
     -fx-font-size: 12px;
     -fx-font-weight: bold;
-    -fx-min-width: -fx-pref-width;
 }
 
 .workspace-calendar-video-icon {

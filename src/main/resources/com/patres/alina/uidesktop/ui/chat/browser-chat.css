@@ -436,7 +436,7 @@ th, td {
 }
 .message-footer {
   margin-top: 0;
-  margin-bottom: -4px;
+  margin-bottom: 2px;
   font-size: 11px;
   color: var(--color-fg-muted);
   opacity: 0.6;
