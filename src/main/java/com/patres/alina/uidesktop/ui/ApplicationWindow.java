@@ -1,6 +1,7 @@
 package com.patres.alina.uidesktop.ui;
 
 import com.patres.alina.common.event.bus.DefaultEventBus;
+import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.backend.BackendApi;
@@ -35,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 public class ApplicationWindow extends BorderPane {
@@ -112,13 +114,14 @@ public class ApplicationWindow extends BorderPane {
     }
 
     private void handleCommandShortcutExecuted(CommandShortcutExecutedEvent event) {
-        // Load the thread on JavaFX thread WITHOUT activating the application
-        Platform.runLater(() -> {
+        Thread.startVirtualThread(() -> {
             ChatThread thread = BackendApi.getChatThread(event.getThreadId()).orElse(null);
             if (thread != null) {
-                loadChatThread(thread);
-                // Close any modal panes
-                appModalPane.hide(false);
+                List<ChatMessageResponseModel> messages = BackendApi.getMessagesByThreadId(thread.id());
+                Platform.runLater(() -> {
+                    loadChatThread(thread, messages);
+                    appModalPane.hide(false);
+                });
             }
         });
     }
@@ -129,8 +132,15 @@ public class ApplicationWindow extends BorderPane {
     }
 
     public void createAndOpenNewChatThread() {
-        prepareOpenCodeForFreshChat();
-        createAndOpenInitialChatThread();
+        Thread.startVirtualThread(() -> {
+            prepareOpenCodeForFreshChat();
+            final ChatThread newThread = BackendApi.createChatThread();
+            Platform.runLater(() -> {
+                chatThread = newThread;
+                loadChatThread(newThread, List.of());
+                appModalPane.hide(true);
+            });
+        });
     }
 
     private void createAndOpenInitialChatThread() {
@@ -139,9 +149,14 @@ public class ApplicationWindow extends BorderPane {
     }
 
     public void createNewChatThread() {
-        prepareOpenCodeForFreshChat();
-        chatThread = BackendApi.createChatThread();
-        loadChatThread(chatThread);
+        Thread.startVirtualThread(() -> {
+            prepareOpenCodeForFreshChat();
+            final ChatThread newThread = BackendApi.createChatThread();
+            Platform.runLater(() -> {
+                chatThread = newThread;
+                loadChatThread(newThread, List.of());
+            });
+        });
     }
 
     private void prepareOpenCodeForFreshChat() {
@@ -154,11 +169,15 @@ public class ApplicationWindow extends BorderPane {
     }
 
     public void loadChatThread(ChatThread chatThread) {
+        loadChatThread(chatThread, BackendApi.getMessagesByThreadId(chatThread.id()));
+    }
+
+    public void loadChatThread(ChatThread chatThread, List<ChatMessageResponseModel> messages) {
         centerPane.getChildren().removeIf(node -> node instanceof ChatWindow);
         if (chatWindow != null) {
             chatWindow.unsubscribeEvents();
         }
-        chatWindow = new ChatWindow(chatThread, this);
+        chatWindow = new ChatWindow(chatThread, this, messages);
         centerPane.getChildren().add(chatWindow);
         VBox.setMargin(chatWindow, new Insets(2, 0, 0, 0));
         VBox.setVgrow(chatWindow, javafx.scene.layout.Priority.ALWAYS);
@@ -166,8 +185,13 @@ public class ApplicationWindow extends BorderPane {
     }
 
     public void openChatThread(ChatThread chatThread) {
-        loadChatThread(chatThread);
-        appModalPane.hide(true);
+        Thread.startVirtualThread(() -> {
+            List<ChatMessageResponseModel> messages = BackendApi.getMessagesByThreadId(chatThread.id());
+            Platform.runLater(() -> {
+                loadChatThread(chatThread, messages);
+                appModalPane.hide(true);
+            });
+        });
     }
 
     public void openUiSettings() {

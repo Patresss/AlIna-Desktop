@@ -146,10 +146,14 @@ public class ChatWindow extends BorderPane {
     private List<Node> nonRecordingActionNodes;
 
     public ChatWindow(ChatThread chatThread, ApplicationWindow applicationWindow) {
+        this(chatThread, applicationWindow, BackendApi.getMessagesByThreadId(chatThread.id()));
+    }
+
+    public ChatWindow(ChatThread chatThread, ApplicationWindow applicationWindow, List<ChatMessageResponseModel> prefetchedMessages) {
         super();
         this.chatThread = chatThread;
         this.applicationWindow = applicationWindow;
-        messages = BackendApi.getMessagesByThreadId(chatThread.id());
+        this.messages = prefetchedMessages;
 
         try {
             var loader = new FXMLLoader(
@@ -277,9 +281,15 @@ public class ChatWindow extends BorderPane {
 
         modelMenu = new ContextMenu();
 
-        refreshModelMenu();
-        AssistantSettings settings = BackendApi.getAssistantSettings();
-        modelLabel.setText(settings.resolveModelIdentifier());
+        // Load models and settings off the FX thread
+        Thread.startVirtualThread(() -> {
+            final List<String> models = BackendApi.getChatModels();
+            final AssistantSettings settings = BackendApi.getAssistantSettings();
+            FxThreadRunner.run(() -> {
+                modelLabel.setText(settings.resolveModelIdentifier());
+                populateModelMenu(models, settings);
+            });
+        });
 
         modelLabel.setOnMouseClicked(_ -> {
             if (modelMenu.isShowing()) {
@@ -298,10 +308,8 @@ public class ChatWindow extends BorderPane {
         );
     }
 
-    private void refreshModelMenu() {
+    private void populateModelMenu(final List<String> models, final AssistantSettings current) {
         modelMenu.getItems().clear();
-        List<String> models = BackendApi.getChatModels();
-        AssistantSettings current = BackendApi.getAssistantSettings();
         if (modelLabel != null) {
             modelLabel.setText(current.resolveModelIdentifier());
         }
@@ -313,6 +321,14 @@ public class ChatWindow extends BorderPane {
             });
             modelMenu.getItems().add(item);
         }
+    }
+
+    private void refreshModelMenu() {
+        Thread.startVirtualThread(() -> {
+            final List<String> models = BackendApi.getChatModels();
+            final AssistantSettings current = BackendApi.getAssistantSettings();
+            FxThreadRunner.run(() -> populateModelMenu(models, current));
+        });
     }
 
     private void updateModel(String model) {
@@ -575,8 +591,14 @@ public class ChatWindow extends BorderPane {
                 case NEW_CHAT -> applicationWindow.createNewChatThread();
                 case MODELS -> {
                     if (modelMenu != null) {
-                        refreshModelMenu();
-                        modelMenu.show(modelLabel, javafx.geometry.Side.TOP, 0, 0);
+                        Thread.startVirtualThread(() -> {
+                            final List<String> models = BackendApi.getChatModels();
+                            final AssistantSettings current = BackendApi.getAssistantSettings();
+                            FxThreadRunner.run(() -> {
+                                populateModelMenu(models, current);
+                                modelMenu.show(modelLabel, javafx.geometry.Side.TOP, 0, 0);
+                            });
+                        });
                     }
                 }
                 case THEME -> showThemeMenu();

@@ -63,11 +63,15 @@ public class SearchCommandPopup extends Popup {
     }
 
     private void fetchAllCommands() {
-        allCommands = BackendApi.getEnabledCommands().stream()
-                .filter(command -> command.visibility().showInChat())
-                .toList();
-
-        updateItems("");
+        Thread.startVirtualThread(() -> {
+            final List<Command> commands = BackendApi.getEnabledCommands().stream()
+                    .filter(command -> command.visibility().showInChat())
+                    .toList();
+            Platform.runLater(() -> {
+                allCommands = commands;
+                updateItems("");
+            });
+        });
     }
 
     private void fetchAllQuickActions() {
