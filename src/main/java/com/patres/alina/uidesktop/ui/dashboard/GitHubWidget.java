@@ -3,7 +3,6 @@ package com.patres.alina.uidesktop.ui.dashboard;
 import atlantafx.base.theme.Styles;
 import com.patres.alina.server.integration.GitHubPullRequest;
 import com.patres.alina.server.integration.GitHubPullRequestResult;
-import com.patres.alina.server.integration.GitHubService;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.chat.Browser;
 import com.patres.alina.uidesktop.util.EmojiLabelHelper;
@@ -95,7 +94,7 @@ public class GitHubWidget extends VBox {
 
         Thread.startVirtualThread(() -> {
             final int maxResults = BackendApi.getWorkspaceSettings().dashboardGithubPrLimit();
-            final GitHubPullRequestResult result = GitHubService.fetchPendingReviews(token, maxResults);
+            final GitHubPullRequestResult result = BackendApi.fetchGitHubPendingReviews(token, maxResults);
             Platform.runLater(() -> render(result));
         });
     }

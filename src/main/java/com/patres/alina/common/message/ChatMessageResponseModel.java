@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @JsonSerialize
 public record ChatMessageResponseModel(
         String content,
-        ChatMessageRole seder,
+        ChatMessageRole sender,
         LocalDateTime createdAt,
         ChatMessageStyleType styleType,
         String chatThreadId,

@@ -148,7 +148,7 @@ public class DashboardService {
         return """
                 # Focus Tasks
 
-                - [ ] Ustaw plik tasków pod swój workflow
+                - [ ] Set up your tasks file to match your workflow
                 """;
     }
 }

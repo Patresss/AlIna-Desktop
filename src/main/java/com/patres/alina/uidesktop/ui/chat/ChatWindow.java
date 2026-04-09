@@ -222,7 +222,7 @@ public class ChatWindow extends BorderPane {
                 .toList();
 
         browser.whenReady(() -> messages.forEach(this::displayMessage));
-        boolean hasAnyUserMessages = messages.stream().anyMatch(m -> m.seder() == ChatMessageRole.USER);
+        boolean hasAnyUserMessages = messages.stream().anyMatch(m -> m.sender() == ChatMessageRole.USER);
 
         streamingController = new ChatStreamingController(
                 browser,
@@ -425,7 +425,7 @@ public class ChatWindow extends BorderPane {
     }
 
     private void displayMessage(final ChatMessageResponseModel message) {
-        displayMessage(message.content(), message.seder(), message.styleType(), message.commandUsageInfo());
+        displayMessage(message.content(), message.sender(), message.styleType(), message.commandUsageInfo());
     }
 
     private void displayMessage(final String text,

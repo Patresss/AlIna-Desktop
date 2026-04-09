@@ -64,7 +64,7 @@ public class MediaControlWidget extends VBox {
         final HBox controlsBox = new HBox(8, prevButton, playPauseButton, nextButton);
         controlsBox.setAlignment(Pos.CENTER_LEFT);
 
-        // Track info label - będzie obok przycisków
+        // Track info label - placed next to the buttons
         trackInfoLabel.getStyleClass().add("workspace-media-track-info");
         trackInfoLabel.setMaxWidth(Double.MAX_VALUE);
         trackInfoLabel.setWrapText(false);

@@ -3,6 +3,7 @@ package com.patres.alina.server.assistant;
 import com.patres.alina.common.permission.PermissionApprovalAction;
 import com.patres.alina.common.permission.PermissionResolutionModel;
 import com.patres.alina.server.opencode.OpenCodeRuntimeService;
+import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -17,7 +18,7 @@ public class PermissionRequestController {
     public PermissionResolutionModel resolve(final String requestId,
                                              final PermissionApprovalAction action) {
         if (!openCodeRuntimeService.ownsPermissionRequest(requestId)) {
-            return PermissionResolutionModel.missing("To zapytanie o zgodę nie jest już aktywne.");
+            return PermissionResolutionModel.missing(LanguageManager.getLanguageString("chat.permission.missing"));
         }
         return openCodeRuntimeService.resolvePermissionRequest(requestId, action);
     }

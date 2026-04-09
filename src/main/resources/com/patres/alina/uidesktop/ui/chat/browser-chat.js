@@ -1,0 +1,683 @@
+    function addHtmlContent(htmlContent, messageType, notificationStyle, commandFontFamily, commandGlyph, commandName, commandPrompt) {
+        var div = document.createElement('div');
+        div.className = 'chat-message ' + messageType + ' ' + notificationStyle;
+        if (commandGlyph && commandFontFamily) {
+            div.classList.add('command-message');
+        }
+        div.innerHTML = htmlContent;
+
+        if (commandGlyph && commandFontFamily) {
+            var badge = document.createElement('div');
+            badge.className = 'command-badge';
+
+            var icon = document.createElement('span');
+            icon.className = 'command-icon';
+            icon.textContent = commandGlyph;
+            icon.style.fontFamily = commandFontFamily;
+            badge.appendChild(icon);
+
+            var tooltip = document.createElement('div');
+            tooltip.className = 'command-tooltip';
+
+            var title = document.createElement('div');
+            title.className = 'command-tooltip-title';
+            title.textContent = commandName ? commandName : '';
+            tooltip.appendChild(title);
+
+            var prompt = document.createElement('div');
+            prompt.className = 'command-tooltip-prompt';
+            prompt.textContent = commandPrompt ? commandPrompt : '';
+            tooltip.appendChild(prompt);
+
+            badge.appendChild(tooltip);
+            div.appendChild(badge);
+        }
+
+        var chatContainer = document.getElementById('chat-container');
+        chatContainer.appendChild(div);
+    }
+
+    function showLoader() {
+        document.getElementById('loader').classList.add('active');
+        document.getElementById('loader').classList.remove('user-message');
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function showLoaderForUserMessage() {
+        showLoader();
+        document.getElementById('loader').classList.add('user-message');
+    }
+
+    function hideLoader() {
+        document.getElementById('loader').classList.remove('active');
+        document.getElementById('loader').classList.remove('user-message');
+    }
+
+    function showAssistantActivity(label) {
+        var chatContainer = document.getElementById('chat-container');
+        if (!chatContainer) {
+            return;
+        }
+        var activity = document.getElementById('assistant-activity-message');
+        if (!activity) {
+            activity = document.createElement('div');
+            activity.className = 'chat-message assistant activity-message';
+            activity.id = 'assistant-activity-message';
+            activity.dataset.transient = 'true';
+            activity.dataset.count = '0';
+            activity.dataset.expanded = 'false';
+
+            var shell = document.createElement('div');
+            shell.className = 'activity-shell';
+
+            var summary = document.createElement('div');
+            summary.className = 'activity-summary';
+
+            var summaryMain = document.createElement('div');
+            summaryMain.className = 'activity-summary-main';
+
+            var summaryText = document.createElement('span');
+            summaryText.className = 'activity-summary-text';
+            summaryText.id = 'assistant-activity-summary-text';
+            summaryText.textContent = 'OpenCode: ' + label;
+
+            var summaryBadge = document.createElement('span');
+            summaryBadge.className = 'activity-summary-badge';
+            summaryBadge.id = 'assistant-activity-summary-badge';
+            summaryBadge.textContent = '1';
+
+            var toggleButton = document.createElement('button');
+            toggleButton.className = 'activity-toggle';
+            toggleButton.id = 'assistant-activity-toggle';
+            toggleButton.type = 'button';
+            toggleButton.textContent = '▸';
+            toggleButton.setAttribute('aria-label', 'Show details');
+            toggleButton.onclick = function() {
+                var shell = this.parentElement ? this.parentElement.parentElement : null;
+                var activityEl = shell ? shell.parentElement : null;
+                var bodyEl = shell ? shell.querySelector('.activity-body') : null;
+                if (!activityEl || !bodyEl) return;
+                var expanded = activityEl.dataset.expanded === 'true';
+                if (expanded) {
+                    bodyEl.classList.remove('open');
+                    activityEl.dataset.expanded = 'false';
+                    this.textContent = '\u25b8';
+                    this.setAttribute('aria-label', 'Show details');
+                } else {
+                    bodyEl.classList.add('open');
+                    activityEl.dataset.expanded = 'true';
+                    this.textContent = '\u25be';
+                    this.setAttribute('aria-label', 'Hide details');
+                }
+            };
+
+            summaryMain.appendChild(summaryText);
+            summaryMain.appendChild(summaryBadge);
+            summary.appendChild(summaryMain);
+            summary.appendChild(toggleButton);
+
+            var body = document.createElement('div');
+            body.className = 'activity-body';
+            body.id = 'assistant-activity-body';
+
+            shell.appendChild(summary);
+            shell.appendChild(body);
+            activity.appendChild(shell);
+            chatContainer.appendChild(activity);
+        }
+
+        var bodyNode = document.getElementById('assistant-activity-body');
+        var lastEntry = bodyNode ? bodyNode.lastElementChild : null;
+        if (lastEntry && lastEntry.dataset && lastEntry.dataset.label === label) {
+            var count = parseInt(lastEntry.dataset.count ? lastEntry.dataset.count : '1', 10) + 1;
+            lastEntry.dataset.count = String(count);
+            lastEntry.textContent = label + ' ×' + count;
+        } else if (bodyNode) {
+            var entry = document.createElement('div');
+            entry.className = 'activity-entry';
+            entry.dataset.label = label;
+            entry.dataset.count = '1';
+            entry.textContent = label;
+            bodyNode.appendChild(entry);
+        }
+
+        if (activity.dataset) {
+            var totalCount = parseInt(activity.dataset.count ? activity.dataset.count : '0', 10) + 1;
+            activity.dataset.count = String(totalCount);
+            activity.dataset.lastEntry = label;
+        }
+
+        var summaryTextNode = document.getElementById('assistant-activity-summary-text');
+        if (summaryTextNode) {
+            summaryTextNode.textContent = buildAssistantActivitySummary(activity.dataset.count, label);
+        }
+        var summaryBadgeNode = document.getElementById('assistant-activity-summary-badge');
+        if (summaryBadgeNode && activity.dataset) {
+            summaryBadgeNode.textContent = activity.dataset.count;
+        }
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function finalizeAssistantActivity() {
+        var activity = document.getElementById('assistant-activity-message');
+        if (!activity) {
+            return;
+        }
+        activity.removeAttribute('id');
+        var childIds = ['assistant-activity-body', 'assistant-activity-toggle',
+                        'assistant-activity-summary-text', 'assistant-activity-summary-badge'];
+        childIds.forEach(function(cid) {
+            var el = document.getElementById(cid);
+            if (el) el.removeAttribute('id');
+        });
+        if (activity.dataset) {
+            delete activity.dataset.lastEntry;
+        }
+    }
+
+    function clearAssistantActivity() {
+        var activity = document.getElementById('assistant-activity-message');
+        if (!activity) {
+            return;
+        }
+        activity.remove();
+    }
+
+    function buildAssistantActivitySummary(count, lastLabel) {
+        var parsedCount = parseInt(count ? count : '0', 10);
+        var safeCount = Number.isNaN(parsedCount) ? 0 : parsedCount;
+        if (safeCount <= 1) {
+            return 'OpenCode: ' + lastLabel;
+        }
+        return 'OpenCode tools: ' + safeCount + ' · latest: ' + lastLabel;
+    }
+
+    function toggleAssistantActivity() {
+        var activity = document.getElementById('assistant-activity-message');
+        if (!activity || !activity.dataset) {
+            return;
+        }
+        var body = document.getElementById('assistant-activity-body');
+        var toggle = document.getElementById('assistant-activity-toggle');
+        if (!body || !toggle) {
+            return;
+        }
+        var expanded = activity.dataset.expanded === 'true';
+        if (expanded) {
+            body.classList.remove('open');
+            activity.dataset.expanded = 'false';
+            toggle.textContent = '▸';
+            toggle.setAttribute('aria-label', 'Show details');
+        } else {
+            body.classList.add('open');
+            activity.dataset.expanded = 'true';
+            toggle.textContent = '▾';
+            toggle.setAttribute('aria-label', 'Hide details');
+        }
+    }
+
+    function showAssistantReasoning(title, htmlContent) {
+        var chatContainer = document.getElementById('chat-container');
+        if (!chatContainer) {
+            return;
+        }
+        var card = document.getElementById('assistant-reasoning-message');
+        if (!card) {
+            card = document.createElement('div');
+            card.className = 'chat-message assistant reasoning-message';
+            card.id = 'assistant-reasoning-message';
+            card.dataset.transient = 'true';
+
+            var details = document.createElement('details');
+            details.className = 'reasoning-details';
+            details.open = true;
+
+            var summary = document.createElement('summary');
+            summary.className = 'reasoning-summary';
+            summary.textContent = title;
+
+            var body = document.createElement('div');
+            body.className = 'reasoning-body';
+            body.id = 'assistant-reasoning-body';
+
+            details.appendChild(summary);
+            details.appendChild(body);
+            card.appendChild(details);
+            chatContainer.appendChild(card);
+        }
+        var bodyNode = document.getElementById('assistant-reasoning-body');
+        if (bodyNode) {
+            bodyNode.innerHTML = htmlContent;
+        }
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function showAssistantCommentary(title, htmlContent) {
+        var chatContainer = document.getElementById('chat-container');
+        if (!chatContainer) {
+            return;
+        }
+        var card = document.getElementById('assistant-commentary-message');
+        if (!card) {
+            card = document.createElement('div');
+            card.className = 'chat-message assistant commentary-message';
+            card.id = 'assistant-commentary-message';
+            card.dataset.transient = 'true';
+
+            var details = document.createElement('details');
+            details.className = 'commentary-details';
+            details.open = true;
+
+            var summary = document.createElement('summary');
+            summary.className = 'commentary-summary';
+            summary.textContent = title;
+
+            var body = document.createElement('div');
+            body.className = 'commentary-body';
+            body.id = 'assistant-commentary-body';
+
+            details.appendChild(summary);
+            details.appendChild(body);
+            card.appendChild(details);
+            chatContainer.appendChild(card);
+        }
+        var bodyNode = document.getElementById('assistant-commentary-body');
+        if (bodyNode) {
+            bodyNode.innerHTML = htmlContent;
+        }
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function finalizeAssistantReasoning() {
+        var card = document.getElementById('assistant-reasoning-message');
+        if (!card) {
+            return;
+        }
+        card.removeAttribute('id');
+        var body = document.getElementById('assistant-reasoning-body');
+        if (body) {
+            body.removeAttribute('id');
+        }
+    }
+
+    function finalizeAssistantCommentary() {
+        var card = document.getElementById('assistant-commentary-message');
+        if (!card) {
+            return;
+        }
+        card.removeAttribute('id');
+        var body = document.getElementById('assistant-commentary-body');
+        if (body) {
+            body.removeAttribute('id');
+        }
+    }
+
+    function clearAssistantReasoning() {
+        var card = document.getElementById('assistant-reasoning-message');
+        if (!card) {
+            return;
+        }
+        card.remove();
+    }
+
+    function clearAssistantCommentary() {
+        var card = document.getElementById('assistant-commentary-message');
+        if (!card) {
+            return;
+        }
+        card.remove();
+    }
+
+    function attachProcessPanelToLastAssistantMessage(summaryText, reasoningTitle, reasoningHtml, commentaryTitle, commentaryHtml, toolsHtml) {
+        var chatContainer = document.getElementById('chat-container');
+        if (!chatContainer || !chatContainer.children) {
+            return;
+        }
+
+        var target = null;
+        for (var i = chatContainer.children.length - 1; i >= 0; i--) {
+            var node = chatContainer.children[i];
+            if (!node || !node.classList) {
+                continue;
+            }
+            if (node.id === 'streaming-message') {
+                target = node;
+                break;
+            }
+            if (node.classList.contains('chat-message')
+                && node.classList.contains('assistant')
+                && (!node.dataset || node.dataset.transient !== 'true')) {
+                target = node;
+                break;
+            }
+        }
+
+        if (!target) {
+            return;
+        }
+
+        var existing = target.querySelector('.assistant-process');
+        if (existing) {
+            existing.remove();
+        }
+
+        var hasReasoning = reasoningHtml && reasoningHtml.trim() !== '';
+        var hasCommentary = commentaryHtml && commentaryHtml.trim() !== '';
+        var hasTools = toolsHtml && toolsHtml.trim() !== '';
+        if (!hasReasoning && !hasCommentary && !hasTools) {
+            return;
+        }
+
+        var shell = document.createElement('div');
+        shell.className = 'assistant-process';
+
+        var toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'assistant-process-toggle';
+
+        var summary = document.createElement('span');
+        summary.className = 'assistant-process-summary';
+        summary.textContent = summaryText ? summaryText : 'Process';
+
+        var chevron = document.createElement('span');
+        chevron.className = 'assistant-process-chevron';
+        chevron.textContent = '▸';
+
+        toggle.appendChild(summary);
+        toggle.appendChild(chevron);
+
+        var body = document.createElement('div');
+        body.className = 'assistant-process-body';
+
+        function appendSection(title, html) {
+            if (!html || html.trim() === '') {
+                return;
+            }
+            var section = document.createElement('div');
+            section.className = 'assistant-process-section';
+
+            var titleNode = document.createElement('div');
+            titleNode.className = 'assistant-process-title';
+            titleNode.textContent = title;
+
+            var contentNode = document.createElement('div');
+            contentNode.className = 'assistant-process-content';
+            contentNode.innerHTML = html;
+
+            section.appendChild(titleNode);
+            section.appendChild(contentNode);
+            body.appendChild(section);
+        }
+
+        appendSection(reasoningTitle, reasoningHtml);
+        appendSection(commentaryTitle, commentaryHtml);
+        appendSection('Tools', toolsHtml);
+
+        toggle.onclick = function() {
+            var expanded = body.classList.contains('open');
+            if (expanded) {
+                body.classList.remove('open');
+                chevron.textContent = '▸';
+            } else {
+                body.classList.add('open');
+                chevron.textContent = '▾';
+            }
+        };
+
+        shell.appendChild(toggle);
+        shell.appendChild(body);
+        target.appendChild(shell);
+    }
+
+    function showAssistantPermissionRequest(requestId, title, message, approveLabel, approveAlwaysLabel, denyLabel) {
+        var chatContainer = document.getElementById('chat-container');
+        if (!chatContainer || !requestId) {
+            return;
+        }
+
+        var messageId = 'assistant-permission-' + requestId;
+        var card = document.getElementById(messageId);
+        if (!card) {
+            card = document.createElement('div');
+            card.className = 'chat-message assistant permission-message';
+            card.id = messageId;
+            card.dataset.transient = 'true';
+
+            var shell = document.createElement('div');
+            shell.className = 'permission-shell';
+
+            var header = document.createElement('div');
+            header.className = 'permission-header';
+
+            var titleNode = document.createElement('div');
+            titleNode.className = 'permission-title';
+            titleNode.textContent = title;
+            header.appendChild(titleNode);
+
+            var badge = document.createElement('div');
+            badge.className = 'permission-badge';
+            badge.textContent = 'Approval';
+            header.appendChild(badge);
+            shell.appendChild(header);
+
+            var body = document.createElement('div');
+            body.className = 'permission-message-body';
+            body.textContent = message;
+            shell.appendChild(body);
+
+            var actions = document.createElement('div');
+            actions.className = 'permission-actions';
+
+            function createButton(label, cssClass, actionName) {
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.className = cssClass;
+                button.textContent = label;
+                button.onclick = function() {
+                    markAssistantPermissionRequestPending(requestId, label + '...');
+                    if (window.alinaBrowserBridge && window.alinaBrowserBridge.handlePermissionAction) {
+                        window.alinaBrowserBridge.handlePermissionAction(requestId, actionName);
+                    } else if (window.alert) {
+                        window.alert('__ALINA_PERMISSION__|' + requestId + '|' + actionName);
+                    }
+                };
+                return button;
+            }
+
+            actions.appendChild(createButton(approveLabel, 'primary', 'APPROVE_ONCE'));
+            actions.appendChild(createButton(approveAlwaysLabel, 'always', 'APPROVE_ALWAYS'));
+            actions.appendChild(createButton(denyLabel, 'deny', 'DENY'));
+            shell.appendChild(actions);
+
+            var status = document.createElement('div');
+            status.className = 'permission-status';
+            status.id = messageId + '-status';
+            shell.appendChild(status);
+
+            card.appendChild(shell);
+
+            chatContainer.appendChild(card);
+        }
+
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function markAssistantPermissionRequestPending(requestId, statusLabel) {
+        var card = document.getElementById('assistant-permission-' + requestId);
+        if (!card) {
+            return;
+        }
+        var buttons = card.querySelectorAll('button');
+        Array.prototype.forEach.call(buttons, function(button) {
+            button.disabled = true;
+        });
+        var status = document.getElementById('assistant-permission-' + requestId + '-status');
+        if (status) {
+            status.textContent = statusLabel ? statusLabel : '';
+        }
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function resolveAssistantPermissionRequest(requestId, statusLabel) {
+        var card = document.getElementById('assistant-permission-' + requestId);
+        if (!card) {
+            return;
+        }
+        var buttons = card.querySelectorAll('button');
+        Array.prototype.forEach.call(buttons, function(button) {
+            button.disabled = true;
+        });
+        var status = document.getElementById('assistant-permission-' + requestId + '-status');
+        if (status) {
+            status.textContent = statusLabel ? statusLabel : '';
+        }
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function startStreamingAssistantMessage() {
+        var chatContainer = document.getElementById('chat-container');
+        var streamingDiv = null;
+
+        if (arguments.length > 0 && arguments[0] === true) {
+            var target = document.getElementById('regenerate-target');
+            if (target) {
+                streamingDiv = target;
+            }
+        }
+
+        if (!streamingDiv) {
+            streamingDiv = document.createElement('div');
+            chatContainer.appendChild(streamingDiv);
+        }
+
+        streamingDiv.className = 'chat-message assistant';
+        streamingDiv.id = 'streaming-message';
+        streamingDiv.innerHTML = '';
+
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function appendToStreamingMessage(escapedToken) {
+        var streamingDiv = document.getElementById('streaming-message');
+        if (streamingDiv) {
+            // Use textContent to preserve markdown syntax during streaming
+            if (streamingDiv.textContent === undefined) {
+                streamingDiv.innerText += escapedToken;
+            } else {
+                streamingDiv.textContent += escapedToken;
+            }
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+    }
+
+    function updateStreamingMessageWithHtml(htmlContent) {
+        var streamingDiv = document.getElementById('streaming-message');
+        if (streamingDiv) {
+            // Update with processed HTML content in real-time
+            streamingDiv.innerHTML = htmlContent;
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+    }
+
+    function finishStreamingMessage() {
+        var streamingDiv = document.getElementById('streaming-message');
+        if (streamingDiv) {
+            // Remove the streaming ID so it becomes a regular message
+            streamingDiv.removeAttribute('id');
+            // Scroll to bottom one final time
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+    }
+
+    function finishStreamingMessageWithMarkdown(processedHtml) {
+        var streamingDiv = document.getElementById('streaming-message');
+        if (streamingDiv) {
+            // Replace raw content with processed markdown HTML
+            streamingDiv.innerHTML = processedHtml;
+            // Remove the streaming ID so it becomes a regular message
+            streamingDiv.removeAttribute('id');
+            // Scroll to bottom one final time
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+    }
+
+    function scrollToBottom() {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function attachMessageFooter(footerText) {
+        var chatContainer = document.getElementById('chat-container');
+        if (!chatContainer || !chatContainer.children) return;
+        var target = null;
+        for (var i = chatContainer.children.length - 1; i >= 0; i--) {
+            var node = chatContainer.children[i];
+            if (!node || !node.classList) continue;
+            if (node.classList.contains('chat-message')
+                && node.classList.contains('assistant')
+                && (!node.dataset || node.dataset.transient !== 'true')) {
+                target = node;
+                break;
+            }
+        }
+        if (!target) return;
+        var existing = target.querySelector('.message-footer');
+        if (existing) existing.remove();
+        var footer = document.createElement('div');
+        footer.className = 'message-footer';
+        footer.textContent = footerText;
+        target.appendChild(footer);
+    }
+
+    function prepareRegenerationTarget() {
+        var chatContainer = document.getElementById('chat-container');
+        if (!chatContainer || !chatContainer.children) {
+            return false;
+        }
+
+        for (var i = chatContainer.children.length - 1; i >= 0; i--) {
+            var node = chatContainer.children[i];
+            if (!node || !node.classList) {
+                continue;
+            }
+            if (node.classList.contains('chat-message')
+                && node.classList.contains('assistant')
+                && (!node.dataset || node.dataset.transient !== 'true')) {
+                if (node.dataset) {
+                    node.dataset.prevHtml = node.innerHTML;
+                }
+                node.id = 'regenerate-target';
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function restoreRegenerationTarget() {
+        var node = document.getElementById('streaming-message');
+        if (!node) {
+            node = document.getElementById('regenerate-target');
+        }
+        if (!node) {
+            return;
+        }
+
+        if (node.dataset && node.dataset.prevHtml !== undefined) {
+            node.innerHTML = node.dataset.prevHtml;
+            delete node.dataset.prevHtml;
+        }
+        node.removeAttribute('id');
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function discardRegenerationBackup() {
+        var node = document.getElementById('streaming-message');
+        if (!node) {
+            node = document.getElementById('regenerate-target');
+        }
+        if (!node) {
+            return;
+        }
+        if (node.dataset && node.dataset.prevHtml !== undefined) {
+            delete node.dataset.prevHtml;
+        }
+    }

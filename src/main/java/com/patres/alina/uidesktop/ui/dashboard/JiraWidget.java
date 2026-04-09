@@ -3,7 +3,6 @@ package com.patres.alina.uidesktop.ui.dashboard;
 import atlantafx.base.theme.Styles;
 import com.patres.alina.server.integration.JiraIssue;
 import com.patres.alina.server.integration.JiraIssueResult;
-import com.patres.alina.server.integration.JiraService;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.chat.Browser;
 import com.patres.alina.uidesktop.util.EmojiLabelHelper;
@@ -100,7 +99,7 @@ public class JiraWidget extends VBox {
                 return;
             }
             
-            final JiraIssueResult result = JiraService.fetchAssignedIssues(email, token, maxResults);
+            final JiraIssueResult result = BackendApi.fetchJiraAssignedIssues(email, token, maxResults);
             Platform.runLater(() -> render(result));
         });
     }

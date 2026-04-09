@@ -2,8 +2,11 @@ package com.patres.alina.server.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.patres.alina.server.integration.http.HttpClientFactory;
+import com.patres.alina.server.integration.http.HttpResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -20,7 +23,8 @@ import java.util.List;
  * Service for interacting with Jira Cloud API.
  * Fetches issues assigned to the current user that are not closed/done/rejected.
  */
-public final class JiraService {
+@Service
+public class JiraService {
 
     private static final Logger logger = LoggerFactory.getLogger(JiraService.class);
 
@@ -34,8 +38,10 @@ public final class JiraService {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
-    private JiraService() {
-        // utility class
+    private final HttpClient httpClient;
+
+    public JiraService(final HttpClientFactory httpClientFactory) {
+        this.httpClient = httpClientFactory.getClient();
     }
 
     /**
@@ -46,7 +52,7 @@ public final class JiraService {
      * @param maxResults maximum number of issues to return in the result list
      * @return result containing the issues and total count
      */
-    public static JiraIssueResult fetchAssignedIssues(final String jiraEmail, final String jiraApiToken, final int maxResults) {
+    public JiraIssueResult fetchAssignedIssues(final String jiraEmail, final String jiraApiToken, final int maxResults) {
         if (jiraEmail == null || jiraEmail.isBlank() || jiraApiToken == null || jiraApiToken.isBlank()) {
             logger.info("Jira: skipping fetch - email or token is empty");
             return new JiraIssueResult(Collections.emptyList(), 0);
@@ -56,10 +62,6 @@ public final class JiraService {
         logger.info("Jira: starting fetch with email: {}, maxResults: {}", emailPrefix, maxResults);
 
         try {
-            final HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(TIMEOUT)
-                    .build();
-
             // Build search URL with JQL query
             final String encodedJql = URLEncoder.encode(JQL_TEMPLATE, StandardCharsets.UTF_8);
             final String searchUrl = JIRA_BASE_URL + SEARCH_API_PATH 
@@ -82,18 +84,16 @@ public final class JiraService {
                     .GET()
                     .build();
 
-            final HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             logger.info("Jira: search response status = {}, body length = {}", 
                     response.statusCode(), response.body().length());
 
-            if (response.statusCode() == 401) {
-                logger.warn("Jira API returned 401 Unauthorized. Check your email and API token. " +
-                        "Create an API token at: https://id.atlassian.com/manage-profile/security/api-tokens");
-                return new JiraIssueResult(Collections.emptyList(), 0);
-            }
-
-            if (response.statusCode() != 200) {
-                logger.warn("Jira API returned status {}: {}", response.statusCode(), response.body());
+            if (!HttpResponseHandler.isSuccess(response)) {
+                HttpResponseHandler.describeError("Jira", response);
+                if (response.statusCode() == 401) {
+                    logger.warn("Jira API returned 401 Unauthorized. Check your email and API token. " +
+                            "Create an API token at: https://id.atlassian.com/manage-profile/security/api-tokens");
+                }
                 return new JiraIssueResult(Collections.emptyList(), 0);
             }
 
@@ -108,7 +108,7 @@ public final class JiraService {
         }
     }
 
-    private static JiraIssueResult parseResponse(final String json, final int maxResults) throws Exception {
+    private JiraIssueResult parseResponse(final String json, final int maxResults) throws Exception {
         final JsonNode root = OBJECT_MAPPER.readTree(json);
         final int totalCount = root.path("total").asInt(0);
         logger.info("Jira: total issues matching query = {}", totalCount);

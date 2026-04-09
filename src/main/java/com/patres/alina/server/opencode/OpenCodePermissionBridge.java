@@ -7,6 +7,7 @@ import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.permission.PermissionApprovalAction;
 import com.patres.alina.common.permission.PermissionResolutionModel;
 import com.patres.alina.common.storage.OpenCodePaths;
+import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -74,7 +75,7 @@ public class OpenCodePermissionBridge {
                                              final BiConsumer<String, PendingPermission> onResolved) {
         final PendingPermission pendingPermission = pendingPermissions.remove(requestId);
         if (pendingPermission == null) {
-            return PermissionResolutionModel.missing("To zapytanie o zgodę OpenCode nie jest już aktywne.");
+            return PermissionResolutionModel.missing(LanguageManager.getLanguageString("chat.permission.missing"));
         }
 
         final ObjectNode body = objectMapper.createObjectNode();
@@ -97,16 +98,16 @@ public class OpenCodePermissionBridge {
             httpClient.post("/session/%s/permissions/%s".formatted(pendingPermission.sessionId(), requestId), body);
             onResolved.accept(requestId, pendingPermission);
             if (action == PermissionApprovalAction.DENY) {
-                return PermissionResolutionModel.denied("Dostęp odrzucony.");
+                return PermissionResolutionModel.denied(LanguageManager.getLanguageString("chat.permission.denied"));
             }
             final boolean persisted = action == PermissionApprovalAction.APPROVE_ALWAYS;
             final String message = persisted
-                    ? "Trwała zgoda została przekazana do OpenCode. OpenCode kontynuuje."
-                    : "Jednorazowa zgoda przyjęta. OpenCode kontynuuje.";
+                    ? LanguageManager.getLanguageString("chat.permission.approvedAlways")
+                    : LanguageManager.getLanguageString("chat.permission.approvedOnce");
             return PermissionResolutionModel.approved(persisted, true, message);
         } catch (Exception e) {
             logger.warn("Cannot resolve OpenCode permission request {}", requestId, e);
-            return PermissionResolutionModel.denied("Nie udało się przekazać decyzji do OpenCode: " + e.getMessage());
+            return PermissionResolutionModel.denied(LanguageManager.getLanguageString("chat.permission.error", e.getMessage()));
         }
     }
 

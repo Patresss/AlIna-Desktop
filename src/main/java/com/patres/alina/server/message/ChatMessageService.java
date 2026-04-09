@@ -16,6 +16,7 @@ import com.patres.alina.server.command.CommandFileService;
 import com.patres.alina.server.assistant.AssistantPromptService;
 import com.patres.alina.server.opencode.OpenCodeRuntimeService;
 import com.patres.alina.server.thread.ChatThreadFacade;
+import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AbstractMessage;
@@ -233,7 +234,7 @@ public class ChatMessageService {
 
         try {
             if (!openCodeRuntimeService.isEnabled()) {
-                throw new IllegalStateException("OpenCode runtime is disabled. Włącz OpenCode w ustawieniach Workspace.");
+                throw new IllegalStateException(LanguageManager.getLanguageString("error.opencode.disabled"));
             }
             final String systemPrompt = buildOpenCodeSystemPrompt(contextMessages);
             final String historySummary = summarizeHistoryForOpenCode(contextMessages);

@@ -2,8 +2,11 @@ package com.patres.alina.server.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.patres.alina.server.integration.http.HttpClientFactory;
+import com.patres.alina.server.integration.http.HttpResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -14,7 +17,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class GitHubService {
+@Service
+public class GitHubService {
 
     private static final Logger logger = LoggerFactory.getLogger(GitHubService.class);
 
@@ -27,11 +31,13 @@ public final class GitHubService {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
-    private GitHubService() {
-        // utility class
+    private final HttpClient httpClient;
+
+    public GitHubService(final HttpClientFactory httpClientFactory) {
+        this.httpClient = httpClientFactory.getClient();
     }
 
-    public static GitHubPullRequestResult fetchPendingReviews(final String githubToken, final int maxResults) {
+    public GitHubPullRequestResult fetchPendingReviews(final String githubToken, final int maxResults) {
         if (githubToken == null || githubToken.isBlank()) {
             return new GitHubPullRequestResult(Collections.emptyList(), 0);
         }
@@ -40,11 +46,7 @@ public final class GitHubService {
         logger.info("GitHub: starting fetch with token: {}, maxResults: {}", tokenPrefix, maxResults);
 
         try {
-            final HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(TIMEOUT)
-                    .build();
-
-            final String username = fetchAuthenticatedUsername(client, githubToken);
+            final String username = fetchAuthenticatedUsername(githubToken);
             if (username == null) {
                 logger.warn("Could not resolve GitHub username — check if the token is valid");
                 return new GitHubPullRequestResult(Collections.emptyList(), 0);
@@ -63,10 +65,11 @@ public final class GitHubService {
                     .GET()
                     .build();
 
-            final HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             logger.info("GitHub: search response status = {}, body length = {}", response.statusCode(), response.body().length());
 
-            if (response.statusCode() != 200) {
+            if (!HttpResponseHandler.isSuccess(response)) {
+                HttpResponseHandler.describeError("GitHub", response);
                 logger.warn("GitHub API returned status {}: {}. Token used: {}. " +
                         "If 401, verify: 1) Token is valid and not expired, 2) Token has 'repo' or 'public_repo' scope, " +
                         "3) You've restarted the app after updating the token in settings",
@@ -78,7 +81,7 @@ public final class GitHubService {
             logger.info("GitHub: found {} pull requests from search", allPRs.size());
             
             // Filter to only PRs that need review from user
-            final GitHubPullRequestResult result = filterPRsNeedingReview(client, githubToken, username, allPRs, maxResults);
+            final GitHubPullRequestResult result = filterPRsNeedingReview(githubToken, username, allPRs, maxResults);
             logger.info("GitHub: filtered to {} pull requests needing review (total: {})", 
                     result.pullRequests().size(), result.totalCount());
             
@@ -93,7 +96,7 @@ public final class GitHubService {
         }
     }
 
-    private static String fetchAuthenticatedUsername(final HttpClient client, final String githubToken) throws Exception {
+    private String fetchAuthenticatedUsername(final String githubToken) throws Exception {
         final HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(USER_URL))
                 .header("Authorization", "Bearer " + githubToken)
@@ -103,10 +106,10 @@ public final class GitHubService {
                 .GET()
                 .build();
 
-        final HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() != 200) {
-            logger.warn("GitHub /user API returned status {}: {}", response.statusCode(), response.body());
+        if (!HttpResponseHandler.isSuccess(response)) {
+            HttpResponseHandler.describeError("GitHub", response);
             return null;
         }
 
@@ -124,8 +127,7 @@ public final class GitHubService {
      * - User has reviewed but last review is not APPROVED (COMMENTED, CHANGES_REQUESTED, DISMISSED)
      * Returns result with limited number of PRs and total count of all matching PRs.
      */
-    private static GitHubPullRequestResult filterPRsNeedingReview(
-            final HttpClient client,
+    private GitHubPullRequestResult filterPRsNeedingReview(
             final String githubToken,
             final String username,
             final List<GitHubPullRequest> allPRs,
@@ -136,7 +138,7 @@ public final class GitHubService {
         
         for (final GitHubPullRequest pr : allPRs) {
             try {
-                if (needsReviewFromUser(client, githubToken, username, pr)) {
+                if (needsReviewFromUser(githubToken, username, pr)) {
                     allMatching.add(pr);
                     if (limited.size() < maxResults) {
                         limited.add(pr);
@@ -163,8 +165,7 @@ public final class GitHubService {
      * - User is in requested_reviewers (directly, not via team), OR
      * - User has reviewed but last review state is not APPROVED
      */
-    private static boolean needsReviewFromUser(
-            final HttpClient client,
+    private boolean needsReviewFromUser(
             final String githubToken,
             final String username,
             final GitHubPullRequest pr) throws Exception {
@@ -189,10 +190,10 @@ public final class GitHubService {
                 .GET()
                 .build();
         
-        final HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         
-        if (response.statusCode() != 200) {
-            logger.warn("Failed to fetch PR details for {}: status {}", detailsUrl, response.statusCode());
+        if (!HttpResponseHandler.isSuccess(response)) {
+            HttpResponseHandler.describeError("GitHub", response);
             return true; // Include by default if we can't check
         }
         
@@ -221,9 +222,9 @@ public final class GitHubService {
                 .GET()
                 .build();
         
-        final HttpResponse<String> reviewsResponse = client.send(reviewsRequest, HttpResponse.BodyHandlers.ofString());
-        if (reviewsResponse.statusCode() != 200) {
-            logger.warn("Failed to fetch reviews for {}: status {}", reviewsUrl, reviewsResponse.statusCode());
+        final HttpResponse<String> reviewsResponse = httpClient.send(reviewsRequest, HttpResponse.BodyHandlers.ofString());
+        if (!HttpResponseHandler.isSuccess(reviewsResponse)) {
+            HttpResponseHandler.describeError("GitHub", reviewsResponse);
             return false; // If we can't check reviews, assume not needed
         }
         
@@ -260,7 +261,7 @@ public final class GitHubService {
      * Extracts PR number from GitHub PR URL.
      * Example: "https://github.com/owner/repo/pull/123" -> "123"
      */
-    private static String extractPRNumber(final String prUrl) {
+    private String extractPRNumber(final String prUrl) {
         if (prUrl == null || prUrl.isBlank()) {
             return null;
         }
@@ -271,7 +272,7 @@ public final class GitHubService {
         return null;
     }
 
-    private static List<GitHubPullRequest> parseResponse(final String json) throws Exception {
+    private List<GitHubPullRequest> parseResponse(final String json) throws Exception {
         final JsonNode root = OBJECT_MAPPER.readTree(json);
         final JsonNode totalCount = root.get("total_count");
         logger.info("GitHub: total_count = {}", totalCount);
@@ -297,7 +298,7 @@ public final class GitHubService {
         return Collections.unmodifiableList(pullRequests);
     }
 
-    private static String getTextOrDefault(final JsonNode node, final String field, final String defaultValue) {
+    private String getTextOrDefault(final JsonNode node, final String field, final String defaultValue) {
         if (node.has(field) && !node.get(field).isNull()) {
             return node.get(field).asText(defaultValue);
         }
@@ -308,7 +309,7 @@ public final class GitHubService {
      * Extracts "owner/repo" from a GitHub API repository URL like
      * "https://api.github.com/repos/owner/repo".
      */
-    private static String extractRepositoryName(final String repositoryUrl) {
+    private String extractRepositoryName(final String repositoryUrl) {
         if (repositoryUrl == null || repositoryUrl.isBlank()) {
             return "unknown";
         }

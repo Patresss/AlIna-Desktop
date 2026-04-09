@@ -23,6 +23,10 @@ import com.patres.alina.server.settings.SettingsController;
 import com.patres.alina.server.speech.SpeechToTextController;
 import com.patres.alina.server.assistant.PermissionRequestController;
 import com.patres.alina.server.thread.ChatThreadController;
+import com.patres.alina.server.integration.GitHubPullRequestResult;
+import com.patres.alina.server.integration.GitHubService;
+import com.patres.alina.server.integration.JiraIssueResult;
+import com.patres.alina.server.integration.JiraService;
 import com.patres.alina.server.workspace.WorkspaceController;
 
 import java.io.File;
@@ -161,5 +165,13 @@ public class BackendApi {
 
     public static String getOpenCodeSessionWebUrl(final String chatThreadId) {
         return AppLauncher.getBean(WorkspaceController.class).getOpenCodeSessionWebUrl(chatThreadId);
+    }
+
+    public static JiraIssueResult fetchJiraAssignedIssues(final String jiraEmail, final String jiraApiToken, final int maxResults) {
+        return AppLauncher.getBean(JiraService.class).fetchAssignedIssues(jiraEmail, jiraApiToken, maxResults);
+    }
+
+    public static GitHubPullRequestResult fetchGitHubPendingReviews(final String githubToken, final int maxResults) {
+        return AppLauncher.getBean(GitHubService.class).fetchPendingReviews(githubToken, maxResults);
     }
 }

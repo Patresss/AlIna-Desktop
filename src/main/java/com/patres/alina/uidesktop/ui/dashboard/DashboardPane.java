@@ -8,6 +8,7 @@ import com.patres.alina.common.event.DashboardUpdatedEvent;
 import com.patres.alina.common.event.WorkspaceSettingsUpdatedEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.uidesktop.backend.BackendApi;
+import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.util.EmojiLabelHelper;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -108,7 +109,7 @@ public class DashboardPane extends VBox {
 
         tasksBox.getChildren().clear();
         if (state.tasks().isEmpty()) {
-            final Label emptyState = new Label("Brak aktywnych tasków.");
+            final Label emptyState = new Label(LanguageManager.getLanguageString("dashboard.tasks.empty"));
             emptyState.getStyleClass().add("workspace-dashboard-empty");
             tasksBox.getChildren().add(emptyState);
             return;

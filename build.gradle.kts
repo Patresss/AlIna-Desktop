@@ -65,7 +65,6 @@ dependencies {
     implementation("org.springframework.ai:spring-ai-starter-mcp-client:1.0.3")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.security:spring-security-test")
 
 }
 
