@@ -51,7 +51,7 @@ public class MarkdownParser {
         
         ParsedFrontmatter parsedFrontmatter = parseYaml(frontmatterYaml, id);
         if (!id.equals(parsedFrontmatter.id())) {
-            logger.warn("Frontmatter id '{}' does not match filename '{}', using frontmatter id", parsedFrontmatter.id(), id);
+            logger.debug("Frontmatter id '{}' does not match filename '{}', using frontmatter id", parsedFrontmatter.id(), id);
         }
         return new ParsedCommand(parsedFrontmatter.id(), parsedFrontmatter.metadata(), markdownContent);
     }

@@ -74,7 +74,8 @@ tasks.withType<Test> {
 
 val runArgsValue = listOf(
     "-Djavafx.enablePreview=true",
-    "-Djava.awt.headless=false"
+    "-Djava.awt.headless=false",
+    "--enable-native-access=javafx.web,javafx.graphics,ALL-UNNAMED"
 )
 
 val title = "AlIna"
