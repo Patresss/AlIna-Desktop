@@ -22,9 +22,13 @@ import com.patres.alina.uidesktop.common.event.shortcut.FocusShortcutTriggeredEv
 import com.patres.alina.uidesktop.common.event.shortcut.SpeechShortcutTriggeredEvent;
 import com.patres.alina.uidesktop.command.SearchCommandPopup;
 import com.patres.alina.uidesktop.microphone.AudioRecorder;
+import com.patres.alina.uidesktop.settings.UiSettings;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
 import com.patres.alina.common.settings.AssistantSettings;
+import com.patres.alina.uidesktop.ui.language.ApplicationLanguage;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
+import com.patres.alina.uidesktop.ui.theme.SamplerTheme;
+import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import com.patres.alina.uidesktop.ui.util.FxThreadRunner;
 import com.patres.alina.uidesktop.ui.util.NotificationSoundPlayer;
 import javafx.fxml.FXML;
@@ -55,6 +59,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import static com.patres.alina.common.message.ChatMessageRole.ASSISTANT;
+import static com.patres.alina.uidesktop.settings.SettingsMangers.UI_SETTINGS;
 
 
 public class ChatWindow extends BorderPane {
@@ -260,6 +265,7 @@ public class ChatWindow extends BorderPane {
         initModelSelector();
         setCurrentCommand(null);
         bindInputHeightToButtonsBox();
+        initLanguageListener();
 
         speechShortcutTriggeredEventConsumer = event -> triggerSpeechAction();
         chatMessageStreamEventConsumer = streamingController::handleStreamEvent;
@@ -339,6 +345,12 @@ public class ChatWindow extends BorderPane {
                     statusBar.setPadding(new Insets(0, newVal.doubleValue(), 0, 0))
             );
         }
+    }
+
+    private void initLanguageListener() {
+        LanguageManager.localeProperty().addListener((_, _, _) ->
+                FxThreadRunner.run(() -> setCurrentCommand(currentCommand))
+        );
     }
 
     private void triggerSpeechAction() {
@@ -567,6 +579,8 @@ public class ChatWindow extends BorderPane {
                         modelMenu.show(modelLabel, javafx.geometry.Side.TOP, 0, 0);
                     }
                 }
+                case THEME -> showThemeMenu();
+                case LANGUAGE -> showLanguageMenu();
                 case HISTORY -> applicationWindow.openThreadHistories();
                 case COMMANDS -> applicationWindow.openCommands();
                 case UI_SETTINGS -> applicationWindow.openUiSettings();
@@ -574,6 +588,75 @@ public class ChatWindow extends BorderPane {
                 case DASHBOARD_SETTINGS -> applicationWindow.openDashboardSettings();
                 case OPENCODE_SETTINGS -> applicationWindow.openOpenCodeSettings();
             }
+        });
+    }
+
+    private void showThemeMenu() {
+        ThemeManager tm = ThemeManager.getInstance();
+        ContextMenu themeMenu = new ContextMenu();
+        List<SamplerTheme> themes = tm.getRepository().getAll();
+        SamplerTheme currentTheme = tm.getTheme();
+
+        for (SamplerTheme theme : themes) {
+            MenuItem item = new MenuItem(theme.getName());
+            if (currentTheme != null && theme.getName().equals(currentTheme.getName())) {
+                item.setGraphic(new FontIcon("mdal-check"));
+            }
+            item.setOnAction(_ -> {
+                tm.setTheme(theme);
+                saveThemeToUiSettings(theme.getName());
+            });
+            themeMenu.getItems().add(item);
+        }
+
+        themeMenu.show(chatTextArea, javafx.geometry.Side.TOP, 0, 0);
+    }
+
+    private void showLanguageMenu() {
+        ContextMenu languageMenu = new ContextMenu();
+        UiSettings currentSettings = UI_SETTINGS.getSettings();
+        String currentLang = currentSettings.language();
+
+        for (ApplicationLanguage lang : ApplicationLanguage.values()) {
+            MenuItem item = new MenuItem(lang.getLanguageName());
+            if (lang.getLocale().getLanguage().equals(currentLang)) {
+                item.setGraphic(new FontIcon("mdal-check"));
+            }
+            item.setOnAction(_ -> {
+                LanguageManager.setLanguage(lang);
+                saveLanguageToUiSettings(lang.getLocale().getLanguage());
+            });
+            languageMenu.getItems().add(item);
+        }
+
+        languageMenu.show(chatTextArea, javafx.geometry.Side.TOP, 0, 0);
+    }
+
+    private void saveThemeToUiSettings(String themeName) {
+        Thread.startVirtualThread(() -> {
+            UiSettings current = UI_SETTINGS.getSettings();
+            UiSettings updated = new UiSettings(
+                    themeName,
+                    current.language(),
+                    current.shortcutKeysSettings(),
+                    current.soundNotificationEnabled(),
+                    current.notificationSoundType()
+            );
+            UI_SETTINGS.saveDocument(updated);
+        });
+    }
+
+    private void saveLanguageToUiSettings(String language) {
+        Thread.startVirtualThread(() -> {
+            UiSettings current = UI_SETTINGS.getSettings();
+            UiSettings updated = new UiSettings(
+                    current.theme(),
+                    language,
+                    current.shortcutKeysSettings(),
+                    current.soundNotificationEnabled(),
+                    current.notificationSoundType()
+                    );
+            UI_SETTINGS.saveDocument(updated);
         });
     }
 

@@ -81,7 +81,7 @@ public class GoogleCalendarWidget extends VBox {
 
         final FontIcon calendarIcon = new FontIcon(Feather.CALENDAR);
         calendarIcon.getStyleClass().add(STYLE_DASHBOARD_TITLE);
-        titleLabel.setText(LanguageManager.getLanguageString("dashboard.calendar.title"));
+        titleLabel.textProperty().bind(LanguageManager.createStringBinding("dashboard.calendar.title"));
         titleLabel.setGraphic(calendarIcon);
         titleLabel.getStyleClass().add(STYLE_DASHBOARD_TITLE);
 

@@ -3,6 +3,7 @@ package com.patres.alina.uidesktop.ui.dashboard;
 import atlantafx.base.theme.Styles;
 import com.patres.alina.server.integration.MediaControlService;
 import com.patres.alina.uidesktop.backend.BackendApi;
+import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -36,7 +37,8 @@ public class MediaControlWidget extends VBox {
 
         // Header with title and controls in one line
         final FontIcon musicIcon = new FontIcon(Feather.MUSIC);
-        final Label titleLabel = new Label("Music");
+        final Label titleLabel = new Label();
+        titleLabel.textProperty().bind(LanguageManager.createStringBinding("dashboard.music.title"));
         titleLabel.setGraphic(musicIcon);
         titleLabel.setGraphicTextGap(6);
         titleLabel.getStyleClass().add("workspace-dashboard-title");

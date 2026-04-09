@@ -35,6 +35,10 @@ public class LanguageManager {
         Locale.setDefault(newLocale);
     }
 
+    public static ObjectProperty<Locale> localeProperty() {
+        return locale;
+    }
+
     public static StringBinding createStringBinding(String key, Object... args) {
         return Bindings.createStringBinding(() -> getLanguageString(key, args), locale);
     }
