@@ -18,6 +18,7 @@ import javafx.scene.Scene;
 import javafx.scene.SceneAntialiasing;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
@@ -26,21 +27,22 @@ import static com.patres.alina.uidesktop.settings.SettingsMangers.UI_SETTINGS;
 
 public class AssistantAppLauncher {
 
-    public static final double GOLDEN_RATIO = 1.618;
-    public static final int WIDTH = 480;
-    public static final int HIGH = (int) (WIDTH * GOLDEN_RATIO);
+    public static final int WIDTH = 760;
 
     public void start(Stage stage) throws NativeHookException {
         Thread.currentThread().setUncaughtExceptionHandler(new DefaultExceptionHandler(stage));
 
         LanguageManager.setLanguage(UI_SETTINGS.getSettings().language());
 
+        var screenBounds = Screen.getPrimary().getVisualBounds();
+        var screenHeight = screenBounds.getHeight();
+
         var root = new ApplicationWindow();
 
         var antialiasing = Platform.isSupported(ConditionalFeature.SCENE3D)
                 ? SceneAntialiasing.BALANCED
                 : SceneAntialiasing.DISABLED;
-        var scene = new Scene(root, WIDTH, HIGH, false, antialiasing);
+        var scene = new Scene(root, WIDTH, screenHeight, false, antialiasing);
         stage.initStyle(StageStyle.EXTENDED);
 
         var headerBar = new HeaderBar();
@@ -74,10 +76,10 @@ public class AssistantAppLauncher {
         // register event listeners
 
         Platform.runLater(() -> {
+            stage.setX(screenBounds.getMinX() + screenBounds.getWidth() - WIDTH);
+            stage.setY(screenBounds.getMinY());
             stage.show();
             stage.requestFocus();
-
-
         });
 
         var appGlobalContextMenu = AppGlobalContextMenu.init(root);
