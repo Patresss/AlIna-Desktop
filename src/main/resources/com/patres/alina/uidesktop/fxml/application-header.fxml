@@ -47,7 +47,6 @@
                   </Button>
                   <MenuButton maxHeight="1.0" mnemonicParsing="false">
                       <items>
-                          <MenuItem mnemonicParsing="false" onAction="#openAssistantSettings" text="%settings.assistant.title" />
                           <MenuItem mnemonicParsing="false" onAction="#openUiSettings" text="%settings.ui.title" />
                           <MenuItem mnemonicParsing="false" onAction="#openPlugins" text="%plugin.title" />
                       </items>

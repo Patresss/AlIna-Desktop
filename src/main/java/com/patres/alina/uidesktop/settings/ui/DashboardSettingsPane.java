@@ -5,11 +5,18 @@ import atlantafx.base.theme.Styles;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
-import javafx.scene.control.Separator;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.stage.FileChooser;
+import org.kordamp.ikonli.feather.Feather;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static com.patres.alina.uidesktop.ui.util.TranslatedComponentUtils.createTextSeparator;
@@ -175,6 +182,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         final var tasksHeader = createTextSeparator("settings.dashboard.tasks.section", Styles.TITLE_4);
         showDashboardTasksToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         tasksFileField = createResizableTextField(settingsBox);
+        final Node tasksFilePicker = createFilePickerField(tasksFileField, this::chooseTasksFile);
         dashboardTaskLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardTaskLimit(), settingsBox);
         final var taskLimitTile = createTile("settings.workspace.taskLimit.title", "settings.workspace.taskLimit.description");
         taskLimitTile.setAction(dashboardTaskLimitSpinner);
@@ -211,12 +219,10 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 generalHeader,
                 tileFor(showDashboardToggle, "settings.workspace.dashboard.title", "settings.workspace.dashboard.description"),
                 tileFor(alwaysOnTopToggle, "settings.workspace.ontop.title", "settings.workspace.ontop.description"),
-                new Separator(),
                 // Music
                 musicHeader,
                 tileFor(showDashboardMusicToggle, "settings.workspace.showMusic.title", "settings.workspace.showMusic.description"),
                 mediaRefreshTile,
-                new Separator(),
                 // Calendar
                 calendarHeader,
                 tileFor(showDashboardCalendarToggle, "settings.workspace.showCalendar.title", "settings.workspace.showCalendar.description"),
@@ -225,21 +231,18 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 calendarRefreshTile,
                 tileFor(calendarNotificationsToggle, "settings.workspace.calendarNotifications.title", "settings.workspace.calendarNotifications.description"),
                 calendarNotificationMinutesTile,
-                new Separator(),
                 // Tasks
                 tasksHeader,
                 tileFor(showDashboardTasksToggle, "settings.workspace.showTasks.title", "settings.workspace.showTasks.description"),
-                tileFor(tasksFileField, "settings.workspace.tasksFile.title", "settings.workspace.tasksFile.description"),
+                tileFor(tasksFilePicker, "settings.workspace.tasksFile.title", "settings.workspace.tasksFile.description"),
                 taskLimitTile,
                 tasksRefreshTile,
-                new Separator(),
                 // GitHub
                 githubHeader,
                 tileFor(showDashboardGithubToggle, "settings.workspace.showGithub.title", "settings.workspace.showGithub.description"),
                 tileFor(githubTokenField, "settings.workspace.github.token.title", "settings.workspace.github.token.description"),
                 githubRefreshTile,
                 githubPrLimitTile,
-                new Separator(),
                 // Jira
                 jiraHeader,
                 tileFor(showDashboardJiraToggle, "settings.workspace.showJira.title", "settings.workspace.showJira.description"),
@@ -258,5 +261,49 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
 
     private String orEmpty(final String value) {
         return value == null ? "" : value;
+    }
+
+    private Node createFilePickerField(final TextField field, final Runnable onPick) {
+        final Button browseButton = createButton(Feather.FOLDER, e -> onPick.run());
+        browseButton.setFocusTraversable(false);
+        final HBox box = new HBox(8, field, browseButton);
+        HBox.setHgrow(field, Priority.ALWAYS);
+        return box;
+    }
+
+    private void chooseTasksFile() {
+        final FileChooser chooser = new FileChooser();
+        chooser.setTitle("Tasks file");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Markdown files", "*.md"));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("All files", "*.*"));
+        applyInitialDirectory(chooser, tasksFileField.getText());
+        final File selected = chooser.showOpenDialog(settingsBox.getScene() == null ? null : settingsBox.getScene().getWindow());
+        if (selected != null) {
+            tasksFileField.setText(selected.getAbsolutePath());
+        }
+    }
+
+    private void applyInitialDirectory(final FileChooser chooser, final String currentValue) {
+        final Path path = resolveExistingDirectory(currentValue);
+        if (path != null) {
+            chooser.setInitialDirectory(path.toFile());
+        }
+    }
+
+    private Path resolveExistingDirectory(final String currentValue) {
+        if (currentValue == null || currentValue.isBlank()) {
+            return existingDirectory(Path.of(System.getProperty("user.home", ".")));
+        }
+        final Path path = Path.of(currentValue).toAbsolutePath().normalize();
+        // If it's a file, use its parent directory
+        final Path directory = Files.isRegularFile(path) ? path.getParent() : existingDirectory(path);
+        return directory != null ? directory : existingDirectory(Path.of(System.getProperty("user.home", ".")));
+    }
+
+    private Path existingDirectory(final Path path) {
+        if (path == null) {
+            return null;
+        }
+        return Files.isDirectory(path) ? path : null;
     }
 }

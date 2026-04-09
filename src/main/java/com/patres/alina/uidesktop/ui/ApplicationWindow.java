@@ -10,7 +10,6 @@ import com.patres.alina.uidesktop.command.settings.CommandPane;
 import com.patres.alina.uidesktop.common.event.CommandShortcutExecutedEvent;
 import com.patres.alina.uidesktop.quickaction.settings.QuickActionSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
-import com.patres.alina.uidesktop.settings.ui.AssistantSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.DashboardSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.OpenCodeSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.UiSettingsPane;
@@ -56,7 +55,6 @@ public class ApplicationWindow extends BorderPane {
 
     private final AppModalPane appModalPane = new AppModalPane();
     private final ApplicationModalPaneContent uiSettingsModalPane = new UiSettingsPane(appModalPane::hide);
-    private final ApplicationModalPaneContent assistantServerSettings = new AssistantSettingsPane(appModalPane::hide);
     private final ApplicationModalPaneContent dashboardSettingsPane = new DashboardSettingsPane(appModalPane::hide);
     private final ApplicationModalPaneContent openCodeSettingsPane = new OpenCodeSettingsPane(appModalPane::hide);
     private final ApplicationModalPaneContent chatThreadHistoryPane = new ChatThreadHistoryPane(appModalPane::hide, this);
@@ -197,11 +195,6 @@ public class ApplicationWindow extends BorderPane {
     public void openUiSettings() {
         uiSettingsModalPane.reload();
         appModalPane.show(uiSettingsModalPane);
-    }
-
-    public void openAssistantSettings() {
-        assistantServerSettings.reload();
-        appModalPane.show(assistantServerSettings);
     }
 
     public void openDashboardSettings() {

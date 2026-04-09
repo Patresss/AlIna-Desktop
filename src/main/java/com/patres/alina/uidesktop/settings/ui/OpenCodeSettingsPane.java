@@ -2,11 +2,12 @@ package com.patres.alina.uidesktop.settings.ui;
 
 import atlantafx.base.theme.Styles;
 import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
+import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.Separator;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
@@ -19,9 +20,11 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 import static com.patres.alina.uidesktop.ui.util.TranslatedComponentUtils.createTextSeparator;
 import static com.patres.alina.uidesktop.ui.util.TranslatedComponentUtils.createTile;
+import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableRegion;
 import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableTextArea;
 import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableTextField;
 
@@ -30,12 +33,14 @@ import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResiza
  */
 public class OpenCodeSettingsPane extends SettingsModalPaneContent {
 
+    private ChoiceBox<String> chatModelSelector;
     private TextField openCodeHostnameField;
     private TextField openCodePortField;
     private TextField openCodeWorkingDirectoryField;
     private TextArea openCodeStatusArea;
 
     private WorkspaceSettings settings;
+    private AssistantSettings assistantSettings;
 
     public OpenCodeSettingsPane(final Runnable backFunction) {
         super(backFunction);
@@ -44,9 +49,18 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
     @Override
     protected void reset() {
         settings = BackendApi.getWorkspaceSettings();
+        assistantSettings = BackendApi.getAssistantSettings();
         openCodeHostnameField.setText(orEmpty(settings.openCodeHostname()));
         openCodePortField.setText(String.valueOf(settings.openCodePort()));
         openCodeWorkingDirectoryField.setText(orEmpty(settings.openCodeWorkingDirectory()));
+
+        final List<String> chatModels = BackendApi.getChatModels();
+        chatModelSelector.getItems().setAll(chatModels);
+        final String selectedModel = chatModels.contains(assistantSettings.resolveModelIdentifier())
+                ? assistantSettings.resolveModelIdentifier()
+                : chatModels.isEmpty() ? assistantSettings.resolveModelIdentifier() : chatModels.getFirst();
+        chatModelSelector.setValue(selectedModel);
+
         refreshOpenCodeStatus();
     }
 
@@ -83,14 +97,31 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;
+
+        final String chatModel = Optional.ofNullable(chatModelSelector)
+                .map(ChoiceBox::getValue)
+                .orElse(assistantSettings.resolveModelIdentifier());
+        final AssistantSettings updatedAssistant = new AssistantSettings(chatModel);
+        BackendApi.updateAssistantSettings(updatedAssistant);
+        assistantSettings = updatedAssistant;
+
         refreshOpenCodeStatus();
     }
 
     @Override
     protected List<Node> generateContent() {
         settings = BackendApi.getWorkspaceSettings();
+        assistantSettings = BackendApi.getAssistantSettings();
 
         final var header = createTextSeparator("settings.opencode.title", Styles.TITLE_3);
+
+        // ── Chat model ──
+        final var chatModelHeader = createTextSeparator("settings.chatModel.title", Styles.TITLE_4);
+        chatModelSelector = createResizableRegion(ChoiceBox::new, settingsBox);
+        final var chatModelTile = createTile("settings.chatModel.title", "settings.chatModel.description");
+        chatModelTile.setAction(chatModelSelector);
+
+        // ── Runtime ──
         final var runtimeHeader = createTextSeparator("settings.workspace.runtime.title", Styles.TITLE_4);
         final var runtimeStatusHeader = createTextSeparator("settings.workspace.openCode.status.section", Styles.TITLE_4);
 
@@ -110,11 +141,12 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
 
         return List.of(
                 header,
+                chatModelHeader,
+                chatModelTile,
                 runtimeHeader,
                 tileFor(openCodeHostnameField, "settings.workspace.openCode.hostname.title", "settings.workspace.openCode.hostname.description"),
                 tileFor(openCodePortField, "settings.workspace.openCode.port.title", "settings.workspace.openCode.port.description"),
                 tileFor(openCodeWorkingDirectoryPicker, "settings.workspace.openCode.directory.title", "settings.workspace.openCode.directory.description"),
-                new Separator(),
                 runtimeStatusHeader,
                 tileFor(openCodeStatusBox, "settings.workspace.openCode.status.title", "settings.workspace.openCode.status.description")
         );

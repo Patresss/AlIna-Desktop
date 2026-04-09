@@ -548,7 +548,7 @@ public class ChatWindow extends BorderPane {
                 case HISTORY -> applicationWindow.openThreadHistories();
                 case COMMANDS -> applicationWindow.openCommands();
                 case UI_SETTINGS -> applicationWindow.openUiSettings();
-                case ASSISTANT_SETTINGS -> applicationWindow.openAssistantSettings();
+                case ASSISTANT_SETTINGS -> applicationWindow.openOpenCodeSettings();
                 case DASHBOARD_SETTINGS -> applicationWindow.openDashboardSettings();
                 case OPENCODE_SETTINGS -> applicationWindow.openOpenCodeSettings();
                 case ADD_TASK -> enterAddTaskMode();

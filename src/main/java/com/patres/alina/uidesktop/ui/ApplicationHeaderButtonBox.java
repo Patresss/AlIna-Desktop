@@ -18,8 +18,6 @@ public class ApplicationHeaderButtonBox extends HBox {
     @FXML
     private ToggleButton pinToggleButton;
     @FXML
-    private MenuItem assistantSettingsMenuItem;
-    @FXML
     private MenuItem uiSettingsMenuItem;
     @FXML
     private MenuItem dashboardSettingsMenuItem;
@@ -58,7 +56,6 @@ public class ApplicationHeaderButtonBox extends HBox {
                     BackendApi.updateWorkspaceSettings(settings.withKeepWindowAlwaysOnTop(newValue));
                 });
 
-        assistantSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("settings.assistant.title"));
         uiSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("settings.ui.title"));
         dashboardSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("settings.dashboard.title"));
         openCodeSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("settings.opencode.title"));
@@ -80,11 +77,6 @@ public class ApplicationHeaderButtonBox extends HBox {
     @FXML
     public void openUiSettings() {
         applicationWindow.openUiSettings();
-    }
-
-    @FXML
-    public void openAssistantSettings() {
-        applicationWindow.openAssistantSettings();
     }
 
     @FXML

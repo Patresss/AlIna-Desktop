@@ -8,7 +8,6 @@ import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
-import javafx.scene.control.Separator;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -248,17 +247,14 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 jiraRefreshTile,
                 jiraIssueLimitTile,
                 calendarRefreshTile,
-                new Separator(),
                 integrationsHeader,
                 tileFor(githubTokenField, "settings.workspace.github.token.title", "settings.workspace.github.token.description"),
                 tileFor(jiraEmailField, "settings.workspace.jira.email.title", "settings.workspace.jira.email.description"),
                 tileFor(jiraApiTokenField, "settings.workspace.jira.token.title", "settings.workspace.jira.token.description"),
-                new Separator(),
                 runtimeHeader,
                 tileFor(openCodeHostnameField, "settings.workspace.openCode.hostname.title", "settings.workspace.openCode.hostname.description"),
                 tileFor(openCodePortField, "settings.workspace.openCode.port.title", "settings.workspace.openCode.port.description"),
                 tileFor(openCodeWorkingDirectoryPicker, "settings.workspace.openCode.directory.title", "settings.workspace.openCode.directory.description"),
-                new Separator(),
                 runtimeStatusHeader,
                 tileFor(openCodeStatusBox, "settings.workspace.openCode.status.title", "settings.workspace.openCode.status.description")
         );

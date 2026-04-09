@@ -7,7 +7,7 @@ public enum QuickActionType {
     HISTORY("history", "quickaction.history.title", "quickaction.history.description", "mdal-history"),
     COMMANDS("commands", "quickaction.commands.title", "quickaction.commands.description", "fth-terminal"),
     UI_SETTINGS("ui-settings", "quickaction.uiSettings.title", "quickaction.uiSettings.description", "mdmz-palette"),
-    ASSISTANT_SETTINGS("assistant-settings", "quickaction.assistantSettings.title", "quickaction.assistantSettings.description", "mdmz-psychology"),
+    ASSISTANT_SETTINGS("assistant-settings", "quickaction.opencodeSettings.title", "quickaction.opencodeSettings.description", "mdal-code"),
     THEME("theme", "quickaction.theme.title", "quickaction.theme.description", "mdmz-palette"),
     LANGUAGE("language", "quickaction.language.title", "quickaction.language.description", "fth-globe"),
     DASHBOARD_SETTINGS("dashboard-settings", "quickaction.dashboardSettings.title", "quickaction.dashboardSettings.description", "mdal-dashboard"),

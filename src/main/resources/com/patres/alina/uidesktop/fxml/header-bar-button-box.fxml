@@ -59,7 +59,6 @@
       </Button>
       <MenuButton mnemonicParsing="false"  styleClass="button-circle">
          <items>
-            <MenuItem fx:id="assistantSettingsMenuItem" mnemonicParsing="false" onAction="#openAssistantSettings" text="%settings.assistant.title" />
             <MenuItem fx:id="uiSettingsMenuItem" mnemonicParsing="false" onAction="#openUiSettings" text="%settings.ui.title" />
             <MenuItem fx:id="dashboardSettingsMenuItem" mnemonicParsing="false" onAction="#openDashboardSettings" text="%settings.dashboard.title" />
             <MenuItem fx:id="openCodeSettingsMenuItem" mnemonicParsing="false" onAction="#openOpenCodeSettings" text="%settings.opencode.title" />
