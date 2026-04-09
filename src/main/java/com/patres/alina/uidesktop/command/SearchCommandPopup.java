@@ -107,6 +107,7 @@ public class SearchCommandPopup extends Popup {
         allItems.addAll(filteredCommands);
 
         commandListView.getItems().setAll(allItems);
+        commandListView.getSelectionModel().selectFirst();
         updateHeightOfListView(allItems);
     }
 
