@@ -689,10 +689,10 @@ blockquote {
 }
 /* Info (blue) — Co chcemy spróbować */
 .callout-info {
-  border-left-color: var(--color-accent-fg);
+  border-left-color: var(--color-info-fg);
 }
 .callout-info .callout-title {
-  color: var(--color-accent-fg);
+  color: var(--color-info-fg);
 }
 .callout-note {
   border-left-color: var(--color-accent-fg);
@@ -702,10 +702,10 @@ blockquote {
 }
 /* Question (yellow/amber) — Co nas zastanawia */
 .callout-question {
-  border-left-color: var(--color-attention-fg);
+  border-left-color: var(--color-warning-fg);
 }
 .callout-question .callout-title {
-  color: var(--color-attention-fg);
+  color: var(--color-warning-fg);
 }
 /* Warning (orange) */
 .callout-warning {
