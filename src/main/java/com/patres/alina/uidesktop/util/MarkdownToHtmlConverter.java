@@ -9,6 +9,7 @@ import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class MarkdownToHtmlConverter {
@@ -54,13 +55,86 @@ public final class MarkdownToHtmlConverter {
             ")"
     );
 
+    /**
+     * Pattern matching blockquotes containing Obsidian-style callout syntax.
+     * Captures the callout type (e.g. success, danger, info, question) and
+     * the remaining content up to the closing blockquote tag.
+     */
+    private static final Pattern CALLOUT_BLOCKQUOTE_PATTERN = Pattern.compile(
+            "<blockquote>\\s*<p>\\[!(\\w+)]\\s*(.*?)</blockquote>",
+            Pattern.DOTALL
+    );
+
     public static String convertMarkdownToHtml(final String markdown) {
         if (markdown == null) {
             return null;
         }
         org.commonmark.node.Node document = PARSER.parse(markdown);
         String html = RENDER.render(document).trim();
+        html = convertCalloutsToHtml(html);
         return sanitizeEmojiForWebView(html);
+    }
+
+    /**
+     * Converts Obsidian-style callout blockquotes into styled HTML div elements.
+     * <p>
+     * Transforms blockquotes like:
+     * <pre>{@code
+     * > [!success] Title text
+     * > Body text
+     * }</pre>
+     * into colored callout cards with title and body sections.
+     * Supported types include: success, danger, info, question, note, warning, tip, important, caution.
+     */
+    static String convertCalloutsToHtml(final String html) {
+        if (html == null || !html.contains("[!")) {
+            return html;
+        }
+        return CALLOUT_BLOCKQUOTE_PATTERN.matcher(html).replaceAll(matchResult -> {
+            String type = matchResult.group(1).toLowerCase();
+            String rawContent = matchResult.group(2).trim()
+                    .replaceAll("\\s*</p>\\s*$", "").trim();
+
+            String title;
+            String body;
+
+            int brIdx = rawContent.indexOf("<br>");
+            int pIdx = rawContent.indexOf("</p>");
+
+            int splitIdx;
+            int skipLen;
+            if (brIdx >= 0 && (pIdx < 0 || brIdx < pIdx)) {
+                splitIdx = brIdx;
+                skipLen = "<br>".length();
+            } else if (pIdx >= 0) {
+                splitIdx = pIdx;
+                skipLen = "</p>".length();
+            } else {
+                splitIdx = -1;
+                skipLen = 0;
+            }
+
+            if (splitIdx >= 0) {
+                title = rawContent.substring(0, splitIdx).trim();
+                body = rawContent.substring(splitIdx + skipLen).trim()
+                        .replaceAll("</p>\\s*<p>", "<br>")
+                        .replaceAll("^\\s*<p>", "")
+                        .replaceAll("</p>\\s*$", "")
+                        .trim();
+            } else {
+                title = rawContent;
+                body = "";
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("<div class=\"callout callout-").append(type).append("\">");
+            sb.append("<div class=\"callout-title\">").append(title).append("</div>");
+            if (!body.isEmpty()) {
+                sb.append("<div class=\"callout-body\">").append(body).append("</div>");
+            }
+            sb.append("</div>");
+            return Matcher.quoteReplacement(sb.toString());
+        });
     }
 
     /**

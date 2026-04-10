@@ -634,3 +634,90 @@ th, td {
 .todo-item.todo-priority-low {
   padding-left: 8px;
 }
+/* ── Blockquote ──────────────────────────────────────── */
+blockquote {
+  border-left: 4px solid var(--color-border-default);
+  margin: 8px 0;
+  padding: 6px 14px;
+  color: var(--color-fg-muted);
+  background-color: var(--color-bg-default);
+  border-radius: 4px;
+}
+/* ── Obsidian-style Callouts ─────────────────────────── */
+.callout {
+  border-left: 4px solid var(--color-border-default);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 8px 0;
+  background-color: var(--color-bg-default);
+}
+.callout-title {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.callout-body {
+  font-size: 13px;
+  color: var(--color-fg-muted);
+  line-height: 1.5;
+}
+/* Success (green) — Co poszło dobrze */
+.callout-success {
+  border-left-color: var(--color-success-fg);
+}
+.callout-success .callout-title {
+  color: var(--color-success-fg);
+}
+.callout-tip {
+  border-left-color: var(--color-success-fg);
+}
+.callout-tip .callout-title {
+  color: var(--color-success-fg);
+}
+/* Danger (red) — Co nie poszło */
+.callout-danger {
+  border-left-color: var(--color-danger-fg);
+}
+.callout-danger .callout-title {
+  color: var(--color-danger-fg);
+}
+.callout-caution {
+  border-left-color: var(--color-danger-fg);
+}
+.callout-caution .callout-title {
+  color: var(--color-danger-fg);
+}
+/* Info (blue) — Co chcemy spróbować */
+.callout-info {
+  border-left-color: var(--color-accent-fg);
+}
+.callout-info .callout-title {
+  color: var(--color-accent-fg);
+}
+.callout-note {
+  border-left-color: var(--color-accent-fg);
+}
+.callout-note .callout-title {
+  color: var(--color-accent-fg);
+}
+/* Question (yellow/amber) — Co nas zastanawia */
+.callout-question {
+  border-left-color: var(--color-attention-fg);
+}
+.callout-question .callout-title {
+  color: var(--color-attention-fg);
+}
+/* Warning (orange) */
+.callout-warning {
+  border-left-color: var(--color-warning-fg);
+}
+.callout-warning .callout-title {
+  color: var(--color-warning-fg);
+}
+/* Important (purple/accent) */
+.callout-important {
+  border-left-color: var(--color-accent-fg);
+}
+.callout-important .callout-title {
+  color: var(--color-accent-fg);
+}
