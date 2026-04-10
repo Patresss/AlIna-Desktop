@@ -755,10 +755,14 @@
 
     function getTodoStatusIcon(status) {
         switch (status) {
-            case 'completed':   return '\u2714';  // checkmark
-            case 'in_progress': return '\u25b6';  // play triangle
-            case 'cancelled':   return '\u2716';  // heavy X
-            default:            return '\u25cb';   // circle
+            case 'completed':
+                return '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.15"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            case 'in_progress':
+                return '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.1"/><circle cx="8" cy="8" r="2.5" fill="currentColor"/></svg>';
+            case 'cancelled':
+                return '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.1"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+            default:
+                return '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/></svg>';
         }
     }
 
@@ -854,10 +858,10 @@
             var expanded = body.classList.contains('open');
             if (expanded) {
                 body.classList.remove('open');
-                chevron.textContent = '\u25b8';
+                chevron.style.transform = 'rotate(0deg)';
             } else {
                 body.classList.add('open');
-                chevron.textContent = '\u25be';
+                chevron.style.transform = 'rotate(90deg)';
             }
         };
 
