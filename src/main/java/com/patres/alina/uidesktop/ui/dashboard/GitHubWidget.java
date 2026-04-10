@@ -1,6 +1,9 @@
 package com.patres.alina.uidesktop.ui.dashboard;
 
 import atlantafx.base.theme.Styles;
+import com.patres.alina.common.tracking.DashboardChangeTracker;
+import com.patres.alina.common.tracking.DashboardSection;
+import com.patres.alina.common.tracking.TrackableItem;
 import com.patres.alina.server.integration.GitHubPullRequest;
 import com.patres.alina.server.integration.GitHubPullRequestResult;
 import com.patres.alina.uidesktop.backend.BackendApi;
@@ -19,7 +22,9 @@ import javafx.util.Duration;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GitHubWidget extends VBox {
 
@@ -95,6 +100,7 @@ public class GitHubWidget extends VBox {
         Thread.startVirtualThread(() -> {
             final int maxResults = BackendApi.getWorkspaceSettings().dashboardGithubPrLimit();
             final GitHubPullRequestResult result = BackendApi.fetchGitHubPendingReviews(token, maxResults);
+            trackChanges(result.pullRequests());
             Platform.runLater(() -> render(result));
         });
     }
@@ -135,8 +141,13 @@ public class GitHubWidget extends VBox {
     }
 
     private HBox createPrRow(final GitHubPullRequest pr) {
+        final Label numberLabel = new Label("#" + pr.number());
+        numberLabel.getStyleClass().addAll("workspace-pr-number", "workspace-pr-link");
+        numberLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        numberLabel.setOnMouseClicked(event -> Browser.openWebpage(pr.url()));
+
         final String repoName = extractRepoName(pr.repository());
-        final Label repoLabel = new Label(repoName);
+        final Label repoLabel = new Label("[" + repoName + "]");
         repoLabel.getStyleClass().add("workspace-pr-repo");
         repoLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
 
@@ -145,10 +156,11 @@ public class GitHubWidget extends VBox {
         prTitleLabel.getStyleClass().add("workspace-pr-title");
         prTitleLabel.setMaxWidth(Double.MAX_VALUE);
         prTitleLabel.setWrapText(false);
+        prTitleLabel.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
         HBox.setHgrow(prTitleLabel, Priority.ALWAYS);
-        prTitleLabel.setOnMouseClicked(event -> Browser.openWebpage(pr.url()));
+        prTitleLabel.setOnMouseClicked(event -> EmojiLabelHelper.toggleWrap(prTitleLabel));
 
-        final HBox row = new HBox(8, repoLabel, prTitleLabel);
+        final HBox row = new HBox(8, numberLabel, repoLabel, prTitleLabel);
 
         if (pr.draft()) {
             final Label draftLabel = new Label("(draft)");
@@ -161,6 +173,33 @@ public class GitHubWidget extends VBox {
         HBox.setHgrow(row, Priority.ALWAYS);
         return row;
     }
+
+    // ── Change tracking ──────────────────────────────────────────
+
+    private void trackChanges(final List<GitHubPullRequest> pullRequests) {
+        final boolean enabled = BackendApi.getWorkspaceSettings().githubChangeNotificationsEnabled();
+        DashboardChangeTracker.getInstance().trackChanges(
+                DashboardSection.GITHUB,
+                pullRequests,
+                GitHubWidget::toTrackableItem,
+                enabled
+        );
+    }
+
+    static TrackableItem toTrackableItem(final GitHubPullRequest pr) {
+        final String key = "#" + pr.number();
+        final String repoName = extractRepoName(pr.repository());
+        final String displayName = "[" + repoName + "] " + pr.title();
+        final Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("title", pr.title());
+        fields.put("author", pr.author());
+        fields.put("draft", String.valueOf(pr.draft()));
+        fields.put("repository", pr.repository());
+        fields.put("url", pr.url());
+        return new TrackableItem(key, displayName, fields);
+    }
+
+    // ── Collapse toggle ──────────────────────────────────────────
 
     private void toggleCollapsed() {
         collapsed = !collapsed;

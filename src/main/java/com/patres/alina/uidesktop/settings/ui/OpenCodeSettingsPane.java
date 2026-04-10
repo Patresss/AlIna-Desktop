@@ -93,7 +93,10 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
                 settings.calendarHideAllDayEvents(),
                 settings.calendarShowOnlyCurrentAndFuture(),
                 settings.calendarNotificationsEnabled(),
-                settings.calendarNotificationMinutesBefore()
+                settings.calendarNotificationMinutesBefore(),
+                settings.calendarChangeNotificationsEnabled(),
+                settings.githubChangeNotificationsEnabled(),
+                settings.jiraChangeNotificationsEnabled()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;

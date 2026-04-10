@@ -27,7 +27,10 @@ public record WorkspaceSettings(
         boolean calendarHideAllDayEvents,
         boolean calendarShowOnlyCurrentAndFuture,
         boolean calendarNotificationsEnabled,
-        int calendarNotificationMinutesBefore
+        int calendarNotificationMinutesBefore,
+        boolean calendarChangeNotificationsEnabled,
+        boolean githubChangeNotificationsEnabled,
+        boolean jiraChangeNotificationsEnabled
 ) {
 
     public static final String DEFAULT_TASKS_FILE = "profile/default/focus.md";
@@ -72,7 +75,10 @@ public record WorkspaceSettings(
                 false,
                 true,
                 false,
-                DEFAULT_CALENDAR_NOTIFICATION_MINUTES_BEFORE
+                DEFAULT_CALENDAR_NOTIFICATION_MINUTES_BEFORE,
+                true,
+                true,
+                true
         );
     }
 
@@ -123,7 +129,10 @@ public record WorkspaceSettings(
                 calendarHideAllDayEvents,
                 calendarShowOnlyCurrentAndFuture,
                 calendarNotificationsEnabled,
-                calendarNotificationMinutesBefore
+                calendarNotificationMinutesBefore,
+                calendarChangeNotificationsEnabled,
+                githubChangeNotificationsEnabled,
+                jiraChangeNotificationsEnabled
         );
     }
 
@@ -155,7 +164,10 @@ public record WorkspaceSettings(
                 calendarHideAllDayEvents,
                 calendarShowOnlyCurrentAndFuture,
                 calendarNotificationsEnabled,
-                calendarNotificationMinutesBefore
+                calendarNotificationMinutesBefore,
+                calendarChangeNotificationsEnabled,
+                githubChangeNotificationsEnabled,
+                jiraChangeNotificationsEnabled
         );
     }
 

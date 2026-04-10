@@ -284,6 +284,7 @@ public class GitHubService {
 
         final List<GitHubPullRequest> pullRequests = new ArrayList<>();
         for (final JsonNode item : items) {
+            final int number = item.has("number") ? item.get("number").asInt(0) : 0;
             final String title = getTextOrDefault(item, "title", "Untitled");
             final String url = getTextOrDefault(item, "html_url", "");
             final String repositoryUrl = getTextOrDefault(item, "repository_url", "");
@@ -293,7 +294,7 @@ public class GitHubService {
                     : "unknown";
             final boolean draft = item.has("draft") && item.get("draft").asBoolean(false);
 
-            pullRequests.add(new GitHubPullRequest(title, url, repository, author, draft));
+            pullRequests.add(new GitHubPullRequest(number, title, url, repository, author, draft));
         }
         return Collections.unmodifiableList(pullRequests);
     }

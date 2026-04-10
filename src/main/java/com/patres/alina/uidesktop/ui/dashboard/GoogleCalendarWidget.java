@@ -4,6 +4,9 @@ import atlantafx.base.theme.Styles;
 import com.patres.alina.common.event.ChatNotificationEvent;
 import com.patres.alina.common.event.Event;
 import com.patres.alina.common.settings.WorkspaceSettings;
+import com.patres.alina.common.tracking.DashboardChangeTracker;
+import com.patres.alina.common.tracking.DashboardSection;
+import com.patres.alina.common.tracking.TrackableItem;
 import com.patres.alina.server.integration.GoogleCalendarEvent;
 import com.patres.alina.server.integration.GoogleCalendarResult;
 import com.patres.alina.server.integration.GoogleCalendarService;
@@ -29,9 +32,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Dashboard widget displaying today's Google Calendar events.
@@ -123,6 +124,9 @@ public class GoogleCalendarWidget extends VBox {
     private void refreshAsync() {
         Thread.startVirtualThread(() -> {
             final GoogleCalendarResult result = GoogleCalendarService.fetchTodayEvents();
+            if (!result.authError() && result.errorMessage().isEmpty()) {
+                trackChanges(result.events());
+            }
             Platform.runLater(() -> render(result));
         });
     }
@@ -473,6 +477,30 @@ public class GoogleCalendarWidget extends VBox {
             }
         }
         return "";
+    }
+
+    // ── Change tracking ─────────────────────────────────────────
+
+    private void trackChanges(final List<GoogleCalendarEvent> events) {
+        final boolean enabled = BackendApi.getWorkspaceSettings().calendarChangeNotificationsEnabled();
+        DashboardChangeTracker.getInstance().trackChanges(
+                DashboardSection.CALENDAR,
+                events,
+                GoogleCalendarWidget::toTrackableItem,
+                enabled
+        );
+    }
+
+    static TrackableItem toTrackableItem(final GoogleCalendarEvent event) {
+        final String key = event.summary();
+        final String time = event.allDay() ? "" : event.startTime();
+        final String displayName = time.isEmpty()
+                ? event.summary()
+                : time + " " + event.summary();
+        final Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("startTime", event.startTime());
+        fields.put("endTime", event.endTime());
+        return new TrackableItem(key, displayName, fields);
     }
 
     // ── Collapse toggle ──────────────────────────────────────────

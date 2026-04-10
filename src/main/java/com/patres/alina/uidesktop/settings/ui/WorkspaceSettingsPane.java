@@ -126,7 +126,10 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 calendarHideAllDayToggle.isSelected(),
                 calendarShowOnlyCurrentAndFutureToggle.isSelected(),
                 settings.calendarNotificationsEnabled(),
-                settings.calendarNotificationMinutesBefore()
+                settings.calendarNotificationMinutesBefore(),
+                settings.calendarChangeNotificationsEnabled(),
+                settings.githubChangeNotificationsEnabled(),
+                settings.jiraChangeNotificationsEnabled()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;

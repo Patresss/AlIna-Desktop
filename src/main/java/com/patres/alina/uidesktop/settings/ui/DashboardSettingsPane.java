@@ -46,6 +46,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     private Spinner<Integer> dashboardCalendarRefreshSpinner;
     private ToggleSwitch calendarNotificationsToggle;
     private Spinner<Integer> calendarNotificationMinutesSpinner;
+    private ToggleSwitch calendarChangeNotificationsToggle;
 
     // Tasks
     private ToggleSwitch showDashboardTasksToggle;
@@ -58,6 +59,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     private PasswordField githubTokenField;
     private Spinner<Integer> dashboardGithubRefreshSpinner;
     private Spinner<Integer> dashboardGithubPrLimitSpinner;
+    private ToggleSwitch githubChangeNotificationsToggle;
 
     // Jira
     private ToggleSwitch showDashboardJiraToggle;
@@ -65,6 +67,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     private PasswordField jiraApiTokenField;
     private Spinner<Integer> dashboardJiraRefreshSpinner;
     private Spinner<Integer> dashboardJiraIssueLimitSpinner;
+    private ToggleSwitch jiraChangeNotificationsToggle;
 
     private WorkspaceSettings settings;
 
@@ -91,6 +94,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         dashboardCalendarRefreshSpinner.getValueFactory().setValue(settings.dashboardCalendarRefreshSeconds());
         calendarNotificationsToggle.setSelected(settings.calendarNotificationsEnabled());
         calendarNotificationMinutesSpinner.getValueFactory().setValue(settings.calendarNotificationMinutesBefore());
+        calendarChangeNotificationsToggle.setSelected(settings.calendarChangeNotificationsEnabled());
 
         // Tasks
         showDashboardTasksToggle.setSelected(settings.showDashboardTasks());
@@ -103,6 +107,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         githubTokenField.setText(orEmpty(settings.githubToken()));
         dashboardGithubRefreshSpinner.getValueFactory().setValue(settings.dashboardGithubRefreshSeconds());
         dashboardGithubPrLimitSpinner.getValueFactory().setValue(settings.dashboardGithubPrLimit());
+        githubChangeNotificationsToggle.setSelected(settings.githubChangeNotificationsEnabled());
 
         // Jira
         showDashboardJiraToggle.setSelected(settings.showDashboardJira());
@@ -110,6 +115,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         jiraApiTokenField.setText(orEmpty(settings.jiraApiToken()));
         dashboardJiraRefreshSpinner.getValueFactory().setValue(settings.dashboardJiraRefreshSeconds());
         dashboardJiraIssueLimitSpinner.getValueFactory().setValue(settings.dashboardJiraIssueLimit());
+        jiraChangeNotificationsToggle.setSelected(settings.jiraChangeNotificationsEnabled());
     }
 
     @Override
@@ -141,7 +147,10 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 calendarHideAllDayToggle.isSelected(),
                 calendarShowOnlyCurrentAndFutureToggle.isSelected(),
                 calendarNotificationsToggle.isSelected(),
-                calendarNotificationMinutesSpinner.getValue()
+                calendarNotificationMinutesSpinner.getValue(),
+                calendarChangeNotificationsToggle.isSelected(),
+                githubChangeNotificationsToggle.isSelected(),
+                jiraChangeNotificationsToggle.isSelected()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;
@@ -177,6 +186,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         calendarNotificationMinutesSpinner = createResizableEditableSpinner(1, 30, settings.calendarNotificationMinutesBefore(), settingsBox);
         final var calendarNotificationMinutesTile = createTile("settings.workspace.calendarNotificationMinutes.title", "settings.workspace.calendarNotificationMinutes.description");
         calendarNotificationMinutesTile.setAction(calendarNotificationMinutesSpinner);
+        calendarChangeNotificationsToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
 
         // ── Tasks ──
         final var tasksHeader = createTextSeparator("settings.dashboard.tasks.section", Styles.TITLE_4);
@@ -200,6 +210,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         dashboardGithubPrLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardGithubPrLimit(), settingsBox);
         final var githubPrLimitTile = createTile("settings.workspace.githubPrLimit.title", "settings.workspace.githubPrLimit.description");
         githubPrLimitTile.setAction(dashboardGithubPrLimitSpinner);
+        githubChangeNotificationsToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
 
         // ── Jira ──
         final var jiraHeader = createTextSeparator("settings.dashboard.jira.section", Styles.TITLE_4);
@@ -212,6 +223,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         dashboardJiraIssueLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardJiraIssueLimit(), settingsBox);
         final var jiraIssueLimitTile = createTile("settings.workspace.jiraIssueLimit.title", "settings.workspace.jiraIssueLimit.description");
         jiraIssueLimitTile.setAction(dashboardJiraIssueLimitSpinner);
+        jiraChangeNotificationsToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
 
         return List.of(
                 header,
@@ -231,6 +243,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 calendarRefreshTile,
                 tileFor(calendarNotificationsToggle, "settings.workspace.calendarNotifications.title", "settings.workspace.calendarNotifications.description"),
                 calendarNotificationMinutesTile,
+                tileFor(calendarChangeNotificationsToggle, "settings.workspace.calendarChangeNotifications.title", "settings.workspace.calendarChangeNotifications.description"),
                 // Tasks
                 tasksHeader,
                 tileFor(showDashboardTasksToggle, "settings.workspace.showTasks.title", "settings.workspace.showTasks.description"),
@@ -243,13 +256,15 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 tileFor(githubTokenField, "settings.workspace.github.token.title", "settings.workspace.github.token.description"),
                 githubRefreshTile,
                 githubPrLimitTile,
+                tileFor(githubChangeNotificationsToggle, "settings.workspace.githubChangeNotifications.title", "settings.workspace.githubChangeNotifications.description"),
                 // Jira
                 jiraHeader,
                 tileFor(showDashboardJiraToggle, "settings.workspace.showJira.title", "settings.workspace.showJira.description"),
                 tileFor(jiraEmailField, "settings.workspace.jira.email.title", "settings.workspace.jira.email.description"),
                 tileFor(jiraApiTokenField, "settings.workspace.jira.token.title", "settings.workspace.jira.token.description"),
                 jiraRefreshTile,
-                jiraIssueLimitTile
+                jiraIssueLimitTile,
+                tileFor(jiraChangeNotificationsToggle, "settings.workspace.jiraChangeNotifications.title", "settings.workspace.jiraChangeNotifications.description")
         );
     }
 

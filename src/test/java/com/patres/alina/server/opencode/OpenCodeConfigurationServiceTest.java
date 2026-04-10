@@ -145,7 +145,10 @@ class OpenCodeConfigurationServiceTest {
                 false,
                 true,
                 false,
-                WorkspaceSettings.DEFAULT_CALENDAR_NOTIFICATION_MINUTES_BEFORE
+                WorkspaceSettings.DEFAULT_CALENDAR_NOTIFICATION_MINUTES_BEFORE,
+                true,
+                true,
+                true
         ));
 
         return new OpenCodeConfigurationService(

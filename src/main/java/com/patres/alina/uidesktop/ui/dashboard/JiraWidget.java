@@ -1,6 +1,9 @@
 package com.patres.alina.uidesktop.ui.dashboard;
 
 import atlantafx.base.theme.Styles;
+import com.patres.alina.common.tracking.DashboardChangeTracker;
+import com.patres.alina.common.tracking.DashboardSection;
+import com.patres.alina.common.tracking.TrackableItem;
 import com.patres.alina.server.integration.JiraIssue;
 import com.patres.alina.server.integration.JiraIssueResult;
 import com.patres.alina.uidesktop.backend.BackendApi;
@@ -19,6 +22,10 @@ import javafx.util.Duration;
 import org.kordamp.ikonli.devicons.Devicons;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Dashboard widget displaying Jira issues assigned to the current user
@@ -100,6 +107,7 @@ public class JiraWidget extends VBox {
             }
             
             final JiraIssueResult result = BackendApi.fetchJiraAssignedIssues(email, token, maxResults);
+            trackChanges(result.issues());
             Platform.runLater(() -> render(result));
         });
     }
@@ -167,6 +175,30 @@ public class JiraWidget extends VBox {
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
         return row;
+    }
+
+    // ── Change tracking ──────────────────────────────────────────
+
+    private void trackChanges(final List<JiraIssue> issues) {
+        final boolean enabled = BackendApi.getWorkspaceSettings().jiraChangeNotificationsEnabled();
+        DashboardChangeTracker.getInstance().trackChanges(
+                DashboardSection.JIRA,
+                issues,
+                JiraWidget::toTrackableItem,
+                enabled
+        );
+    }
+
+    static TrackableItem toTrackableItem(final JiraIssue issue) {
+        final String key = issue.key();
+        final String displayName = issue.summary();
+        final Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("summary", issue.summary());
+        fields.put("status", issue.status());
+        fields.put("priority", issue.priority());
+        fields.put("type", issue.type());
+        fields.put("url", issue.url());
+        return new TrackableItem(key, displayName, fields);
     }
 
     private void toggleCollapsed() {

@@ -362,15 +362,26 @@ ChatThreadHistoryCard {
     -fx-min-width: -fx-pref-width;
 }
 
+.workspace-pr-number {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-family: monospace;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.workspace-pr-number:hover {
+    -fx-text-fill: -color-accent-fg;
+    -fx-underline: true;
+}
+
 .workspace-pr-title {
     -fx-text-fill: -color-fg-default;
-    -fx-cursor: hand;
     -fx-text-overrun: ellipsis;
 }
 
 .workspace-pr-title:hover {
-    -fx-text-fill: -color-accent-fg;
-    -fx-underline: true;
+    -fx-text-fill: -color-fg-default;
 }
 
 .workspace-pr-link-icon {
