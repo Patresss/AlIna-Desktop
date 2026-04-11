@@ -16,6 +16,7 @@ import java.util.TreeSet;
 public class OpenCodeModelService {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenCodeModelService.class);
+    private static final int CACHE_TIME_SEC = 60 * 60 * 24; // 1 day
 
     private final OpenCodeConfigurationService configurationService;
     private final OpenCodeHttpClient httpClient;
@@ -36,7 +37,7 @@ public class OpenCodeModelService {
 
     public List<String> getAvailableModels() {
         try {
-            if (Instant.now().isBefore(cachedModelsAt.plusSeconds(30)) && !cachedModels.isEmpty()) {
+            if (Instant.now().isBefore(cachedModelsAt.plusSeconds(CACHE_TIME_SEC)) && !cachedModels.isEmpty()) {
                 return cachedModels;
             }
 
