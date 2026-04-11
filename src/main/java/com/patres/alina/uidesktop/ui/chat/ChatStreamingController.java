@@ -212,6 +212,7 @@ public class ChatStreamingController {
 
     private void handleActivityEvent(final ChatMessageStreamEvent event) {
         final String label = formatActivityLabel(event);
+        final String detail = event.getActivityDetail() == null ? "" : event.getActivityDetail();
         synchronized (activityLabels) {
             activityLabels.add(label);
         }
@@ -220,7 +221,7 @@ public class ChatStreamingController {
                 browser.finishStreamingMessage();
                 streamingStarted = false;
             }
-            browser.showAssistantActivity(label);
+            browser.showAssistantActivity(label, detail);
             updateComposerProcessStatus();
             statusPrompt.showStatusPrompt(label);
         });

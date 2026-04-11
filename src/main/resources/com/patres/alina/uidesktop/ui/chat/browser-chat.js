@@ -35,6 +35,8 @@
 
         var chatContainer = document.getElementById('chat-container');
         chatContainer.appendChild(div);
+        // Force synchronous reflow to fix WebKit border rendering bug
+        void div.offsetHeight;
     }
 
     function showLoader() {
@@ -53,7 +55,7 @@
         document.getElementById('loader').classList.remove('user-message');
     }
 
-    function showAssistantActivity(label) {
+    function showAssistantActivity(label, detail) {
         var chatContainer = document.getElementById('chat-container');
         if (!chatContainer) {
             return;
@@ -79,7 +81,7 @@
             var summaryText = document.createElement('span');
             summaryText.className = 'activity-summary-text';
             summaryText.id = 'assistant-activity-summary-text';
-            summaryText.textContent = 'OpenCode: ' + label;
+            summaryText.textContent = 'Tools · ' + stripActivityPrefix(label);
 
             var summaryBadge = document.createElement('span');
             summaryBadge.className = 'activity-summary-badge';
@@ -128,16 +130,38 @@
 
         var bodyNode = document.getElementById('assistant-activity-body');
         var lastEntry = bodyNode ? bodyNode.lastElementChild : null;
+        var shortLabel = stripActivityPrefix(label);
         if (lastEntry && lastEntry.dataset && lastEntry.dataset.label === label) {
             var count = parseInt(lastEntry.dataset.count ? lastEntry.dataset.count : '1', 10) + 1;
             lastEntry.dataset.count = String(count);
-            lastEntry.textContent = label + ' ×' + count;
+            var nameEl = lastEntry.querySelector('.activity-entry-name');
+            if (nameEl) {
+                nameEl.textContent = shortLabel + ' ×' + count;
+            }
+            if (detail && detail.trim()) {
+                var detailEl = lastEntry.querySelector('.activity-entry-detail');
+                if (detailEl) {
+                    detailEl.textContent = detail;
+                }
+            }
         } else if (bodyNode) {
             var entry = document.createElement('div');
             entry.className = 'activity-entry';
             entry.dataset.label = label;
             entry.dataset.count = '1';
-            entry.textContent = label;
+
+            var nameSpan = document.createElement('span');
+            nameSpan.className = 'activity-entry-name';
+            nameSpan.textContent = shortLabel;
+            entry.appendChild(nameSpan);
+
+            if (detail && detail.trim()) {
+                var detailSpan = document.createElement('span');
+                detailSpan.className = 'activity-entry-detail';
+                detailSpan.textContent = detail;
+                entry.appendChild(detailSpan);
+            }
+
             bodyNode.appendChild(entry);
         }
 
@@ -183,13 +207,18 @@
         activity.remove();
     }
 
+    function stripActivityPrefix(label) {
+        return label.replace(/^OpenCode:\s*/i, '').replace(/^Skill:\s*/i, '').replace(/^MCP:\s*/i, '');
+    }
+
     function buildAssistantActivitySummary(count, lastLabel) {
         var parsedCount = parseInt(count ? count : '0', 10);
         var safeCount = Number.isNaN(parsedCount) ? 0 : parsedCount;
+        var shortLabel = stripActivityPrefix(lastLabel);
         if (safeCount <= 1) {
-            return 'OpenCode: ' + lastLabel;
+            return 'Tools · ' + shortLabel;
         }
-        return 'OpenCode tools: ' + safeCount + ' · latest: ' + lastLabel;
+        return 'Tools · latest: ' + shortLabel;
     }
 
     function toggleAssistantActivity() {
@@ -575,6 +604,8 @@
         if (streamingDiv) {
             // Update with processed HTML content in real-time
             streamingDiv.innerHTML = htmlContent;
+            // Force synchronous reflow to fix WebKit border rendering bug
+            void streamingDiv.offsetHeight;
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
     }
@@ -584,6 +615,8 @@
         if (streamingDiv) {
             // Remove the streaming ID so it becomes a regular message
             streamingDiv.removeAttribute('id');
+            // Force synchronous reflow to fix WebKit border rendering bug
+            void streamingDiv.offsetHeight;
             // Scroll to bottom one final time
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
@@ -596,6 +629,8 @@
             streamingDiv.innerHTML = processedHtml;
             // Remove the streaming ID so it becomes a regular message
             streamingDiv.removeAttribute('id');
+            // Force synchronous reflow to fix WebKit border rendering bug
+            void streamingDiv.offsetHeight;
             // Scroll to bottom one final time
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }

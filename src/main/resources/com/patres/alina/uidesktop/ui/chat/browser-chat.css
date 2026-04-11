@@ -47,6 +47,8 @@ th, td {
   overflow-y: auto;
   position: relative;
   box-sizing: border-box;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 .chat-message.command-message {
   padding-right: 36px;
@@ -203,9 +205,22 @@ th, td {
   line-height: 1.45;
   color: var(--color-fg-muted);
   margin-top: 3px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.activity-entry-name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.activity-entry-detail {
+  font-size: 10px;
+  color: var(--color-fg-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
 }
 .chat-message.permission-message {
   border-left: none;
@@ -329,6 +344,22 @@ th, td {
 .activity-entry {
   font-size: 12px;
   line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.activity-entry-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.activity-entry-detail {
+  font-size: 11px;
+  opacity: 0.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
 }
 .activity-entry + .activity-entry {
   margin-top: 4px;
@@ -642,6 +673,8 @@ blockquote {
   color: var(--color-fg-muted);
   background-color: var(--color-bg-default);
   border-radius: 4px;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 /* ── Obsidian-style Callouts ─────────────────────────── */
 .callout {
@@ -650,6 +683,8 @@ blockquote {
   padding: 10px 14px;
   margin: 8px 0;
   background-color: var(--color-bg-default);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 .callout-title {
   font-weight: 600;

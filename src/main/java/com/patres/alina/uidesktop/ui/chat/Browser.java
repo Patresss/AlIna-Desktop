@@ -349,8 +349,8 @@ public class Browser extends StackPane {
         executeJavaScript("hideLoader()");
     }
 
-    public void showAssistantActivity(final String label) {
-        safeJavaScriptCall("showAssistantActivity", label);
+    public void showAssistantActivity(final String label, final String detail) {
+        safeJavaScriptCall("showAssistantActivity", label, detail == null ? "" : detail);
     }
 
     /**
