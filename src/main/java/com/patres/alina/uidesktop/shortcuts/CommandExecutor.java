@@ -41,10 +41,6 @@ public class CommandExecutor {
     public void executeWithSelectedText(Command command) {
         CompletableFuture.runAsync(() -> {
             CapturedContext context = captureCurrentContext();
-            if (!context.hasText()) {
-                logger.warn("Skipping command '{}' because no text is selected", command.name());
-                return;
-            }
             executeWithContext(command, context, aiResponse -> pasteAiResponse(aiResponse, context.sourceAppName()));
         });
     }
@@ -56,10 +52,6 @@ public class CommandExecutor {
     public void executeWithSelectedTextAndDisplay(Command command) {
         CompletableFuture.runAsync(() -> {
             CapturedContext context = captureCurrentContext();
-            if (!context.hasText()) {
-                logger.warn("Skipping command '{}' because no text is selected", command.name());
-                return;
-            }
             executeWithContext(command, context, aiResponse -> displayAiResponse(command, aiResponse));
         });
     }
@@ -69,10 +61,6 @@ public class CommandExecutor {
      * Used by context menu (context was captured before menu appeared).
      */
     public void executeWithCapturedText(Command command, CapturedContext context) {
-        if (!context.hasText()) {
-            logger.warn("Skipping command '{}' because captured text is empty", command.name());
-            return;
-        }
         CompletableFuture.runAsync(() ->
                 executeWithContext(command, context, aiResponse -> pasteAiResponse(aiResponse, context.sourceAppName()))
         );
@@ -83,10 +71,6 @@ public class CommandExecutor {
      * Used by context menu (context was captured before menu appeared).
      */
     public void executeWithCapturedTextAndDisplay(Command command, CapturedContext context) {
-        if (!context.hasText()) {
-            logger.warn("Skipping command '{}' because captured text is empty", command.name());
-            return;
-        }
         CompletableFuture.runAsync(() ->
                 executeWithContext(command, context, aiResponse -> displayAiResponse(command, aiResponse))
         );
@@ -99,10 +83,6 @@ public class CommandExecutor {
     public void executeWithSelectedTextSilently(Command command) {
         CompletableFuture.runAsync(() -> {
             CapturedContext context = captureCurrentContext();
-            if (!context.hasText()) {
-                logger.warn("Skipping command '{}' because no text is selected", command.name());
-                return;
-            }
             executeWithContext(command, context, aiResponse -> onSilentComplete(command));
         });
     }
@@ -112,26 +92,23 @@ public class CommandExecutor {
      * Used by context menu for fire-and-forget commands.
      */
     public void executeWithCapturedTextSilently(Command command, CapturedContext context) {
-        if (!context.hasText()) {
-            logger.warn("Skipping command '{}' because captured text is empty", command.name());
-            return;
-        }
         CompletableFuture.runAsync(() ->
                 executeWithContext(command, context, aiResponse -> onSilentComplete(command))
         );
     }
 
     private void executeWithContext(Command command, CapturedContext context, OnMessageCompleteCallback onComplete) {
+        String text = context.selectedText() != null ? context.selectedText() : "";
         logger.info("Executing command '{}' with text ({} chars): '{}'",
-                command.name(), context.selectedText().length(),
-                context.selectedText().substring(0, Math.min(100, context.selectedText().length())));
+                command.name(), text.length(),
+                text.substring(0, Math.min(100, text.length())));
 
         Platform.runLater(() -> {
             LOADING_INDICATOR.show();
             String threadId = applicationWindow.getChatThread().map(t -> t.id()).orElse(null);
             subscribeToStream(threadId);
             applicationWindow.getChatWindow().sendMessage(
-                    context.selectedText(),
+                    text,
                     command.id(),
                     wrapOnComplete(onComplete, threadId)
             );

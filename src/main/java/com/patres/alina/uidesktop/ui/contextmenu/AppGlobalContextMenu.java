@@ -100,10 +100,6 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
      * Used by HTTP server and other callers that capture context synchronously.
      */
     public void displayWithContext(CapturedContext context) {
-        if (!context.hasText()) {
-            logger.warn("No text captured, not showing context menu");
-            return;
-        }
         displayWithPendingCapture(CompletableFuture.completedFuture(context));
     }
 
@@ -188,13 +184,7 @@ public class AppGlobalContextMenu extends StackPane implements Initializable {
             logger.warn("No pending capture for command '{}'", command.name());
             return;
         }
-        capture.thenAcceptAsync(ctx -> {
-            if (!ctx.hasText()) {
-                logger.warn("No text captured for command '{}'", command.name());
-                return;
-            }
-            executor.accept(command, ctx);
-        });
+        capture.thenAcceptAsync(ctx -> executor.accept(command, ctx));
     }
 
     private boolean addCommandGroup(String groupName, List<Command> commands, Consumer<Command> action) {
