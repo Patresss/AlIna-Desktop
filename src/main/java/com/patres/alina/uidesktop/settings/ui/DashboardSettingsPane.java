@@ -150,7 +150,8 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 calendarNotificationMinutesSpinner.getValue(),
                 calendarChangeNotificationsToggle.isSelected(),
                 githubChangeNotificationsToggle.isSelected(),
-                jiraChangeNotificationsToggle.isSelected()
+                jiraChangeNotificationsToggle.isSelected(),
+                settings.splitMode()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;

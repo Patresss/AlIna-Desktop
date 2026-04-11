@@ -96,7 +96,8 @@ public class ChatMessageService {
                     newChatThread.id(),
                     chatMessageSendModel.commandId(),
                     chatMessageSendModel.styleType(),
-                    chatMessageSendModel.onComplete()
+                    chatMessageSendModel.onComplete(),
+                    chatMessageSendModel.model()
             );
             sendMessageStreamWithChatThread(withNewThread);
             return;
@@ -236,10 +237,20 @@ public class ChatMessageService {
             }
             final String systemPrompt = buildOpenCodeSystemPrompt(contextMessages);
             final String historySummary = summarizeHistoryForOpenCode(contextMessages);
-            final String modelOverride = resolveCommandModelOverride(chatMessageSendModel.commandId());
-            session.effectiveModel = (modelOverride == null || modelOverride.isBlank())
+            final String commandModelOverride = resolveCommandModelOverride(chatMessageSendModel.commandId());
+            // Priority: command model override > per-tab model > global default
+            final String perTabModel = chatMessageSendModel.model();
+            final String modelOverride;
+            if (commandModelOverride != null && !commandModelOverride.isBlank()) {
+                modelOverride = commandModelOverride.trim();
+            } else if (perTabModel != null && !perTabModel.isBlank()) {
+                modelOverride = perTabModel.trim();
+            } else {
+                modelOverride = null;
+            }
+            session.effectiveModel = (modelOverride == null)
                     ? assistantSettingsManager.getSettings().resolveModelIdentifier()
-                    : modelOverride.trim();
+                    : modelOverride;
             final String currentUserMessage = contextMessages.isEmpty()
                     ? chatMessageSendModel.content()
                     : contextMessages.getLast().text();

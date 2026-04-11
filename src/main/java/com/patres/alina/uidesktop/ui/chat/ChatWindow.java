@@ -75,6 +75,7 @@ public class ChatWindow extends BorderPane {
     private CardListItem currentCommand;
     private volatile Command currentCommandDetails;
     private ChatInputMode inputMode = ChatInputMode.CHAT;
+    private volatile String selectedModel;
 
     @FXML
     private StackPane chatAnswersPane;
@@ -197,6 +198,10 @@ public class ChatWindow extends BorderPane {
                 ChatNotificationEvent.class,
                 chatNotificationEventConsumer
         );
+
+        if (browser != null) {
+            browser.dispose();
+        }
     }
 
     @FXML
@@ -244,13 +249,15 @@ public class ChatWindow extends BorderPane {
 
         modelMenu = new ContextMenu();
 
-        // Load models and settings off the FX thread
+        // Initialize with the global default model; each tab tracks its own from here on
         Thread.startVirtualThread(() -> {
             final List<String> models = BackendApi.getChatModels();
             final AssistantSettings settings = BackendApi.getAssistantSettings();
+            final String defaultModel = settings.resolveModelIdentifier();
+            selectedModel = defaultModel;
             FxThreadRunner.run(() -> {
-                modelLabel.setText(settings.resolveModelIdentifier());
-                populateModelMenu(models, settings);
+                modelLabel.setText(defaultModel);
+                populateModelMenu(models);
             });
         });
 
@@ -261,47 +268,18 @@ public class ChatWindow extends BorderPane {
                 modelMenu.show(modelLabel, javafx.geometry.Side.TOP, 0, 0);
             }
         });
-
-        DefaultEventBus.getInstance().subscribe(
-                com.patres.alina.server.event.AssistantSettingsUpdatedEvent.class,
-                e -> FxThreadRunner.run(() -> {
-                    modelLabel.setText(e.getSettings().resolveModelIdentifier());
-                    refreshModelMenu();
-                })
-        );
     }
 
-    private void populateModelMenu(final List<String> models, final AssistantSettings current) {
+    private void populateModelMenu(final List<String> models) {
         modelMenu.getItems().clear();
-        if (modelLabel != null) {
-            modelLabel.setText(current.resolveModelIdentifier());
-        }
         for (String model : models) {
             MenuItem item = new MenuItem(model);
             item.setOnAction(_ -> {
+                selectedModel = model;
                 modelLabel.setText(model);
-                updateModel(model);
             });
             modelMenu.getItems().add(item);
         }
-    }
-
-    private void refreshModelMenu() {
-        Thread.startVirtualThread(() -> {
-            final List<String> models = BackendApi.getChatModels();
-            final AssistantSettings current = BackendApi.getAssistantSettings();
-            FxThreadRunner.run(() -> populateModelMenu(models, current));
-        });
-    }
-
-    private void updateModel(String model) {
-        Thread.startVirtualThread(() -> {
-            AssistantSettings current = BackendApi.getAssistantSettings();
-            if (model.equals(current.resolveModelIdentifier())) return;
-
-            AssistantSettings updated = new AssistantSettings(model);
-            BackendApi.updateAssistantSettings(updated);
-        });
     }
 
     private void bindInputHeightToButtonsBox() {
@@ -432,6 +410,9 @@ public class ChatWindow extends BorderPane {
     }
 
     private void handleChatNotification(final ChatNotificationEvent event) {
+        if (!applicationWindow.isActiveTab(chatThread.id())) {
+            return;
+        }
         NotificationSoundPlayer.playIfEnabled();
         displayMessage(event.getMessage(), ASSISTANT, event.getStyleType());
     }
@@ -445,7 +426,9 @@ public class ChatWindow extends BorderPane {
             try {
                 final boolean backgroundMode = onComplete != null;
                 streamingController.beginStreaming(false, backgroundMode);
-                final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(message, chatThread.id(), commandId, onComplete);
+                final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(
+                        message, chatThread.id(), commandId, ChatMessageStyleType.NONE, onComplete, selectedModel
+                );
 
                 BackendApi.sendChatMessagesStream(chatMessageSendModel);
             } catch (Exception e) {
@@ -535,9 +518,8 @@ public class ChatWindow extends BorderPane {
                     if (modelMenu != null) {
                         Thread.startVirtualThread(() -> {
                             final List<String> models = BackendApi.getChatModels();
-                            final AssistantSettings current = BackendApi.getAssistantSettings();
                             FxThreadRunner.run(() -> {
-                                populateModelMenu(models, current);
+                                populateModelMenu(models);
                                 modelMenu.show(modelLabel, javafx.geometry.Side.TOP, 0, 0);
                             });
                         });

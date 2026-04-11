@@ -35,6 +35,12 @@
     -fx-padding: 10px 10px 10px 10px;
 }
 
+.split-dashboard-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+}
+
 /*.text-area {*/
 /*  -fx-background-radius: 15px;*/
 /*}*/
@@ -521,14 +527,13 @@ ChatThreadHistoryCard {
 }
 
 /* ══════════════════════════════════════════════════
-   Chat Tab Bar
+   Chat Tab Bar — modern pill / segment style
    ══════════════════════════════════════════════════ */
 
 .chat-tab-bar {
-    -fx-padding: 0 4px 0 4px;
+    -fx-padding: 2px 6px 6px 6px;
     -fx-alignment: center-left;
-    -fx-min-height: 36px;
-    -fx-max-height: 36px;
+    -fx-spacing: 4px;
 }
 
 .chat-tab-bar-scroll {
@@ -545,51 +550,72 @@ ChatThreadHistoryCard {
 .chat-tab-bar-tabs {
     -fx-alignment: center-left;
     -fx-spacing: 2px;
+    -fx-padding: 2px 0 2px 0;
 }
 
+/* ── Individual tab ────────────────────────────── */
+
 .chat-tab-item {
-    -fx-background-radius: 8px;
-    -fx-border-radius: 8px;
-    -fx-padding: 4px 8px 4px 10px;
+    -fx-background-radius: 10px;
+    -fx-padding: 5px 10px 5px 12px;
     -fx-cursor: hand;
-    -fx-min-height: 28px;
-    -fx-max-height: 28px;
+    -fx-border-width: 0;
+    -fx-background-color: transparent;
 }
 
 .chat-tab-active {
-    -fx-background-color: -color-glass-bg-hover;
-    -fx-border-color: -color-glass-border-hover;
-    -fx-border-width: 1px;
+    -fx-background-color: -color-bg-subtle;
 }
 
 .chat-tab-inactive {
     -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-border-width: 1px;
 }
 
 .chat-tab-inactive:hover {
     -fx-background-color: -color-glass-bg;
-    -fx-border-color: -color-glass-border;
 }
+
+/* ── Tab label ─────────────────────────────────── */
 
 .chat-tab-name {
     -fx-font-size: 12px;
     -fx-text-overrun: ellipsis;
+    -fx-padding: 0 2px 0 0;
 }
+
+.chat-tab-active .chat-tab-name {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-weight: 700;
+}
+
+.chat-tab-inactive .chat-tab-name {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-weight: normal;
+}
+
+.chat-tab-inactive:hover .chat-tab-name {
+    -fx-text-fill: -color-fg-default;
+}
+
+/* ── Close button (hidden until hover) ─────────── */
 
 .chat-tab-close-button {
     -fx-background-color: transparent;
-    -fx-padding: 0 2px 0 2px;
+    -fx-background-radius: 6px;
+    -fx-padding: 1px 3px 1px 3px;
     -fx-cursor: hand;
-    -fx-min-width: 16px;
-    -fx-min-height: 16px;
-    -fx-max-width: 16px;
-    -fx-max-height: 16px;
+    -fx-min-width: 18px;
+    -fx-min-height: 18px;
+    -fx-max-width: 18px;
+    -fx-max-height: 18px;
+}
+
+.chat-tab-close-button:hover {
+    -fx-background-color: -color-glass-bg-hover;
 }
 
 .chat-tab-close-button .ikonli-font-icon {
-    -fx-icon-size: 12px;
+    -fx-icon-size: 11px;
     -fx-icon-color: -color-fg-muted;
 }
 
@@ -597,26 +623,39 @@ ChatThreadHistoryCard {
     -fx-icon-color: -color-fg-default;
 }
 
+/* ── Add / scroll buttons ─────────────────────── */
+
 .chat-tab-add-button {
-    -fx-min-width: 24px;
-    -fx-min-height: 24px;
-    -fx-max-width: 24px;
-    -fx-max-height: 24px;
+    -fx-min-width: 26px;
+    -fx-min-height: 26px;
+    -fx-max-width: 26px;
+    -fx-max-height: 26px;
     -fx-padding: 0;
+    -fx-background-radius: 8px;
 }
 
 .chat-tab-add-button .ikonli-font-icon {
     -fx-icon-size: 14px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.chat-tab-add-button:hover .ikonli-font-icon {
+    -fx-icon-color: -color-fg-default;
 }
 
 .chat-tab-scroll-button {
-    -fx-min-width: 20px;
-    -fx-min-height: 24px;
-    -fx-max-width: 20px;
-    -fx-max-height: 24px;
+    -fx-min-width: 22px;
+    -fx-min-height: 26px;
+    -fx-max-width: 22px;
+    -fx-max-height: 26px;
     -fx-padding: 0;
     -fx-background-color: transparent;
+    -fx-background-radius: 8px;
     -fx-cursor: hand;
+}
+
+.chat-tab-scroll-button:hover {
+    -fx-background-color: -color-glass-bg;
 }
 
 .chat-tab-scroll-button .ikonli-font-icon {

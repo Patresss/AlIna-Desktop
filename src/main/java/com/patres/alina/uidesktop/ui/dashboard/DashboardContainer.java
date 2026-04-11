@@ -60,6 +60,7 @@ public class DashboardContainer extends VBox {
         );
 
         setSpacing(4);
+        setMinWidth(0);
         getChildren().addAll(header, widgetsBox);
 
         updateCollapseButton();

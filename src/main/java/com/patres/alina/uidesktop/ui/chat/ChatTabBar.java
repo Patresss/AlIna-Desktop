@@ -285,35 +285,51 @@ public class ChatTabBar extends HBox {
 
     private void updateTabCloseButtonVisibility() {
         boolean canClose = tabs.size() > 1;
-        tabs.values().forEach(item -> item.getCloseButton().setVisible(canClose));
+        tabs.values().forEach(item -> item.setClosable(canClose));
     }
 
     /**
      * A single tab item in the tab bar.
+     * Close button is only revealed on hover for a clean look.
      */
     static class ChatTabItem extends HBox {
 
         private final Label nameLabel;
         private final Button closeButton;
+        private boolean closable = true;
 
         ChatTabItem(ChatThread chatThread) {
             super();
             getStyleClass().addAll("chat-tab-item", "chat-tab-inactive");
             setAlignment(Pos.CENTER);
-            setSpacing(4);
-            setPadding(new Insets(4, 8, 4, 10));
+            setSpacing(0);
 
             nameLabel = new Label(formatTabName(chatThread.name()));
             nameLabel.getStyleClass().add("chat-tab-name");
-            nameLabel.setMaxWidth(120);
-            nameLabel.setEllipsisString("...");
+            nameLabel.setMaxWidth(110);
+            nameLabel.setEllipsisString("\u2026");
+            nameLabel.setMinWidth(0);
 
             closeButton = new Button();
             closeButton.getStyleClass().addAll("chat-tab-close-button");
             closeButton.setGraphic(new FontIcon("mdal-close"));
-            closeButton.setPadding(new Insets(0, 2, 0, 2));
+            Tooltip.install(closeButton, new Tooltip(LanguageManager.getLanguageString("tab.close")));
+            closeButton.setOpacity(0);
+            closeButton.setMouseTransparent(true);
 
             getChildren().addAll(nameLabel, closeButton);
+
+            // Show close button on hover
+            setOnMouseEntered(_ -> {
+                if (closable) {
+                    closeButton.setOpacity(1);
+                    closeButton.setMouseTransparent(false);
+                }
+            });
+            setOnMouseExited(_ -> {
+                closeButton.setOpacity(0);
+                closeButton.setMouseTransparent(true);
+            });
         }
 
         void setTabName(String name) {
@@ -324,12 +340,20 @@ public class ChatTabBar extends HBox {
             return closeButton;
         }
 
+        void setClosable(boolean closable) {
+            this.closable = closable;
+            if (!closable) {
+                closeButton.setOpacity(0);
+                closeButton.setMouseTransparent(true);
+            }
+        }
+
         private static String formatTabName(String name) {
             if (name == null || name.isBlank()) {
-                return "New Chat";
+                return LanguageManager.getLanguageString("tab.defaultName");
             }
             if (name.length() > 18) {
-                return name.substring(0, 15) + "...";
+                return name.substring(0, 15) + "\u2026";
             }
             return name;
         }

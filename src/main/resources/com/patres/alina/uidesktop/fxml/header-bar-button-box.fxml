@@ -74,6 +74,11 @@
             <String fx:value="button-circle" />
          </styleClass>
       </MenuButton>
+      <ToggleButton fx:id="splitModeToggleButton" mnemonicParsing="false" styleClass="button-circle">
+         <graphic>
+            <FontIcon iconLiteral="mdmz-vertical_split" styleClass="button-circle" />
+         </graphic>
+      </ToggleButton>
       <ToggleButton fx:id="pinToggleButton" mnemonicParsing="false" styleClass="button-circle">
          <graphic>
             <FontIcon iconLiteral="mdrmz-pin" styleClass="button-circle" />

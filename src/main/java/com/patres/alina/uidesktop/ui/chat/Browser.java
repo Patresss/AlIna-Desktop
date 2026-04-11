@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import static com.patres.alina.uidesktop.util.MarkdownToHtmlConverter.convertMarkdownToHtml;
 
@@ -63,6 +64,7 @@ public class Browser extends StackPane {
     private PermissionActionHandler permissionActionHandler;
     private volatile boolean webViewReady = false;
     private final java.util.List<Runnable> pendingActions = new java.util.ArrayList<>();
+    private final Consumer<ThemeEvent> themeEventConsumer = ignored -> updateCssColors();
 
     public Browser() {
         super();
@@ -83,11 +85,26 @@ public class Browser extends StackPane {
         getChildren().add(webView);
 
         updateCssColors();
-        DefaultEventBus.getInstance().subscribe(ThemeEvent.class, ignored -> updateCssColors());
+        DefaultEventBus.getInstance().subscribe(ThemeEvent.class, themeEventConsumer);
     }
 
     public void setPermissionActionHandler(final PermissionActionHandler permissionActionHandler) {
         this.permissionActionHandler = permissionActionHandler;
+    }
+
+    /**
+     * Releases resources held by this Browser: unsubscribes from events,
+     * clears the WebEngine content, and removes the WebView from the scene graph.
+     * Should be called when the owning tab is closed.
+     */
+    public void dispose() {
+        DefaultEventBus.getInstance().unsubscribe(ThemeEvent.class, themeEventConsumer);
+        pendingActions.clear();
+        webViewReady = false;
+        Platform.runLater(() -> {
+            webEngine.load(null);
+            getChildren().remove(webView);
+        });
     }
 
     /**

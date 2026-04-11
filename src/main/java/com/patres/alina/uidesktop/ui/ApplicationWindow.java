@@ -27,8 +27,11 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.control.ScrollPane;
 import javafx.geometry.Insets;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -72,6 +75,12 @@ public class ApplicationWindow extends BorderPane {
     private final GoogleCalendarWidget googleCalendarWidget = new GoogleCalendarWidget();
     private final DashboardContainer dashboardContainer = new DashboardContainer(mediaControlWidget, dashboardPane, gitHubWidget, jiraWidget, googleCalendarWidget);
 
+    // Split mode layout
+    private final VBox chatContentPane = new VBox();
+    private final HBox splitContainer = new HBox();
+    private final ScrollPane dashboardScrollPane = new ScrollPane();
+    private boolean splitModeActive = false;
+
     public ApplicationWindow() {
         super();
         try {
@@ -90,6 +99,7 @@ public class ApplicationWindow extends BorderPane {
     @FXML
     public void initialize() {
         centerPane.setSpacing(0);
+        centerPane.setMinWidth(0);
 
         // Initialize tab bar
         chatTabBar = new ChatTabBar();
@@ -97,14 +107,38 @@ public class ApplicationWindow extends BorderPane {
         chatTabBar.setOnTabClosed(this::handleTabClosed);
         chatTabBar.setOnNewTabRequested(this::createAndOpenNewChatThread);
 
+        // Chat content pane holds all chat windows
+        chatContentPane.setMinWidth(0);
+        VBox.setVgrow(chatContentPane, Priority.ALWAYS);
+
+        // Configure split container (used only in split mode)
+        dashboardScrollPane.setFitToWidth(true);
+        dashboardScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        dashboardScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        dashboardScrollPane.setMaxWidth(Double.MAX_VALUE);
+        dashboardScrollPane.setMinWidth(0);
+        dashboardScrollPane.getStyleClass().add("split-dashboard-scroll");
+        chatContentPane.setMaxWidth(Double.MAX_VALUE);
+        splitContainer.setMinWidth(0);
+        VBox.setVgrow(splitContainer, Priority.ALWAYS);
+        splitContainer.setSpacing(8);
+
+        // Build normal layout: chatTabBar, dashboardContainer, chatContentPane
         centerPane.getChildren().add(chatTabBar);
         centerPane.getChildren().add(dashboardContainer);
         VBox.setMargin(dashboardContainer, new Insets(4, 0, 0, 0));
+        centerPane.getChildren().add(chatContentPane);
 
         refreshIntegrationWidgets();
         createAndOpenInitialChatThread();
         rootCenterContainer.getChildren()
                 .add(appModalPane);
+
+        // Apply persisted split mode
+        final boolean persistedSplitMode = BackendApi.getWorkspaceSettings().splitMode();
+        if (persistedSplitMode) {
+            applySplitMode(true);
+        }
 
         // Subscribe to command shortcut executed event
         DefaultEventBus.getInstance().subscribe(
@@ -197,7 +231,7 @@ public class ApplicationWindow extends BorderPane {
         chatThreads.remove(threadId);
         if (window != null) {
             window.unsubscribeEvents();
-            centerPane.getChildren().remove(window);
+            chatContentPane.getChildren().remove(window);
         }
 
         chatTabBar.removeTab(threadId);
@@ -222,6 +256,7 @@ public class ApplicationWindow extends BorderPane {
         ChatWindow newWindow = new ChatWindow(chatThread, this, messages);
         newWindow.setVisible(true);
         newWindow.setManaged(true);
+        newWindow.setMinWidth(0);
         VBox.setMargin(newWindow, new Insets(2, 0, 0, 0));
         VBox.setVgrow(newWindow, javafx.scene.layout.Priority.ALWAYS);
 
@@ -230,13 +265,60 @@ public class ApplicationWindow extends BorderPane {
         chatThreads.put(chatThread.id(), chatThread);
         activeTabId = chatThread.id();
 
-        // Add to UI
-        centerPane.getChildren().add(newWindow);
+        // Add to chat content pane
+        chatContentPane.getChildren().add(newWindow);
 
         // Add tab and activate it
         chatTabBar.addTab(chatThread, true);
 
         dashboardPane.refreshAsync();
+    }
+
+    // ═══════════════════════════════════════════
+    // Split mode
+    // ═══════════════════════════════════════════
+
+    public void applySplitMode(boolean split) {
+        if (split == splitModeActive) {
+            return;
+        }
+        splitModeActive = split;
+
+        if (split) {
+            // Normal -> Split: move dashboardContainer into scrollPane on the left, chatContentPane on the right
+            centerPane.getChildren().remove(dashboardContainer);
+            centerPane.getChildren().remove(chatContentPane);
+
+            dashboardScrollPane.setContent(dashboardContainer);
+            VBox.setMargin(dashboardContainer, Insets.EMPTY);
+
+            // 50/50 split: bind both halves to exactly half the container width
+            var halfWidth = splitContainer.widthProperty().subtract(8).divide(2);
+            dashboardScrollPane.prefWidthProperty().bind(halfWidth);
+            dashboardScrollPane.minWidthProperty().bind(halfWidth);
+            chatContentPane.prefWidthProperty().bind(halfWidth);
+            chatContentPane.minWidthProperty().bind(halfWidth);
+
+            splitContainer.getChildren().setAll(dashboardScrollPane, chatContentPane);
+            centerPane.getChildren().add(splitContainer);
+        } else {
+            // Unbind size constraints before moving back
+            dashboardScrollPane.prefWidthProperty().unbind();
+            dashboardScrollPane.minWidthProperty().unbind();
+            chatContentPane.prefWidthProperty().unbind();
+            chatContentPane.minWidthProperty().unbind();
+            chatContentPane.setPrefWidth(-1);
+            chatContentPane.setMinWidth(0);
+
+            // Split -> Normal: move dashboard and chatContentPane back into centerPane vertically
+            centerPane.getChildren().remove(splitContainer);
+            splitContainer.getChildren().clear();
+            dashboardScrollPane.setContent(null);
+
+            centerPane.getChildren().add(dashboardContainer);
+            VBox.setMargin(dashboardContainer, new Insets(4, 0, 0, 0));
+            centerPane.getChildren().add(chatContentPane);
+        }
     }
 
     // ═══════════════════════════════════════════
@@ -259,8 +341,10 @@ public class ApplicationWindow extends BorderPane {
     }
 
     private void createAndOpenInitialChatThread() {
-        ChatThread chatThread = BackendApi.createChatThread();
-        addTabAndLoadChat(chatThread, List.of());
+        Thread.startVirtualThread(() -> {
+            ChatThread chatThread = BackendApi.createChatThread();
+            Platform.runLater(() -> addTabAndLoadChat(chatThread, List.of()));
+        });
     }
 
     public void createNewChatThread() {
@@ -289,7 +373,7 @@ public class ApplicationWindow extends BorderPane {
             chatThreads.remove(activeTabId);
             if (oldWindow != null) {
                 oldWindow.unsubscribeEvents();
-                centerPane.getChildren().remove(oldWindow);
+                chatContentPane.getChildren().remove(oldWindow);
             }
             chatTabBar.removeTab(activeTabId);
         }
@@ -371,6 +455,10 @@ public class ApplicationWindow extends BorderPane {
 
     public ChatWindow getChatWindow() {
         return getActiveChatWindow();
+    }
+
+    public boolean isActiveTab(String threadId) {
+        return threadId != null && threadId.equals(activeTabId);
     }
 
     private ChatWindow getActiveChatWindow() {

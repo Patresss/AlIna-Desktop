@@ -1,9 +1,12 @@
 package com.patres.alina.uidesktop.ui;
 
+import com.patres.alina.common.event.WorkspaceSettingsUpdatedEvent;
+import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.MenuItem;
@@ -17,6 +20,8 @@ public class ApplicationHeaderButtonBox extends HBox {
 
     @FXML
     private ToggleButton pinToggleButton;
+    @FXML
+    private ToggleButton splitModeToggleButton;
     @FXML
     private MenuItem uiSettingsMenuItem;
     @FXML
@@ -56,11 +61,38 @@ public class ApplicationHeaderButtonBox extends HBox {
                     BackendApi.updateWorkspaceSettings(settings.withKeepWindowAlwaysOnTop(newValue));
                 });
 
+        // Split mode toggle
+        final WorkspaceSettings initialSettings = BackendApi.getWorkspaceSettings();
+        splitModeToggleButton.setSelected(initialSettings.splitMode());
+        refreshSplitModeVisibility(initialSettings);
+
+        splitModeToggleButton.selectedProperty()
+                .addListener((obs, oldValue, newValue) -> {
+                    final WorkspaceSettings settings = BackendApi.getWorkspaceSettings();
+                    BackendApi.updateWorkspaceSettings(settings.withSplitMode(newValue));
+                    applicationWindow.applySplitMode(newValue);
+                });
+
+        // Listen for settings changes to show/hide split mode button when dashboard visibility changes
+        DefaultEventBus.getInstance().subscribe(
+                WorkspaceSettingsUpdatedEvent.class,
+                event -> Platform.runLater(() -> {
+                    final WorkspaceSettings settings = BackendApi.getWorkspaceSettings();
+                    refreshSplitModeVisibility(settings);
+                })
+        );
+
         uiSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("settings.ui.title"));
         dashboardSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("settings.dashboard.title"));
         openCodeSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("settings.opencode.title"));
         commandsMenuItem.textProperty().bind(LanguageManager.createStringBinding("command.title"));
         quickActionSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("quickaction.settings.title"));
+    }
+
+    private void refreshSplitModeVisibility(WorkspaceSettings settings) {
+        final boolean dashboardVisible = settings.showDashboard();
+        splitModeToggleButton.setVisible(dashboardVisible);
+        splitModeToggleButton.setManaged(dashboardVisible);
     }
 
 

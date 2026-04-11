@@ -30,7 +30,8 @@ public record WorkspaceSettings(
         int calendarNotificationMinutesBefore,
         boolean calendarChangeNotificationsEnabled,
         boolean githubChangeNotificationsEnabled,
-        boolean jiraChangeNotificationsEnabled
+        boolean jiraChangeNotificationsEnabled,
+        boolean splitMode
 ) {
 
     public static final String DEFAULT_TASKS_FILE = "profile/default/focus.md";
@@ -78,7 +79,8 @@ public record WorkspaceSettings(
                 DEFAULT_CALENDAR_NOTIFICATION_MINUTES_BEFORE,
                 true,
                 true,
-                true
+                true,
+                false
         );
     }
 
@@ -132,7 +134,8 @@ public record WorkspaceSettings(
                 calendarNotificationMinutesBefore,
                 calendarChangeNotificationsEnabled,
                 githubChangeNotificationsEnabled,
-                jiraChangeNotificationsEnabled
+                jiraChangeNotificationsEnabled,
+                splitMode
         );
     }
 
@@ -167,7 +170,44 @@ public record WorkspaceSettings(
                 calendarNotificationMinutesBefore,
                 calendarChangeNotificationsEnabled,
                 githubChangeNotificationsEnabled,
-                jiraChangeNotificationsEnabled
+                jiraChangeNotificationsEnabled,
+                splitMode
+        );
+    }
+
+    public WorkspaceSettings withSplitMode(final boolean value) {
+        return new WorkspaceSettings(
+                showDashboard,
+                dashboardCollapsed,
+                keepWindowAlwaysOnTop,
+                tasksFile,
+                dashboardTaskLimit,
+                openCodeHostname,
+                openCodePort,
+                openCodeWorkingDirectory,
+                githubToken,
+                dashboardTasksRefreshSeconds,
+                dashboardGithubRefreshSeconds,
+                dashboardMediaRefreshSeconds,
+                dashboardGithubPrLimit,
+                dashboardJiraRefreshSeconds,
+                dashboardJiraIssueLimit,
+                jiraEmail,
+                jiraApiToken,
+                showDashboardMusic,
+                showDashboardTasks,
+                showDashboardGithub,
+                showDashboardJira,
+                showDashboardCalendar,
+                dashboardCalendarRefreshSeconds,
+                calendarHideAllDayEvents,
+                calendarShowOnlyCurrentAndFuture,
+                calendarNotificationsEnabled,
+                calendarNotificationMinutesBefore,
+                calendarChangeNotificationsEnabled,
+                githubChangeNotificationsEnabled,
+                jiraChangeNotificationsEnabled,
+                value
         );
     }
 
