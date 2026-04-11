@@ -3,6 +3,7 @@
     -color-info-emphasis: #58a6ff;
     -color-info-muted: rgba(88, 166, 255, 0.3);
     -color-info-subtle: rgba(88, 166, 255, 0.12);
+    -color-shadow-default: rgba(0, 0, 0, 0.22);
 
     /* Glass card variables — light theme defaults (dark tints on light bg) */
     -color-glass-bg: rgba(0, 0, 0, 0.02);
@@ -17,6 +18,7 @@
     -color-glass-bg-hover: rgba(255, 255, 255, 0.05);
     -color-glass-border: rgba(255, 255, 255, 0.08);
     -color-glass-border-hover: rgba(255, 255, 255, 0.14);
+    -color-shadow-default: rgba(0, 0, 0, 0.6);
 }
 
 .body {
@@ -365,7 +367,6 @@ ChatThreadHistoryCard {
     -fx-background-color: -color-bg-subtle;
     -fx-background-radius: 4px;
     -fx-padding: 1px 5px;
-    -fx-min-width: -fx-pref-width;
 }
 
 .workspace-pr-number {
@@ -402,7 +403,6 @@ ChatThreadHistoryCard {
     -fx-background-color: -color-bg-subtle;
     -fx-background-radius: 4px;
     -fx-padding: 1px 5px;
-    -fx-min-width: -fx-pref-width;
 }
 
 /* ── Jira Issues widget ───────────────────────── */
@@ -666,4 +666,3 @@ ChatThreadHistoryCard {
 .chat-tab-scroll-button:hover .ikonli-font-icon {
     -fx-icon-color: -color-fg-default;
 }
-

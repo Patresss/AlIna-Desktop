@@ -76,6 +76,7 @@ public class ChatWindow extends BorderPane {
     private volatile Command currentCommandDetails;
     private ChatInputMode inputMode = ChatInputMode.CHAT;
     private volatile String selectedModel;
+    private boolean settingFromHistory = false;
 
     @FXML
     private StackPane chatAnswersPane;
@@ -329,6 +330,11 @@ public class ChatWindow extends BorderPane {
         chatTextArea.textProperty().addListener(
                 (observableValue, oldValue, newValue) -> popup.handleTextChangeListener(newValue, applicationWindow.getStage())
         );
+        chatTextArea.textProperty().addListener((observableValue, oldValue, newValue) -> {
+            if (!settingFromHistory) {
+                PromptHistoryManager.getInstance().resetNavigation();
+            }
+        });
         popup.getSelectedCommandProperty().addListener((observable, oldValue, newValue) -> {
             setCurrentCommand(newValue);
         });
@@ -346,6 +352,34 @@ public class ChatWindow extends BorderPane {
             exitInputMode();
             event.consume();
             return;
+        }
+        if (event.getCode() == KeyCode.UP && !popup.isShowing()) {
+            PromptHistoryManager historyManager = PromptHistoryManager.getInstance();
+            if (chatTextArea.getText().isEmpty() || historyManager.isNavigating()) {
+                String prompt = historyManager.navigateUp(chatTextArea.getText());
+                if (prompt != null) {
+                    settingFromHistory = true;
+                    chatTextArea.setText(prompt);
+                    chatTextArea.positionCaret(prompt.length());
+                    settingFromHistory = false;
+                }
+                event.consume();
+                return;
+            }
+        }
+        if (event.getCode() == KeyCode.DOWN && !popup.isShowing()) {
+            PromptHistoryManager historyManager = PromptHistoryManager.getInstance();
+            if (historyManager.isNavigating()) {
+                String prompt = historyManager.navigateDown();
+                if (prompt != null) {
+                    settingFromHistory = true;
+                    chatTextArea.setText(prompt);
+                    chatTextArea.positionCaret(prompt.length());
+                    settingFromHistory = false;
+                }
+                event.consume();
+                return;
+            }
         }
         if (event.getCode() == KeyCode.ENTER) {
             if (event.isShiftDown()) {
@@ -365,6 +399,7 @@ public class ChatWindow extends BorderPane {
         if (message.isBlank() && currentCommand == null) {
             return;
         }
+        PromptHistoryManager.getInstance().addPrompt(message);
         final String commandId = getCurrentCommandId();
         chatTextArea.clear();
         PreparedMessage prepared = prepareMessageToSend(message, commandId);

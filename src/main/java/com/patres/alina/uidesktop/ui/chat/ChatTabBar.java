@@ -352,8 +352,8 @@ public class ChatTabBar extends HBox {
             if (name == null || name.isBlank()) {
                 return LanguageManager.getLanguageString("tab.defaultName");
             }
-            if (name.length() > 18) {
-                return name.substring(0, 15) + "\u2026";
+            if (name.length() > 30) {
+                return name.substring(0, 30) + "\u2026";
             }
             return name;
         }
