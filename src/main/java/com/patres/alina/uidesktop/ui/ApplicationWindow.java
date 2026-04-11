@@ -14,6 +14,7 @@ import com.patres.alina.uidesktop.settings.ui.DashboardSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.OpenCodeSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.UiSettingsPane;
 import com.patres.alina.uidesktop.ui.chat.Browser;
+import com.patres.alina.uidesktop.ui.chat.ChatTabBar;
 import com.patres.alina.uidesktop.ui.chat.ChatWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.dashboard.DashboardPane;
@@ -35,17 +36,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class ApplicationWindow extends BorderPane {
 
     private static final Logger logger = LoggerFactory.getLogger(ApplicationWindow.class);
 
-    private ChatWindow chatWindow;
-
-    private ChatThread chatThread;
-
+    // Tab system: maps threadId -> ChatWindow
+    private final Map<String, ChatWindow> chatWindows = new LinkedHashMap<>();
+    private final Map<String, ChatThread> chatThreads = new LinkedHashMap<>();
+    private String activeTabId;
+    private ChatTabBar chatTabBar;
 
     @FXML
     private VBox centerPane;
@@ -84,8 +89,18 @@ public class ApplicationWindow extends BorderPane {
 
     @FXML
     public void initialize() {
-        centerPane.setSpacing(14);
+        centerPane.setSpacing(0);
+
+        // Initialize tab bar
+        chatTabBar = new ChatTabBar();
+        chatTabBar.setOnTabSelected(this::handleTabSelected);
+        chatTabBar.setOnTabClosed(this::handleTabClosed);
+        chatTabBar.setOnNewTabRequested(this::createAndOpenNewChatThread);
+
+        centerPane.getChildren().add(chatTabBar);
         centerPane.getChildren().add(dashboardContainer);
+        VBox.setMargin(dashboardContainer, new Insets(4, 0, 0, 0));
+
         refreshIntegrationWidgets();
         createAndOpenInitialChatThread();
         rootCenterContainer.getChildren()
@@ -117,12 +132,116 @@ public class ApplicationWindow extends BorderPane {
             if (thread != null) {
                 List<ChatMessageResponseModel> messages = BackendApi.getMessagesByThreadId(thread.id());
                 Platform.runLater(() -> {
-                    loadChatThread(thread, messages);
+                    loadChatThreadInActiveTab(thread, messages);
                     appModalPane.hide(false);
                 });
             }
         });
     }
+
+    // ═══════════════════════════════════════════
+    // Tab management
+    // ═══════════════════════════════════════════
+
+    private void handleTabSelected(String threadId) {
+        switchToTab(threadId);
+    }
+
+    private void handleTabClosed(String threadId) {
+        closeTab(threadId);
+    }
+
+    private void switchToTab(String threadId) {
+        if (threadId.equals(activeTabId)) {
+            return;
+        }
+
+        // Hide current chat window
+        ChatWindow currentWindow = getActiveChatWindow();
+        if (currentWindow != null) {
+            currentWindow.setVisible(false);
+            currentWindow.setManaged(false);
+        }
+
+        activeTabId = threadId;
+
+        // Show the target chat window
+        ChatWindow targetWindow = chatWindows.get(threadId);
+        if (targetWindow != null) {
+            targetWindow.setVisible(true);
+            targetWindow.setManaged(true);
+        }
+    }
+
+    private void closeTab(String threadId) {
+        if (chatWindows.size() <= 1) {
+            return;
+        }
+
+        // If closing the active tab, switch to a neighbor first
+        if (threadId.equals(activeTabId)) {
+            List<String> tabIds = chatTabBar.getTabIds();
+            int index = tabIds.indexOf(threadId);
+            String nextTabId;
+            if (index > 0) {
+                nextTabId = tabIds.get(index - 1);
+            } else {
+                nextTabId = tabIds.get(index + 1);
+            }
+            chatTabBar.selectTab(nextTabId);
+            switchToTab(nextTabId);
+        }
+
+        // Remove the chat window
+        ChatWindow window = chatWindows.remove(threadId);
+        chatThreads.remove(threadId);
+        if (window != null) {
+            window.unsubscribeEvents();
+            centerPane.getChildren().remove(window);
+        }
+
+        chatTabBar.removeTab(threadId);
+    }
+
+    private void addTabAndLoadChat(ChatThread chatThread, List<ChatMessageResponseModel> messages) {
+        // If tab already exists, just switch to it
+        if (chatWindows.containsKey(chatThread.id())) {
+            chatTabBar.selectTab(chatThread.id());
+            switchToTab(chatThread.id());
+            return;
+        }
+
+        // Hide current active chat window
+        ChatWindow currentWindow = getActiveChatWindow();
+        if (currentWindow != null) {
+            currentWindow.setVisible(false);
+            currentWindow.setManaged(false);
+        }
+
+        // Create new ChatWindow
+        ChatWindow newWindow = new ChatWindow(chatThread, this, messages);
+        newWindow.setVisible(true);
+        newWindow.setManaged(true);
+        VBox.setMargin(newWindow, new Insets(2, 0, 0, 0));
+        VBox.setVgrow(newWindow, javafx.scene.layout.Priority.ALWAYS);
+
+        // Store in maps
+        chatWindows.put(chatThread.id(), newWindow);
+        chatThreads.put(chatThread.id(), chatThread);
+        activeTabId = chatThread.id();
+
+        // Add to UI
+        centerPane.getChildren().add(newWindow);
+
+        // Add tab and activate it
+        chatTabBar.addTab(chatThread, true);
+
+        dashboardPane.refreshAsync();
+    }
+
+    // ═══════════════════════════════════════════
+    // Public API (preserved for compatibility)
+    // ═══════════════════════════════════════════
 
     public void openThreadHistories() {
         chatThreadHistoryPane.reload();
@@ -131,39 +250,52 @@ public class ApplicationWindow extends BorderPane {
 
     public void createAndOpenNewChatThread() {
         Thread.startVirtualThread(() -> {
-            prepareOpenCodeForFreshChat();
             final ChatThread newThread = BackendApi.createChatThread();
             Platform.runLater(() -> {
-                chatThread = newThread;
-                loadChatThread(newThread, List.of());
+                addTabAndLoadChat(newThread, List.of());
                 appModalPane.hide(true);
             });
         });
     }
 
     private void createAndOpenInitialChatThread() {
-        chatThread = BackendApi.createChatThread();
-        openChatThread(chatThread);
+        ChatThread chatThread = BackendApi.createChatThread();
+        addTabAndLoadChat(chatThread, List.of());
     }
 
     public void createNewChatThread() {
         Thread.startVirtualThread(() -> {
-            prepareOpenCodeForFreshChat();
             final ChatThread newThread = BackendApi.createChatThread();
-            Platform.runLater(() -> {
-                chatThread = newThread;
-                loadChatThread(newThread, List.of());
-            });
+            Platform.runLater(() -> addTabAndLoadChat(newThread, List.of()));
         });
     }
 
-    private void prepareOpenCodeForFreshChat() {
-        getChatThread().ifPresent(currentThread -> BackendApi.cancelChatMessagesStream(currentThread.id()));
-        try {
-            BackendApi.prepareOpenCodeForFreshChat();
-        } catch (RuntimeException e) {
-            logger.warn("Cannot reset OpenCode runtime before creating a new chat", e);
+    /**
+     * Load a chat thread in the currently active tab (replaces the content).
+     * Used by command shortcuts and history selection when we want to replace
+     * the active tab's content rather than creating a new tab.
+     */
+    public void loadChatThreadInActiveTab(ChatThread chatThread, List<ChatMessageResponseModel> messages) {
+        // If there's already a tab for this thread, just switch to it
+        if (chatWindows.containsKey(chatThread.id())) {
+            chatTabBar.selectTab(chatThread.id());
+            switchToTab(chatThread.id());
+            return;
         }
+
+        // Remove old active tab's window
+        if (activeTabId != null) {
+            ChatWindow oldWindow = chatWindows.remove(activeTabId);
+            chatThreads.remove(activeTabId);
+            if (oldWindow != null) {
+                oldWindow.unsubscribeEvents();
+                centerPane.getChildren().remove(oldWindow);
+            }
+            chatTabBar.removeTab(activeTabId);
+        }
+
+        // Add as new tab
+        addTabAndLoadChat(chatThread, messages);
     }
 
     public void loadChatThread(ChatThread chatThread) {
@@ -171,22 +303,15 @@ public class ApplicationWindow extends BorderPane {
     }
 
     public void loadChatThread(ChatThread chatThread, List<ChatMessageResponseModel> messages) {
-        centerPane.getChildren().removeIf(node -> node instanceof ChatWindow);
-        if (chatWindow != null) {
-            chatWindow.unsubscribeEvents();
-        }
-        chatWindow = new ChatWindow(chatThread, this, messages);
-        centerPane.getChildren().add(chatWindow);
-        VBox.setMargin(chatWindow, new Insets(2, 0, 0, 0));
-        VBox.setVgrow(chatWindow, javafx.scene.layout.Priority.ALWAYS);
-        dashboardPane.refreshAsync();
+        // Open in a new tab (or switch to existing)
+        addTabAndLoadChat(chatThread, messages);
     }
 
     public void openChatThread(ChatThread chatThread) {
         Thread.startVirtualThread(() -> {
             List<ChatMessageResponseModel> messages = BackendApi.getMessagesByThreadId(chatThread.id());
             Platform.runLater(() -> {
-                loadChatThread(chatThread, messages);
+                addTabAndLoadChat(chatThread, messages);
                 appModalPane.hide(true);
             });
         });
@@ -234,8 +359,10 @@ public class ApplicationWindow extends BorderPane {
     }
 
     public Optional<ChatThread> getChatThread() {
-        return Optional.ofNullable(chatWindow)
-                .map(ChatWindow::getChatThread);
+        if (activeTabId == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(chatThreads.get(activeTabId));
     }
 
     public AppModalPane getAppModalPane() {
@@ -243,6 +370,13 @@ public class ApplicationWindow extends BorderPane {
     }
 
     public ChatWindow getChatWindow() {
-        return chatWindow;
+        return getActiveChatWindow();
+    }
+
+    private ChatWindow getActiveChatWindow() {
+        if (activeTabId == null) {
+            return null;
+        }
+        return chatWindows.get(activeTabId);
     }
 }

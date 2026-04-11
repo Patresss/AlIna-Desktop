@@ -520,3 +520,111 @@ ChatThreadHistoryCard {
     -fx-cursor: hand;
 }
 
+/* ══════════════════════════════════════════════════
+   Chat Tab Bar
+   ══════════════════════════════════════════════════ */
+
+.chat-tab-bar {
+    -fx-padding: 0 4px 0 4px;
+    -fx-alignment: center-left;
+    -fx-min-height: 36px;
+    -fx-max-height: 36px;
+}
+
+.chat-tab-bar-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.chat-tab-bar-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.chat-tab-bar-tabs {
+    -fx-alignment: center-left;
+    -fx-spacing: 2px;
+}
+
+.chat-tab-item {
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-padding: 4px 8px 4px 10px;
+    -fx-cursor: hand;
+    -fx-min-height: 28px;
+    -fx-max-height: 28px;
+}
+
+.chat-tab-active {
+    -fx-background-color: -color-glass-bg-hover;
+    -fx-border-color: -color-glass-border-hover;
+    -fx-border-width: 1px;
+}
+
+.chat-tab-inactive {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+}
+
+.chat-tab-inactive:hover {
+    -fx-background-color: -color-glass-bg;
+    -fx-border-color: -color-glass-border;
+}
+
+.chat-tab-name {
+    -fx-font-size: 12px;
+    -fx-text-overrun: ellipsis;
+}
+
+.chat-tab-close-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 2px 0 2px;
+    -fx-cursor: hand;
+    -fx-min-width: 16px;
+    -fx-min-height: 16px;
+    -fx-max-width: 16px;
+    -fx-max-height: 16px;
+}
+
+.chat-tab-close-button .ikonli-font-icon {
+    -fx-icon-size: 12px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.chat-tab-close-button:hover .ikonli-font-icon {
+    -fx-icon-color: -color-fg-default;
+}
+
+.chat-tab-add-button {
+    -fx-min-width: 24px;
+    -fx-min-height: 24px;
+    -fx-max-width: 24px;
+    -fx-max-height: 24px;
+    -fx-padding: 0;
+}
+
+.chat-tab-add-button .ikonli-font-icon {
+    -fx-icon-size: 14px;
+}
+
+.chat-tab-scroll-button {
+    -fx-min-width: 20px;
+    -fx-min-height: 24px;
+    -fx-max-width: 20px;
+    -fx-max-height: 24px;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+}
+
+.chat-tab-scroll-button .ikonli-font-icon {
+    -fx-icon-size: 14px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.chat-tab-scroll-button:hover .ikonli-font-icon {
+    -fx-icon-color: -color-fg-default;
+}
+
