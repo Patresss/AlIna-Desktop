@@ -347,7 +347,12 @@ public class OpenCodeRuntimeService {
         }
         final String messageId = info.path("id").asText(null);
         if (messageId != null && !messageId.isBlank()) {
-            stream.assistantMessageId = messageId;
+            if (!messageId.equals(stream.assistantMessageId)) {
+                // New assistant message started (e.g. after compaction) — reset completion flag
+                // so we don't prematurely close the stream when a prior message finished.
+                stream.completed.set(false);
+                stream.assistantMessageId = messageId;
+            }
         }
 
         final String modelId = info.path("modelID").asText("");
@@ -385,7 +390,11 @@ public class OpenCodeRuntimeService {
         if (!matchesSession(stream, properties.path("sessionID").asText())) {
             return;
         }
-        if (!matchesAssistantMessage(stream, properties.path("messageID").asText())) {
+        final String incomingMessageId = properties.path("messageID").asText(null);
+        if (incomingMessageId != null && !incomingMessageId.isBlank() && stream.assistantMessageId == null) {
+            stream.assistantMessageId = incomingMessageId;
+        }
+        if (!matchesAssistantMessage(stream, incomingMessageId)) {
             return;
         }
         if (!"text".equals(properties.path("field").asText())) {

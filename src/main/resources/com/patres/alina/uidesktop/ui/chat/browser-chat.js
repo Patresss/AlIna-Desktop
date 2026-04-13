@@ -615,6 +615,9 @@
         if (streamingDiv) {
             // Remove the streaming ID so it becomes a regular message
             streamingDiv.removeAttribute('id');
+            // Mark this element so attachMessageFooter can find it even if
+            // new notification messages are appended before the footer arrives
+            streamingDiv.dataset.awaitingFooter = 'true';
             // Force synchronous reflow to fix WebKit border rendering bug
             void streamingDiv.offsetHeight;
             // Scroll to bottom one final time
@@ -629,6 +632,9 @@
             streamingDiv.innerHTML = processedHtml;
             // Remove the streaming ID so it becomes a regular message
             streamingDiv.removeAttribute('id');
+            // Mark this element so attachMessageFooter can find it even if
+            // new notification messages are appended before the footer arrives
+            streamingDiv.dataset.awaitingFooter = 'true';
             // Force synchronous reflow to fix WebKit border rendering bug
             void streamingDiv.offsetHeight;
             // Scroll to bottom one final time
@@ -643,18 +649,39 @@
     function attachMessageFooter(footerText) {
         var chatContainer = document.getElementById('chat-container');
         if (!chatContainer || !chatContainer.children) return;
+
+        // Prefer the element that was explicitly marked as the message awaiting a footer.
+        // Walk backwards to find the LAST element with data-awaiting-footer, so that
+        // when multiple responses are streamed sequentially each gets the right footer.
         var target = null;
         for (var i = chatContainer.children.length - 1; i >= 0; i--) {
             var node = chatContainer.children[i];
             if (!node || !node.classList) continue;
-            if (node.classList.contains('chat-message')
-                && node.classList.contains('assistant')
-                && (!node.dataset || node.dataset.transient !== 'true')) {
+            if (node.dataset && node.dataset.awaitingFooter === 'true') {
                 target = node;
                 break;
             }
         }
+
+        if (!target) {
+            // Fallback: walk backwards and find the last non-transient assistant message
+            for (var j = chatContainer.children.length - 1; j >= 0; j--) {
+                var fallbackNode = chatContainer.children[j];
+                if (!fallbackNode || !fallbackNode.classList) continue;
+                if (fallbackNode.classList.contains('chat-message')
+                    && fallbackNode.classList.contains('assistant')
+                    && (!fallbackNode.dataset || fallbackNode.dataset.transient !== 'true')) {
+                    target = fallbackNode;
+                    break;
+                }
+            }
+        }
+
         if (!target) return;
+
+        // Clear the awaiting-footer marker now that we are attaching it
+        delete target.dataset.awaitingFooter;
+
         var existing = target.querySelector('.message-footer');
         if (existing) existing.remove();
         var footer = document.createElement('div');

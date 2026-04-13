@@ -54,20 +54,30 @@ public final class DashboardChangeTracker {
      * detects changes against the last snapshot, publishes a notification if changes exist
      * and notifications are enabled, and saves the updated snapshot.
      * <p>
-     * The snapshot is <em>always</em> updated regardless of the {@code notificationsEnabled}
-     * flag, so that toggling the setting back on does not trigger a flood of stale changes.
+     * The snapshot is <em>only</em> updated when {@code fetchError} is {@code false}.
+     * When a fetch error occurs the previous snapshot is preserved so that items which
+     * were visible before the error are not treated as "new" once connectivity is restored.
      *
      * @param section              the dashboard section being refreshed
      * @param items                the current list of domain-specific items (e.g. {@code JiraIssue})
      * @param adapter              converts a domain item to a {@link TrackableItem}
      * @param notificationsEnabled whether to actually publish a chat notification on change
+     * @param fetchError           {@code true} when the upstream API call failed; snapshot is
+     *                             not updated in this case to prevent false "new item" notifications
      * @param <T>                  the domain item type
      */
     public <T> void trackChanges(
             final DashboardSection section,
             final List<T> items,
             final Function<T, TrackableItem> adapter,
-            final boolean notificationsEnabled) {
+            final boolean notificationsEnabled,
+            final boolean fetchError) {
+
+        if (fetchError) {
+            logger.warn("Dashboard section {} fetch failed — skipping snapshot update to avoid false notifications",
+                    section.id());
+            return;
+        }
 
         final List<TrackableItem> currentItems = items.stream()
                 .map(adapter)

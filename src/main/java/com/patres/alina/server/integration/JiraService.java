@@ -55,7 +55,7 @@ public class JiraService {
     public JiraIssueResult fetchAssignedIssues(final String jiraEmail, final String jiraApiToken, final int maxResults) {
         if (jiraEmail == null || jiraEmail.isBlank() || jiraApiToken == null || jiraApiToken.isBlank()) {
             logger.info("Jira: skipping fetch - email or token is empty");
-            return new JiraIssueResult(Collections.emptyList(), 0);
+            return JiraIssueResult.empty();
         }
 
         final String emailPrefix = jiraEmail.length() > 10 ? jiraEmail.substring(0, 10) + "..." : "***";
@@ -94,17 +94,17 @@ public class JiraService {
                     logger.warn("Jira API returned 401 Unauthorized. Check your email and API token. " +
                             "Create an API token at: https://id.atlassian.com/manage-profile/security/api-tokens");
                 }
-                return new JiraIssueResult(Collections.emptyList(), 0);
+                return JiraIssueResult.error();
             }
 
             return parseResponse(response.body(), maxResults);
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.warn("Jira API call interrupted", e);
-            return new JiraIssueResult(Collections.emptyList(), 0);
+            return JiraIssueResult.error();
         } catch (final Exception e) {
             logger.warn("Failed to fetch Jira issues", e);
-            return new JiraIssueResult(Collections.emptyList(), 0);
+            return JiraIssueResult.error();
         }
     }
 
@@ -115,7 +115,7 @@ public class JiraService {
 
         final JsonNode issues = root.path("issues");
         if (issues.isMissingNode() || !issues.isArray()) {
-            return new JiraIssueResult(Collections.emptyList(), 0);
+            return JiraIssueResult.empty();
         }
 
         final List<JiraIssue> issueList = new ArrayList<>();
@@ -138,7 +138,8 @@ public class JiraService {
 
         return new JiraIssueResult(
                 Collections.unmodifiableList(issueList),
-                totalCount
+                totalCount,
+                false
         );
     }
 }

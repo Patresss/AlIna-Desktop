@@ -39,18 +39,18 @@ public class GitHubService {
 
     public GitHubPullRequestResult fetchPendingReviews(final String githubToken, final int maxResults) {
         if (githubToken == null || githubToken.isBlank()) {
-            return new GitHubPullRequestResult(Collections.emptyList(), 0);
+            return GitHubPullRequestResult.empty();
         }
 
         final String tokenPrefix = githubToken.length() > 10 ? githubToken.substring(0, 10) + "..." : "***";
         logger.info("GitHub: starting fetch with token: {}, maxResults: {}", tokenPrefix, maxResults);
 
-        try {
-            final String username = fetchAuthenticatedUsername(githubToken);
-            if (username == null) {
-                logger.warn("Could not resolve GitHub username — check if the token is valid");
-                return new GitHubPullRequestResult(Collections.emptyList(), 0);
-            }
+            try {
+                final String username = fetchAuthenticatedUsername(githubToken);
+                if (username == null) {
+                    logger.warn("Could not resolve GitHub username — check if the token is valid");
+                    return GitHubPullRequestResult.error();
+                }
             logger.info("GitHub: resolved username = {}", username);
 
             final String searchUrl = String.format(SEARCH_URL_TEMPLATE, username, username);
@@ -74,7 +74,7 @@ public class GitHubService {
                         "If 401, verify: 1) Token is valid and not expired, 2) Token has 'repo' or 'public_repo' scope, " +
                         "3) You've restarted the app after updating the token in settings",
                         response.statusCode(), response.body(), tokenPrefix);
-                return new GitHubPullRequestResult(Collections.emptyList(), 0);
+                return GitHubPullRequestResult.error();
             }
 
             final List<GitHubPullRequest> allPRs = parseResponse(response.body());
@@ -89,10 +89,10 @@ public class GitHubService {
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.warn("GitHub API call interrupted", e);
-            return new GitHubPullRequestResult(Collections.emptyList(), 0);
+            return GitHubPullRequestResult.error();
         } catch (final Exception e) {
             logger.warn("Failed to fetch GitHub pull requests", e);
-            return new GitHubPullRequestResult(Collections.emptyList(), 0);
+            return GitHubPullRequestResult.error();
         }
     }
 
@@ -156,7 +156,8 @@ public class GitHubService {
         
         return new GitHubPullRequestResult(
                 Collections.unmodifiableList(limited),
-                allMatching.size()
+                allMatching.size(),
+                false
         );
     }
 

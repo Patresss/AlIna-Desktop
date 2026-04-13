@@ -487,7 +487,8 @@ public class GoogleCalendarWidget extends VBox {
                 DashboardSection.CALENDAR,
                 events,
                 GoogleCalendarWidget::toTrackableItem,
-                enabled
+                enabled,
+                false
         );
     }
 

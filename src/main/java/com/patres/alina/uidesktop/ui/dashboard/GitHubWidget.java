@@ -100,7 +100,7 @@ public class GitHubWidget extends VBox {
         Thread.startVirtualThread(() -> {
             final int maxResults = BackendApi.getWorkspaceSettings().dashboardGithubPrLimit();
             final GitHubPullRequestResult result = BackendApi.fetchGitHubPendingReviews(token, maxResults);
-            trackChanges(result.pullRequests());
+            trackChanges(result);
             Platform.runLater(() -> render(result));
         });
     }
@@ -176,13 +176,14 @@ public class GitHubWidget extends VBox {
 
     // ── Change tracking ──────────────────────────────────────────
 
-    private void trackChanges(final List<GitHubPullRequest> pullRequests) {
+    private void trackChanges(final GitHubPullRequestResult result) {
         final boolean enabled = BackendApi.getWorkspaceSettings().githubChangeNotificationsEnabled();
         DashboardChangeTracker.getInstance().trackChanges(
                 DashboardSection.GITHUB,
-                pullRequests,
+                result.pullRequests(),
                 GitHubWidget::toTrackableItem,
-                enabled
+                enabled,
+                result.fetchError()
         );
     }
 

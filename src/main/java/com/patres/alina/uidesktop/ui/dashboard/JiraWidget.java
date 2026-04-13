@@ -107,7 +107,7 @@ public class JiraWidget extends VBox {
             }
             
             final JiraIssueResult result = BackendApi.fetchJiraAssignedIssues(email, token, maxResults);
-            trackChanges(result.issues());
+            trackChanges(result);
             Platform.runLater(() -> render(result));
         });
     }
@@ -179,13 +179,14 @@ public class JiraWidget extends VBox {
 
     // ── Change tracking ──────────────────────────────────────────
 
-    private void trackChanges(final List<JiraIssue> issues) {
+    private void trackChanges(final JiraIssueResult result) {
         final boolean enabled = BackendApi.getWorkspaceSettings().jiraChangeNotificationsEnabled();
         DashboardChangeTracker.getInstance().trackChanges(
                 DashboardSection.JIRA,
-                issues,
+                result.issues(),
                 JiraWidget::toTrackableItem,
-                enabled
+                enabled,
+                result.fetchError()
         );
     }
 

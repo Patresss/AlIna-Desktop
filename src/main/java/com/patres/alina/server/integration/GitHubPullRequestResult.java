@@ -1,5 +1,6 @@
 package com.patres.alina.server.integration;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -7,6 +8,16 @@ import java.util.List;
  */
 public record GitHubPullRequestResult(
         List<GitHubPullRequest> pullRequests,
-        int totalCount
+        int totalCount,
+        boolean fetchError
 ) {
+    /** Convenience factory for a successful (non-error) empty result. */
+    public static GitHubPullRequestResult empty() {
+        return new GitHubPullRequestResult(Collections.emptyList(), 0, false);
+    }
+
+    /** Factory for results that failed due to a connection / API error. */
+    public static GitHubPullRequestResult error() {
+        return new GitHubPullRequestResult(Collections.emptyList(), 0, true);
+    }
 }
