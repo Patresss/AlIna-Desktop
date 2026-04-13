@@ -356,30 +356,39 @@ public class OpenCodeRuntimeService {
         }
 
         final String modelId = info.path("modelID").asText("");
-        if (!modelId.isBlank()) {
-            final String providerId = info.path("providerID").asText("");
-            stream.modelUsed = providerId.isBlank() ? modelId : providerId + "/" + modelId;
-        }
         final String agent = info.path("agent").asText("");
-        if (!agent.isBlank()) {
-            stream.agentUsed = agent;
-        }
+        // Detect compaction/summary messages — they use a dedicated mode and agent.
+        // Their tokens must not be forwarded to the UI and their "stop" must not end the stream.
+        final String mode = info.path("mode").asText("");
+        final boolean isCompaction = "compaction".equalsIgnoreCase(mode)
+                || "compaction".equalsIgnoreCase(agent);
 
-        final JsonNode tokensNode = info.path("tokens");
-        if (!tokensNode.isMissingNode()) {
-            final long total = tokensNode.path("total").asLong(0);
-            if (total > 0) {
-                stream.tokensTotal = total;
+        if (!isCompaction) {
+            if (!modelId.isBlank()) {
+                final String providerId = info.path("providerID").asText("");
+                stream.modelUsed = providerId.isBlank() ? modelId : providerId + "/" + modelId;
+            }
+            if (!agent.isBlank()) {
+                stream.agentUsed = agent;
+            }
+            final JsonNode tokensNode = info.path("tokens");
+            if (!tokensNode.isMissingNode()) {
+                final long total = tokensNode.path("total").asLong(0);
+                if (total > 0) {
+                    stream.tokensTotal = total;
+                }
+            }
+            final double costValue = info.path("cost").asDouble(0.0);
+            if (costValue > 0.0) {
+                stream.cost = costValue;
             }
         }
 
-        final double costValue = info.path("cost").asDouble(0.0);
-        if (costValue > 0.0) {
-            stream.cost = costValue;
-        }
-
         final String finish = info.path("finish").asText("");
-        if ("stop".equalsIgnoreCase(finish)) {
+        if ("stop".equalsIgnoreCase(finish) && !isCompaction) {
+            // Compaction messages (mode/agent == "compaction") signal the end of a context-compression
+            // turn, NOT the end of the user's request. OpenCode continues streaming a real assistant
+            // response after compaction, so we must not treat this "stop" as final completion.
             stream.completed.set(true);
         }
     }
