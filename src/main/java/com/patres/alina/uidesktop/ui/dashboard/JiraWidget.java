@@ -160,8 +160,12 @@ public class JiraWidget extends VBox {
 
         // Apply color class based on status
         final String statusLower = issue.status().toLowerCase();
-        if (statusLower.contains("progress") || statusLower.contains("review") || statusLower.contains("w toku")) {
+        if (statusLower.contains("progress") || statusLower.contains("review") || statusLower.contains("w toku") || statusLower.contains("in review")) {
             statusLabel.getStyleClass().add("workspace-jira-status-progress");
+        } else if (statusLower.contains("block") || statusLower.contains("impede") || statusLower.contains("zablok")) {
+            statusLabel.getStyleClass().add("workspace-jira-status-blocked");
+        } else if (statusLower.contains("done") || statusLower.contains("closed") || statusLower.contains("resolved") || statusLower.contains("gotowe")) {
+            statusLabel.getStyleClass().add("workspace-jira-status-done");
         }
 
         final Label summaryLabel = new Label();
@@ -171,7 +175,7 @@ public class JiraWidget extends VBox {
         summaryLabel.setWrapText(false);
         HBox.setHgrow(summaryLabel, Priority.ALWAYS);
 
-        final HBox row = new HBox(8, keyLabel, statusLabel, summaryLabel);
+        final HBox row = new HBox(6, keyLabel, statusLabel, summaryLabel);
         row.getStyleClass().add("workspace-jira-item");
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);

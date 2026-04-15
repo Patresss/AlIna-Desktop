@@ -143,12 +143,12 @@ public class GitHubWidget extends VBox {
 
     private HBox createPrRow(final GitHubPullRequest pr) {
         final Label numberLabel = new Label("#" + pr.number());
-        numberLabel.getStyleClass().addAll("workspace-pr-number", "workspace-pr-link");
+        numberLabel.getStyleClass().addAll("workspace-pr-number");
         numberLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
         numberLabel.setOnMouseClicked(event -> Browser.openWebpage(pr.url()));
 
         final String repoName = extractRepoName(pr.repository());
-        final Label repoLabel = new Label("[" + repoName + "]");
+        final Label repoLabel = new Label(repoName);
         repoLabel.getStyleClass().add("workspace-pr-repo");
         repoLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
 
@@ -161,10 +161,10 @@ public class GitHubWidget extends VBox {
         HBox.setHgrow(prTitleLabel, Priority.ALWAYS);
         prTitleLabel.setOnMouseClicked(event -> EmojiLabelHelper.toggleWrap(prTitleLabel));
 
-        final HBox row = new HBox(8, numberLabel, repoLabel, prTitleLabel);
+        final HBox row = new HBox(6, numberLabel, repoLabel, prTitleLabel);
 
         if (pr.draft()) {
-            final Label draftLabel = new Label("(draft)");
+            final Label draftLabel = new Label("draft");
             draftLabel.getStyleClass().add("workspace-pr-draft");
             row.getChildren().add(draftLabel);
         }

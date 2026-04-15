@@ -230,13 +230,16 @@ public class GoogleCalendarWidget extends VBox {
         final Label summaryLabel = createSummaryLabel(event);
 
         final HBox row = new HBox(8, timeColumn, videoSlot, summaryLabel);
-        row.setAlignment(Pos.TOP_LEFT);
-        row.getStyleClass().add(STYLE_CALENDAR_ITEM);
+        row.setAlignment(Pos.CENTER_LEFT);
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
 
         if (isCurrent) {
-            row.getStyleClass().add(STYLE_CALENDAR_ITEM_CURRENT);
+            row.getStyleClass().addAll(STYLE_CALENDAR_ITEM_CURRENT);
+            // Bold summary for active event
+            summaryLabel.setStyle("-fx-font-weight: 700;");
+        } else {
+            row.getStyleClass().add(STYLE_CALENDAR_ITEM);
         }
 
         return row;

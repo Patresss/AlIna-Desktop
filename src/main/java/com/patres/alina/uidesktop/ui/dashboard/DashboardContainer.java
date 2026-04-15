@@ -6,10 +6,13 @@ import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -45,11 +48,14 @@ public class DashboardContainer extends VBox {
 
         collapseButton.getStyleClass().addAll(Styles.BUTTON_CIRCLE, Styles.FLAT, "workspace-collapse-button");
         collapseButton.setOnAction(event -> toggleCollapsed());
+        collapseButton.setFocusTraversable(false);
 
-        final HBox spacer = new HBox();
+        final Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         final HBox header = new HBox(6, titleLabel, spacer, collapseButton);
         header.getStyleClass().add("workspace-dashboard-header");
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setPadding(new Insets(2, 4, 4, 4));
 
         widgetsBox.getChildren().addAll(
                 mediaControlWidget,
@@ -59,7 +65,7 @@ public class DashboardContainer extends VBox {
                 jiraWidget
         );
 
-        setSpacing(4);
+        setSpacing(6);
         setMinWidth(0);
         getChildren().addAll(header, widgetsBox);
 

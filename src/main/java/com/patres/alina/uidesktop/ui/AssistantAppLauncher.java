@@ -47,6 +47,7 @@ public class AssistantAppLauncher {
 
         var headerBar = new HeaderBar();
         headerBar.setTrailing(new ApplicationHeaderButtonBox(root));
+        headerBar.setLeading(new HeaderEventCountdown());
         HeaderBar.setPrefButtonHeight(stage, 100d);
 
 
