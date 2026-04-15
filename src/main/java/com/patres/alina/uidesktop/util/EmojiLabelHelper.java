@@ -131,14 +131,8 @@ public final class EmojiLabelHelper {
     public static void toggleWrap(final Label label) {
         final TextFlow flow = (TextFlow) label.getProperties().get(FLOW_PROP);
         if (flow == null) {
-            // Plain label without emoji — use built-in wrapText + ensure container grows
-            final boolean expanding = !label.isWrapText();
-            label.setWrapText(expanding);
-            if (expanding) {
-                label.setMinHeight(Label.USE_PREF_SIZE);
-            } else {
-                label.setMinHeight(Label.USE_COMPUTED_SIZE);
-            }
+            // Plain label without emoji — simple wrapText toggle, no extra constraints needed.
+            label.setWrapText(!label.isWrapText());
             return;
         }
 

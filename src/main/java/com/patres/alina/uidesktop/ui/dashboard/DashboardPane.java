@@ -124,7 +124,6 @@ public class DashboardPane extends VBox {
             EmojiLabelHelper.applyEmojiText(taskLabel, task.title());
             taskLabel.getStyleClass().add("workspace-task-label");
             taskLabel.setMaxWidth(Double.MAX_VALUE);
-            taskLabel.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
             taskLabel.setWrapText(false);
             HBox.setHgrow(taskLabel, Priority.ALWAYS);
 

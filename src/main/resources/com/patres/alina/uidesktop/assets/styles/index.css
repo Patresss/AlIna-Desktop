@@ -379,11 +379,9 @@ ChatThreadHistoryCard {
 }
 
 .workspace-task-item {
-    -fx-alignment: center-left;
+    -fx-alignment: top-left;
     -fx-padding: 3px 4px;
     -fx-background-radius: 6px;
-    -fx-min-height: 24px;
-    -fx-pref-height: 24px;
 }
 
 .workspace-task-item:hover {

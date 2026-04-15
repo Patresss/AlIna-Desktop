@@ -63,6 +63,9 @@ public class GoogleCalendarWidget extends VBox {
     private static final String STYLE_CALENDAR_CLICKABLE = "workspace-calendar-clickable";
     private static final String STYLE_CALENDAR_ERROR = "workspace-calendar-error";
     private static final String STYLE_CALENDAR_AUTH_BUTTON = "workspace-calendar-auth-button";
+    private static final String STYLE_CALENDAR_VIDEO_ICON = "workspace-calendar-video-icon";
+    private static final String STYLE_CALENDAR_VIDEO_BUTTON = "workspace-calendar-video-button";
+    private static final int VIDEO_SLOT_WIDTH = 16;
 
     private final Label titleLabel = new Label();
     private final Label countLabel = new Label();
@@ -223,9 +226,10 @@ public class GoogleCalendarWidget extends VBox {
 
         final String meetUrl = resolveClickUrl(event);
         final VBox timeColumn = createTimeColumn(event, isCurrent, isUpcomingSoon, remainingMinutes, minutesUntilStart, meetUrl);
+        final Region videoSlot = createVideoSlot(event);
         final Label summaryLabel = createSummaryLabel(event);
 
-        final HBox row = new HBox(8, timeColumn, summaryLabel);
+        final HBox row = new HBox(8, timeColumn, videoSlot, summaryLabel);
         row.setAlignment(Pos.TOP_LEFT);
         row.getStyleClass().add(STYLE_CALENDAR_ITEM);
         row.setMaxWidth(Double.MAX_VALUE);
@@ -278,6 +282,24 @@ public class GoogleCalendarWidget extends VBox {
         }
         label.setMinWidth(Region.USE_PREF_SIZE);
         return label;
+    }
+
+    private Region createVideoSlot(final GoogleCalendarEvent event) {
+        final String meetUrl = resolveClickUrl(event);
+        if (!meetUrl.isEmpty() && !event.allDay()) {
+            final FontIcon videoIcon = new FontIcon(Feather.VIDEO);
+            videoIcon.getStyleClass().add(STYLE_CALENDAR_VIDEO_ICON);
+            final Label videoButton = new Label();
+            videoButton.setGraphic(videoIcon);
+            videoButton.getStyleClass().add(STYLE_CALENDAR_VIDEO_BUTTON);
+            videoButton.setOnMouseClicked(e -> Browser.openWebpage(meetUrl));
+            return videoButton;
+        }
+        final Region placeholder = new Region();
+        placeholder.setMinWidth(VIDEO_SLOT_WIDTH);
+        placeholder.setPrefWidth(VIDEO_SLOT_WIDTH);
+        placeholder.setMaxWidth(VIDEO_SLOT_WIDTH);
+        return placeholder;
     }
 
     private Label createSummaryLabel(final GoogleCalendarEvent event) {
