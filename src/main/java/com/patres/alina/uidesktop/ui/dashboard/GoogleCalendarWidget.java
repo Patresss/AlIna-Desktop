@@ -84,6 +84,7 @@ public class GoogleCalendarWidget extends VBox {
         calendarIcon.getStyleClass().add(STYLE_DASHBOARD_TITLE);
         titleLabel.textProperty().bind(LanguageManager.createStringBinding("dashboard.calendar.title"));
         titleLabel.setGraphic(calendarIcon);
+        titleLabel.setGraphicTextGap(5);
         titleLabel.getStyleClass().add(STYLE_DASHBOARD_TITLE);
 
         countLabel.getStyleClass().add(STYLE_DASHBOARD_COUNT);
@@ -103,7 +104,7 @@ public class GoogleCalendarWidget extends VBox {
 
         detailsBox.getChildren().add(contentBox);
 
-        setSpacing(4);
+        setSpacing(2);
         getChildren().addAll(header, detailsBox);
 
         updateCollapseButton();

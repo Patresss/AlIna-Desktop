@@ -40,7 +40,7 @@ public class MediaControlWidget extends VBox {
         final Label titleLabel = new Label();
         titleLabel.textProperty().bind(LanguageManager.createStringBinding("dashboard.music.title"));
         titleLabel.setGraphic(musicIcon);
-        titleLabel.setGraphicTextGap(6);
+        titleLabel.setGraphicTextGap(5);
         titleLabel.getStyleClass().add("workspace-dashboard-title");
 
         // Control buttons
@@ -63,7 +63,7 @@ public class MediaControlWidget extends VBox {
         final Button nextButton = createControlButton(Feather.SKIP_FORWARD);
         nextButton.setOnAction(event -> executeInBackground(MediaControlService::nextTrack));
 
-        final HBox controlsBox = new HBox(8, prevButton, playPauseButton, nextButton);
+        final HBox controlsBox = new HBox(4, prevButton, playPauseButton, nextButton);
         controlsBox.setAlignment(Pos.CENTER_LEFT);
 
         // Track info label - placed next to the buttons
@@ -73,7 +73,7 @@ public class MediaControlWidget extends VBox {
         HBox.setHgrow(trackInfoLabel, Priority.ALWAYS);
 
         // Header row with title, controls, and track info all in one line
-        final HBox header = new HBox(12, titleLabel, controlsBox, trackInfoLabel);
+        final HBox header = new HBox(8, titleLabel, controlsBox, trackInfoLabel);
         header.setAlignment(Pos.CENTER_LEFT);
         header.getStyleClass().add("workspace-dashboard-header");
 

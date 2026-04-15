@@ -32,6 +32,7 @@ import javafx.geometry.Insets;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -79,6 +80,7 @@ public class ApplicationWindow extends BorderPane {
     private final VBox chatContentPane = new VBox();
     private final HBox splitContainer = new HBox();
     private final ScrollPane dashboardScrollPane = new ScrollPane();
+    private final Region dashboardChatSeparator = new Region();
     private boolean splitModeActive = false;
 
     public ApplicationWindow() {
@@ -123,10 +125,15 @@ public class ApplicationWindow extends BorderPane {
         VBox.setVgrow(splitContainer, Priority.ALWAYS);
         splitContainer.setSpacing(8);
 
-        // Build normal layout: chatTabBar, dashboardContainer, chatContentPane
+        // Separator between dashboard and chat
+        dashboardChatSeparator.getStyleClass().add("dashboard-chat-separator");
+        dashboardChatSeparator.setMaxWidth(Double.MAX_VALUE);
+
+        // Build normal layout: chatTabBar, dashboardContainer, separator, chatContentPane
         centerPane.getChildren().add(chatTabBar);
+        dashboardContainer.getStyleClass().add("dashboard-area");
         centerPane.getChildren().add(dashboardContainer);
-        VBox.setMargin(dashboardContainer, new Insets(4, 0, 0, 0));
+        centerPane.getChildren().add(dashboardChatSeparator);
         centerPane.getChildren().add(chatContentPane);
 
         refreshIntegrationWidgets();
@@ -158,6 +165,12 @@ public class ApplicationWindow extends BorderPane {
         gitHubWidget.refresh(settings.githubToken());
         jiraWidget.refresh();
         googleCalendarWidget.refresh();
+        // Keep chat separator in sync with dashboard visibility (only in normal mode)
+        if (!splitModeActive) {
+            final boolean showDashboard = settings.showDashboard();
+            dashboardChatSeparator.setManaged(showDashboard);
+            dashboardChatSeparator.setVisible(showDashboard);
+        }
     }
 
     private void handleCommandShortcutExecuted(CommandShortcutExecutedEvent event) {
@@ -287,6 +300,7 @@ public class ApplicationWindow extends BorderPane {
         if (split) {
             // Normal -> Split: move dashboardContainer into scrollPane on the left, chatContentPane on the right
             centerPane.getChildren().remove(dashboardContainer);
+            centerPane.getChildren().remove(dashboardChatSeparator);
             centerPane.getChildren().remove(chatContentPane);
 
             dashboardScrollPane.setContent(dashboardContainer);
@@ -316,7 +330,7 @@ public class ApplicationWindow extends BorderPane {
             dashboardScrollPane.setContent(null);
 
             centerPane.getChildren().add(dashboardContainer);
-            VBox.setMargin(dashboardContainer, new Insets(4, 0, 0, 0));
+            centerPane.getChildren().add(dashboardChatSeparator);
             centerPane.getChildren().add(chatContentPane);
         }
     }

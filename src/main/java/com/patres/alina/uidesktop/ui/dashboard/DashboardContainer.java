@@ -20,9 +20,9 @@ import org.kordamp.ikonli.javafx.FontIcon;
  */
 public class DashboardContainer extends VBox {
 
-    private final Label titleLabel = new Label("Dashboard");
+    private final Label titleLabel = new Label("WORKSPACE");
     private final Button collapseButton = new Button();
-    private final VBox widgetsBox = new VBox(8);
+    private final VBox widgetsBox = new VBox(6);
 
     private final MediaControlWidget mediaControlWidget;
     private final DashboardPane dashboardPane;
@@ -48,7 +48,7 @@ public class DashboardContainer extends VBox {
 
         final HBox spacer = new HBox();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        final HBox header = new HBox(8, titleLabel, spacer, collapseButton);
+        final HBox header = new HBox(6, titleLabel, spacer, collapseButton);
         header.getStyleClass().add("workspace-dashboard-header");
 
         widgetsBox.getChildren().addAll(

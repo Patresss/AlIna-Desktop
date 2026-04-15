@@ -50,6 +50,7 @@ public class JiraWidget extends VBox {
         jiraIcon.getStyleClass().add("workspace-dashboard-title");
         titleLabel.setText("Jira Issues");
         titleLabel.setGraphic(jiraIcon);
+        titleLabel.setGraphicTextGap(5);
         titleLabel.getStyleClass().add("workspace-dashboard-title");
 
         countLabel.getStyleClass().add("workspace-dashboard-count");
@@ -69,7 +70,7 @@ public class JiraWidget extends VBox {
 
         detailsBox.getChildren().add(contentBox);
 
-        setSpacing(4);
+        setSpacing(2);
         getChildren().addAll(header, detailsBox);
 
         updateCollapseButton();

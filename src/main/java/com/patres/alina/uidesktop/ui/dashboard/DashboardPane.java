@@ -37,11 +37,11 @@ public class DashboardPane extends VBox {
     public DashboardPane() {
         getStyleClass().add("workspace-dashboard");
         
-        final FontIcon listIcon = new FontIcon(Feather.LIST);
+        final FontIcon listIcon = new FontIcon(Feather.CHECK_SQUARE);
         listIcon.getStyleClass().add("workspace-dashboard-title");
         titleLabel.setText("Tasks");
         titleLabel.setGraphic(listIcon);
-        titleLabel.setGraphicTextGap(6);
+        titleLabel.setGraphicTextGap(5);
         titleLabel.getStyleClass().add("workspace-dashboard-title");
         
         countLabel.getStyleClass().add("workspace-dashboard-count");
@@ -56,7 +56,7 @@ public class DashboardPane extends VBox {
 
         detailsBox.getChildren().add(tasksBox);
 
-        setSpacing(4);
+        setSpacing(2);
         getChildren().addAll(header, detailsBox);
 
         initializeRefreshTimer();

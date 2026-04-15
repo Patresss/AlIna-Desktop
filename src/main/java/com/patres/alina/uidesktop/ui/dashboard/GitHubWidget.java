@@ -46,6 +46,7 @@ public class GitHubWidget extends VBox {
         githubIcon.getStyleClass().add("workspace-dashboard-title");
         titleLabel.setText("GitHub Reviews");
         titleLabel.setGraphic(githubIcon);
+        titleLabel.setGraphicTextGap(5);
         titleLabel.getStyleClass().add("workspace-dashboard-title");
 
         countLabel.getStyleClass().add("workspace-dashboard-count");
@@ -65,7 +66,7 @@ public class GitHubWidget extends VBox {
 
         detailsBox.getChildren().add(contentBox);
 
-        setSpacing(4);
+        setSpacing(2);
         getChildren().addAll(header, detailsBox);
 
         updateCollapseButton();
