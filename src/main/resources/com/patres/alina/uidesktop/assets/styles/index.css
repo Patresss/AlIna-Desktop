@@ -559,7 +559,7 @@ ChatThreadHistoryCard {
 }
 
 .workspace-calendar-time {
-    -fx-text-fill: -color-fg-muted;
+    -fx-text-fill: -color-accent-fg;
     -fx-font-family: monospace;
     -fx-font-size: 12px;
     -fx-font-weight: bold;
