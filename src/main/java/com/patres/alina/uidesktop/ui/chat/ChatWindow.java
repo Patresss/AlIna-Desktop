@@ -402,6 +402,7 @@ public class ChatWindow extends BorderPane {
         PromptHistoryManager.getInstance().addPrompt(message);
         final String commandId = getCurrentCommandId();
         chatTextArea.clear();
+        setCurrentCommand(null);
         PreparedMessage prepared = prepareMessageToSend(message, commandId);
         final String displayText = resolveDisplayText(message, prepared.commandUsageInfo());
         displayMessage(displayText, ChatMessageRole.USER, ChatMessageStyleType.NONE, prepared.commandUsageInfo());
