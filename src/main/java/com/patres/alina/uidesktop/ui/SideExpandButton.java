@@ -15,6 +15,8 @@ import static com.patres.alina.uidesktop.settings.SettingsMangers.UI_SETTINGS;
  * A floating button rendered entirely OUTSIDE the left edge of the main window
  * via a focus-safe {@link Popup}. Nearly invisible (opacity 0.1) until hovered.
  * Clicking expands the window to the left; clicking again restores it.
+ * When {@code autoSplitOnExpand} is enabled in UI settings, expanding also activates
+ * split mode (chat left, dashboard right) and collapsing deactivates it.
  */
 public class SideExpandButton {
 
@@ -33,7 +35,7 @@ public class SideExpandButton {
 
     private boolean expanded = false;
 
-    public void attach(Stage mainStage) {
+    public void attach(Stage mainStage, ApplicationWindow applicationWindow) {
         var button = new Button("‹");
         button.setPrefSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         button.setMinSize(BUTTON_WIDTH, BUTTON_HEIGHT);
@@ -46,8 +48,10 @@ public class SideExpandButton {
         button.setOnMouseExited(e -> button.setOpacity(0.1));
 
         button.setOnAction(e -> {
+            var settings = UI_SETTINGS.getSettings();
             var screenBounds = Screen.getPrimary().getVisualBounds();
-            int expandBy = UI_SETTINGS.getSettings().resolveExpandWidth();
+            int expandBy = settings.resolveExpandWidth();
+
             if (!expanded) {
                 double newX = Math.max(screenBounds.getMinX(), mainStage.getX() - expandBy);
                 double actualExpand = mainStage.getX() - newX;
@@ -55,6 +59,9 @@ public class SideExpandButton {
                 mainStage.setWidth(mainStage.getWidth() + actualExpand);
                 button.setText("›");
                 expanded = true;
+                if (settings.isAutoSplitOnExpand()) {
+                    Platform.runLater(() -> applicationWindow.setSplitMode(true));
+                }
             } else {
                 double originalWidth = AssistantAppLauncher.WIDTH;
                 double shrinkBy = mainStage.getWidth() - originalWidth;
@@ -64,11 +71,13 @@ public class SideExpandButton {
                 }
                 button.setText("‹");
                 expanded = false;
+                if (settings.isAutoSplitOnExpand()) {
+                    Platform.runLater(() -> applicationWindow.setSplitMode(false));
+                }
             }
         });
 
         var root = new StackPane(button);
-        // Explicit size so the Popup takes exactly BUTTON_WIDTH x BUTTON_HEIGHT
         root.setPrefSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         root.setMaxSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         root.setStyle("-fx-background-color: transparent;");
@@ -93,8 +102,7 @@ public class SideExpandButton {
         mainStage.showingProperty().addListener((obs, wasShowing, isShowing) -> {
             if (isShowing) {
                 syncPosition.run();
-                boolean show = UI_SETTINGS.getSettings().isShowExpandButton();
-                if (show) popup.show(mainStage);
+                if (UI_SETTINGS.getSettings().isShowExpandButton()) popup.show(mainStage);
             } else {
                 popup.hide();
             }

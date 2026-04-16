@@ -56,6 +56,8 @@ public class ApplicationWindow extends BorderPane {
     private String activeTabId;
     private ChatTabBar chatTabBar;
 
+    private ApplicationHeaderButtonBox headerButtonBox;
+
     @FXML
     private VBox centerPane;
 
@@ -314,7 +316,7 @@ public class ApplicationWindow extends BorderPane {
             chatContentPane.prefWidthProperty().bind(halfWidth);
             chatContentPane.minWidthProperty().bind(halfWidth);
 
-            splitContainer.getChildren().setAll(dashboardScrollPane, chatContentPane);
+            splitContainer.getChildren().setAll(chatContentPane, dashboardScrollPane);
             centerPane.getChildren().add(splitContainer);
         } else {
             // Unbind size constraints before moving back
@@ -339,6 +341,24 @@ public class ApplicationWindow extends BorderPane {
     // ═══════════════════════════════════════════
     // Public API (preserved for compatibility)
     // ═══════════════════════════════════════════
+
+    /** Called by AssistantAppLauncher so we can programmatically drive the split-mode toggle. */
+    public void setHeaderButtonBox(ApplicationHeaderButtonBox box) {
+        this.headerButtonBox = box;
+    }
+
+    /**
+     * Programmatically toggle split mode as if the user clicked the header button.
+     * This keeps WorkspaceSettings and the toggle button visual state in sync.
+     */
+    public void setSplitMode(boolean split) {
+        if (headerButtonBox != null) {
+            headerButtonBox.setSplitModeSelected(split);
+        } else {
+            // Fallback if called before header is attached
+            applySplitMode(split);
+        }
+    }
 
     public void openThreadHistories() {
         chatThreadHistoryPane.reload();

@@ -46,12 +46,13 @@ public class AssistantAppLauncher {
         stage.initStyle(StageStyle.EXTENDED);
 
         var headerBar = new HeaderBar();
-        headerBar.setTrailing(new ApplicationHeaderButtonBox(root));
+        var headerButtonBox = new ApplicationHeaderButtonBox(root);
+        headerBar.setTrailing(headerButtonBox);
         headerBar.setLeading(new HeaderEventCountdown());
         HeaderBar.setPrefButtonHeight(stage, 100d);
 
-
         root.setTop(headerBar);
+        root.setHeaderButtonBox(headerButtonBox);
 
         // TODO brzydkie
         var tm = ThemeManager.getInstance();
@@ -76,7 +77,7 @@ public class AssistantAppLauncher {
 
         // register event listeners
 
-        new SideExpandButton().attach(stage);
+        new SideExpandButton().attach(stage, root);
 
         Platform.runLater(() -> {
             stage.setX(screenBounds.getMinX() + screenBounds.getWidth() - WIDTH);

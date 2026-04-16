@@ -140,4 +140,9 @@ public class ApplicationHeaderButtonBox extends HBox {
         return (Stage) getScene().getWindow();
     }
 
+    /** Programmatically set the split mode toggle (triggers the listener → persists + applies layout). */
+    public void setSplitModeSelected(boolean selected) {
+        splitModeToggleButton.setSelected(selected);
+    }
+
 }

@@ -45,6 +45,7 @@ public class UiSettingsPane extends SettingsModalPaneContent {
 
     private ToggleSwitch expandButtonToggle;
     private Spinner<Integer> expandWidthSpinner;
+    private ToggleSwitch autoSplitToggle;
 
     private UiSettings uiSettings;
 
@@ -65,6 +66,7 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         LanguageManager.setLanguage(uiSettings.language());
         expandButtonToggle.setSelected(uiSettings.isShowExpandButton());
         expandWidthSpinner.getValueFactory().setValue(uiSettings.resolveExpandWidth());
+        autoSplitToggle.setSelected(uiSettings.isAutoSplitOnExpand());
     }
 
     @Override
@@ -87,9 +89,10 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         final String soundType = selectedSound != null ? selectedSound.name() : null;
         final boolean showExpandButton = expandButtonToggle.isSelected();
         final int expandWidth = expandWidthSpinner.getValue();
+        final boolean autoSplitOnExpand = autoSplitToggle.isSelected();
 
         UI_SETTINGS.saveDocument(new UiSettings(theme, language, shortcutKeysSettings, soundEnabled, soundType,
-                showExpandButton, expandWidth));
+                showExpandButton, expandWidth, autoSplitOnExpand));
     }
 
     private void loadDataFromSettings() {
@@ -175,6 +178,14 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         );
         expandWidthTile.setAction(expandWidthSpinner);
 
+        autoSplitToggle = new ToggleSwitch();
+        autoSplitToggle.setSelected(uiSettings.isAutoSplitOnExpand());
+        var autoSplitTile = createTile(
+                "settings.expandButton.autoSplit.title",
+                "settings.expandButton.autoSplit.description"
+        );
+        autoSplitTile.setAction(autoSplitToggle);
+
         return List.of(
                 header, theme, language,
                 new Separator(),
@@ -182,7 +193,7 @@ public class UiSettingsPane extends SettingsModalPaneContent {
                 new Separator(),
                 soundNotification, soundTypeTile,
                 new Separator(),
-                expandButtonTile, expandWidthTile
+                expandButtonTile, expandWidthTile, autoSplitTile
         );
     }
 
