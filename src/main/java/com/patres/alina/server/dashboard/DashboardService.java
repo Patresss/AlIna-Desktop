@@ -88,7 +88,7 @@ public class DashboardService {
                 final String title = matcher.group(2).trim();
                 final String group = detectGroup(title, configuredGroups);
                 tasks.add(new DashboardTask(
-                        title,
+                        stripGroupTag(title, group),
                         tasksFile.toString(),
                         i + 1,
                         group
@@ -115,6 +115,13 @@ public class DashboardService {
             }
         }
         return null;
+    }
+
+    private String stripGroupTag(final String title, final String group) {
+        if (group == null) {
+            return title;
+        }
+        return title.replaceAll("(?i)\\s*#" + Pattern.quote(group) + "\\b", "").trim();
     }
 
     private List<String> parseConfiguredGroups(final String taskGroups) {
