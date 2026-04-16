@@ -64,6 +64,7 @@
             <MenuItem fx:id="openCodeSettingsMenuItem" mnemonicParsing="false" onAction="#openOpenCodeSettings" text="%settings.opencode.title" />
             <MenuItem fx:id="commandsMenuItem" mnemonicParsing="false" onAction="#openCommands" text="%command.title" />
             <MenuItem fx:id="quickActionSettingsMenuItem" mnemonicParsing="false" onAction="#openQuickActionSettings" text="%quickaction.settings.title" />
+            <MenuItem fx:id="schedulerMenuItem" mnemonicParsing="false" onAction="#openSchedulerSettings" text="%scheduler.title" />
          </items>
          <graphic>
             <FontIcon iconLiteral="mdmz-settings" />

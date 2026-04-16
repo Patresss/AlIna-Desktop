@@ -422,6 +422,23 @@ public class ChatWindow extends BorderPane {
         sendMessageToService(prepared.messageToSend(), commandId, onComplete);
     }
 
+    /**
+     * Sends a message using a specific model override.
+     * If modelOverride is non-null, it temporarily overrides this tab's selectedModel for the request.
+     */
+    public void sendMessageWithModel(final String message, final String commandId, final OnMessageCompleteCallback onComplete, final String modelOverride) {
+        if (modelOverride != null && !modelOverride.isBlank()) {
+            final String previousModel = selectedModel;
+            selectedModel = modelOverride;
+            sendMessage(message, commandId, (aiResponse) -> {
+                selectedModel = previousModel;
+                if (onComplete != null) onComplete.onComplete(aiResponse);
+            });
+        } else {
+            sendMessage(message, commandId, onComplete);
+        }
+    }
+
     private void displayMessage(final ChatMessageResponseModel message) {
         displayMessage(message.content(), message.sender(), message.styleType(), message.commandUsageInfo());
     }

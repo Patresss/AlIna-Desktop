@@ -24,6 +24,8 @@ import com.patres.alina.server.integration.GitHubPullRequestResult;
 import com.patres.alina.server.integration.GitHubService;
 import com.patres.alina.server.integration.JiraIssueResult;
 import com.patres.alina.server.integration.JiraService;
+import com.patres.alina.server.scheduler.ScheduledTask;
+import com.patres.alina.server.scheduler.SchedulerService;
 import com.patres.alina.server.workspace.WorkspaceController;
 
 import java.util.List;
@@ -157,5 +159,29 @@ public class BackendApi {
 
     public static GitHubPullRequestResult fetchGitHubPendingReviews(final String githubToken, final int maxResults) {
         return AppLauncher.getBean(GitHubService.class).fetchPendingReviews(githubToken, maxResults);
+    }
+
+    // ═══════════════════════════════════════════
+    // Scheduler
+    // ═══════════════════════════════════════════
+
+    public static List<ScheduledTask> getScheduledTasks() {
+        return AppLauncher.getBean(SchedulerService.class).getAllTasks();
+    }
+
+    public static void addScheduledTask(ScheduledTask task) {
+        AppLauncher.getBean(SchedulerService.class).addTask(task);
+    }
+
+    public static void updateScheduledTask(ScheduledTask task) {
+        AppLauncher.getBean(SchedulerService.class).updateTask(task);
+    }
+
+    public static void deleteScheduledTask(String taskId) {
+        AppLauncher.getBean(SchedulerService.class).deleteTask(taskId);
+    }
+
+    public static void runScheduledTaskNow(String taskId) {
+        AppLauncher.getBean(SchedulerService.class).runNow(taskId);
     }
 }

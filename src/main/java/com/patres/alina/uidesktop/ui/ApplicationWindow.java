@@ -9,6 +9,8 @@ import com.patres.alina.uidesktop.chat.thread.ui.ChatThreadHistoryPane;
 import com.patres.alina.uidesktop.command.settings.CommandPane;
 import com.patres.alina.uidesktop.common.event.CommandShortcutExecutedEvent;
 import com.patres.alina.uidesktop.quickaction.settings.QuickActionSettingsPane;
+import com.patres.alina.uidesktop.scheduler.SchedulerSettingsPane;
+import com.patres.alina.uidesktop.scheduler.SchedulerTaskExecutor;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.settings.ui.DashboardSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.OpenCodeSettingsPane;
@@ -71,6 +73,7 @@ public class ApplicationWindow extends BorderPane {
     private final ApplicationModalPaneContent chatThreadHistoryPane = new ChatThreadHistoryPane(appModalPane::hide, this);
     private final ApplicationModalPaneContent commandPane = new CommandPane(appModalPane::hide, this);
     private final ApplicationModalPaneContent quickActionSettingsPane = new QuickActionSettingsPane(appModalPane::hide);
+    private final ApplicationModalPaneContent schedulerSettingsPane = new SchedulerSettingsPane(appModalPane::hide);
     private final DashboardPane dashboardPane = new DashboardPane();
     private final MediaControlWidget mediaControlWidget = new MediaControlWidget();
     private final GitHubWidget gitHubWidget = new GitHubWidget();
@@ -84,6 +87,9 @@ public class ApplicationWindow extends BorderPane {
     private final ScrollPane dashboardScrollPane = new ScrollPane();
     private final Region dashboardChatSeparator = new Region();
     private boolean splitModeActive = false;
+
+    @SuppressWarnings("unused") // retained as field to keep event subscription alive
+    private SchedulerTaskExecutor schedulerTaskExecutor;
 
     public ApplicationWindow() {
         super();
@@ -160,6 +166,9 @@ public class ApplicationWindow extends BorderPane {
                 com.patres.alina.common.event.WorkspaceSettingsUpdatedEvent.class,
                 event -> Platform.runLater(this::refreshIntegrationWidgets)
         );
+
+        // Initialize scheduler task executor
+        schedulerTaskExecutor = new SchedulerTaskExecutor(this);
     }
 
     private void refreshIntegrationWidgets() {
@@ -466,6 +475,11 @@ public class ApplicationWindow extends BorderPane {
     public void openQuickActionSettings() {
         quickActionSettingsPane.reload();
         appModalPane.show(quickActionSettingsPane);
+    }
+
+    public void openSchedulerSettings() {
+        schedulerSettingsPane.reload();
+        appModalPane.show(schedulerSettingsPane);
     }
 
     public void openCurrentOpenCodeSession() {

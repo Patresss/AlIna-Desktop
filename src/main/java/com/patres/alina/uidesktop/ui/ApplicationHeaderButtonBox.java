@@ -32,6 +32,8 @@ public class ApplicationHeaderButtonBox extends HBox {
     private MenuItem commandsMenuItem;
     @FXML
     private MenuItem quickActionSettingsMenuItem;
+    @FXML
+    private MenuItem schedulerMenuItem;
 
     private ApplicationWindow applicationWindow;
 
@@ -87,6 +89,7 @@ public class ApplicationHeaderButtonBox extends HBox {
         openCodeSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("settings.opencode.title"));
         commandsMenuItem.textProperty().bind(LanguageManager.createStringBinding("command.title"));
         quickActionSettingsMenuItem.textProperty().bind(LanguageManager.createStringBinding("quickaction.settings.title"));
+        schedulerMenuItem.textProperty().bind(LanguageManager.createStringBinding("scheduler.title"));
     }
 
     private void refreshSplitModeVisibility(WorkspaceSettings settings) {
@@ -129,6 +132,11 @@ public class ApplicationHeaderButtonBox extends HBox {
     @FXML
     public void openQuickActionSettings() {
         applicationWindow.openQuickActionSettings();
+    }
+
+    @FXML
+    public void openSchedulerSettings() {
+        applicationWindow.openSchedulerSettings();
     }
 
     @FXML
