@@ -24,6 +24,10 @@ import javafx.util.Duration;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 public class DashboardPane extends VBox {
 
     private final Label titleLabel = new Label();
@@ -115,28 +119,75 @@ public class DashboardPane extends VBox {
             return;
         }
 
-        for (final DashboardTask task : state.tasks()) {
-            final CheckBox checkBox = new CheckBox();
-            checkBox.getStyleClass().add("workspace-task-checkbox");
-            checkBox.setOnAction(event -> updateTask(task, checkBox.isSelected()));
+        final List<String> configuredGroups = state.configuredGroups();
+        if (configuredGroups.isEmpty()) {
+            // Flat list – original behaviour
+            for (final DashboardTask task : state.tasks()) {
+                tasksBox.getChildren().add(buildTaskRow(task));
+            }
+        } else {
+            // Grouped rendering
+            // Build ordered map: configured groups first, then ungrouped tasks
+            final Map<String, List<DashboardTask>> byGroup = new LinkedHashMap<>();
+            for (final String g : configuredGroups) {
+                byGroup.put(g, new java.util.ArrayList<>());
+            }
+            final List<DashboardTask> ungrouped = new java.util.ArrayList<>();
+            for (final DashboardTask task : state.tasks()) {
+                if (task.group() != null && byGroup.containsKey(task.group())) {
+                    byGroup.get(task.group()).add(task);
+                } else {
+                    ungrouped.add(task);
+                }
+            }
 
-            final Label taskLabel = new Label();
-            EmojiLabelHelper.applyEmojiText(taskLabel, task.title());
-            taskLabel.getStyleClass().add("workspace-task-label");
-            taskLabel.setMaxWidth(Double.MAX_VALUE);
-            taskLabel.setWrapText(false);
-            HBox.setHgrow(taskLabel, Priority.ALWAYS);
+            // Render ungrouped tasks first (no section label)
+            for (final DashboardTask task : ungrouped) {
+                tasksBox.getChildren().add(buildTaskRow(task));
+            }
 
-            taskLabel.setOnMouseClicked(event -> {
-                EmojiLabelHelper.toggleWrap(taskLabel);
-            });
-
-            final HBox row = new HBox(8, checkBox, taskLabel);
-            row.getStyleClass().add("workspace-task-item");
-            row.setMaxWidth(Double.MAX_VALUE);
-            HBox.setHgrow(row, Priority.ALWAYS);
-            tasksBox.getChildren().add(row);
+            // Render each group that has tasks
+            for (final Map.Entry<String, List<DashboardTask>> entry : byGroup.entrySet()) {
+                if (entry.getValue().isEmpty()) {
+                    continue;
+                }
+                final Label groupLabel = new Label(formatGroupLabel(entry.getKey()));
+                groupLabel.getStyleClass().add("workspace-task-group-label");
+                tasksBox.getChildren().add(groupLabel);
+                for (final DashboardTask task : entry.getValue()) {
+                    tasksBox.getChildren().add(buildTaskRow(task));
+                }
+            }
         }
+    }
+
+    private String formatGroupLabel(final String group) {
+        if (group == null || group.isBlank()) {
+            return group;
+        }
+        final String spaced = group.replace("-", " ");
+        return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
+    }
+
+    private HBox buildTaskRow(final DashboardTask task) {
+        final CheckBox checkBox = new CheckBox();
+        checkBox.getStyleClass().add("workspace-task-checkbox");
+        checkBox.setOnAction(event -> updateTask(task, checkBox.isSelected()));
+
+        final Label taskLabel = new Label();
+        EmojiLabelHelper.applyEmojiText(taskLabel, task.title());
+        taskLabel.getStyleClass().add("workspace-task-label");
+        taskLabel.setMaxWidth(Double.MAX_VALUE);
+        taskLabel.setWrapText(false);
+        HBox.setHgrow(taskLabel, Priority.ALWAYS);
+
+        taskLabel.setOnMouseClicked(event -> EmojiLabelHelper.toggleWrap(taskLabel));
+
+        final HBox row = new HBox(8, checkBox, taskLabel);
+        row.getStyleClass().add("workspace-task-item");
+        row.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(row, Priority.ALWAYS);
+        return row;
     }
 
     private void toggleCollapsed(final boolean collapsed) {

@@ -72,6 +72,7 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
                 settings.keepWindowAlwaysOnTop(),
                 settings.tasksFile(),
                 settings.dashboardTaskLimit(),
+                settings.taskGroups(),
                 openCodeHostnameField.getText(),
                 parseInteger(openCodePortField.getText(), WorkspaceSettings.DEFAULT_OPENCODE_PORT),
                 openCodeWorkingDirectoryField.getText(),

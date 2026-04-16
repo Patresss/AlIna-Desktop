@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,6 +33,7 @@ public class DashboardService {
     private static final Pattern ACTIVE_TASK_PATTERN = Pattern.compile("^(.*?- \\[ \\]\\s+)(.+)$");
     private static final Pattern TOGGLE_TASK_PATTERN = Pattern.compile("^(.*?- \\[)( |x|X)(\\]\\s+.*)$");
     private static final Pattern COMPLETION_DATE_PATTERN = Pattern.compile("\\s*✅\\s*\\d{4}-\\d{2}-\\d{2}\\s*$");
+    private static final Pattern TAG_PATTERN = Pattern.compile("#([\\w-]+)");
 
     private final FileManager<WorkspaceSettings> workspaceSettingsManager;
 
@@ -47,10 +49,12 @@ public class DashboardService {
     public DashboardState getState() {
         ensureTaskFile();
         final WorkspaceSettings settings = workspaceSettingsManager.getSettings();
+        final List<String> configuredGroups = parseConfiguredGroups(settings.taskGroups());
         return new DashboardState(
                 settings.showDashboard(),
                 settings.dashboardCollapsed(),
-                readActiveTasks(resolveTasksFile(settings), settings.dashboardTaskLimit())
+                readActiveTasks(resolveTasksFile(settings), settings.dashboardTaskLimit(), configuredGroups),
+                configuredGroups
         );
     }
 
@@ -71,7 +75,7 @@ public class DashboardService {
         appendTaskLine(tasksFile, taskContent.trim());
     }
 
-    private List<DashboardTask> readActiveTasks(final Path tasksFile, final int limit) {
+    private List<DashboardTask> readActiveTasks(final Path tasksFile, final int limit, final List<String> configuredGroups) {
         ensureTextFile(tasksFile, defaultTasksContent());
         try {
             final List<String> lines = Files.readAllLines(tasksFile, StandardCharsets.UTF_8);
@@ -81,10 +85,13 @@ public class DashboardService {
                 if (!matcher.matches()) {
                     continue;
                 }
+                final String title = matcher.group(2).trim();
+                final String group = detectGroup(title, configuredGroups);
                 tasks.add(new DashboardTask(
-                        matcher.group(2).trim(),
+                        title,
                         tasksFile.toString(),
-                        i + 1
+                        i + 1,
+                        group
                 ));
             }
             return tasks;
@@ -92,6 +99,32 @@ public class DashboardService {
             logger.warn("Cannot read dashboard tasks from {}", tasksFile, e);
             return List.of();
         }
+    }
+
+    private String detectGroup(final String title, final List<String> configuredGroups) {
+        if (configuredGroups.isEmpty()) {
+            return null;
+        }
+        final Matcher matcher = TAG_PATTERN.matcher(title);
+        while (matcher.find()) {
+            final String tag = matcher.group(1).toLowerCase();
+            for (final String group : configuredGroups) {
+                if (group.toLowerCase().equals(tag)) {
+                    return group;
+                }
+            }
+        }
+        return null;
+    }
+
+    private List<String> parseConfiguredGroups(final String taskGroups) {
+        if (taskGroups == null || taskGroups.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(taskGroups.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .toList();
     }
 
     private void setTaskCompleted(final Path sourceFile, final int lineNumber, final boolean completed) {

@@ -3,6 +3,7 @@ package com.patres.alina.common.dashboard;
 public record DashboardTask(
         String title,
         String sourceFile,
-        int lineNumber
+        int lineNumber,
+        String group
 ) {
 }

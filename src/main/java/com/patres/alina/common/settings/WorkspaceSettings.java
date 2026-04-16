@@ -6,6 +6,7 @@ public record WorkspaceSettings(
         boolean keepWindowAlwaysOnTop,
         String tasksFile,
         int dashboardTaskLimit,
+        String taskGroups,
         String openCodeHostname,
         int openCodePort,
         String openCodeWorkingDirectory,
@@ -55,6 +56,7 @@ public record WorkspaceSettings(
                 true,
                 DEFAULT_TASKS_FILE,
                 DEFAULT_DASHBOARD_TASK_LIMIT,
+                "",
                 DEFAULT_OPENCODE_HOSTNAME,
                 DEFAULT_OPENCODE_PORT,
                 DEFAULT_OPENCODE_WORKING_DIRECTORY,
@@ -87,6 +89,7 @@ public record WorkspaceSettings(
     public WorkspaceSettings {
         tasksFile = defaultIfBlank(tasksFile, DEFAULT_TASKS_FILE);
         dashboardTaskLimit = dashboardTaskLimit > 0 ? dashboardTaskLimit : DEFAULT_DASHBOARD_TASK_LIMIT;
+        taskGroups = taskGroups == null ? "" : taskGroups.trim();
         openCodeHostname = defaultIfBlank(openCodeHostname, DEFAULT_OPENCODE_HOSTNAME);
         openCodePort = openCodePort > 0 ? openCodePort : DEFAULT_OPENCODE_PORT;
         openCodeWorkingDirectory = defaultIfBlank(openCodeWorkingDirectory, DEFAULT_OPENCODE_WORKING_DIRECTORY);
@@ -110,6 +113,7 @@ public record WorkspaceSettings(
                 value,
                 tasksFile,
                 dashboardTaskLimit,
+                taskGroups,
                 openCodeHostname,
                 openCodePort,
                 openCodeWorkingDirectory,
@@ -146,6 +150,7 @@ public record WorkspaceSettings(
                 keepWindowAlwaysOnTop,
                 tasksFile,
                 dashboardTaskLimit,
+                taskGroups,
                 openCodeHostname,
                 openCodePort,
                 openCodeWorkingDirectory,
@@ -182,6 +187,7 @@ public record WorkspaceSettings(
                 keepWindowAlwaysOnTop,
                 tasksFile,
                 dashboardTaskLimit,
+                taskGroups,
                 openCodeHostname,
                 openCodePort,
                 openCodeWorkingDirectory,

@@ -51,6 +51,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     // Tasks
     private ToggleSwitch showDashboardTasksToggle;
     private TextField tasksFileField;
+    private TextField taskGroupsField;
     private Spinner<Integer> dashboardTaskLimitSpinner;
     private Spinner<Integer> dashboardTasksRefreshSpinner;
 
@@ -99,6 +100,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         // Tasks
         showDashboardTasksToggle.setSelected(settings.showDashboardTasks());
         tasksFileField.setText(orEmpty(settings.tasksFile()));
+        taskGroupsField.setText(orEmpty(settings.taskGroups()));
         dashboardTaskLimitSpinner.getValueFactory().setValue(settings.dashboardTaskLimit());
         dashboardTasksRefreshSpinner.getValueFactory().setValue(settings.dashboardTasksRefreshSeconds());
 
@@ -126,6 +128,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 alwaysOnTopToggle.isSelected(),
                 tasksFileField.getText(),
                 dashboardTaskLimitSpinner.getValue(),
+                taskGroupsField.getText(),
                 settings.openCodeHostname(),
                 settings.openCodePort(),
                 settings.openCodeWorkingDirectory(),
@@ -194,6 +197,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         showDashboardTasksToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         tasksFileField = createResizableTextField(settingsBox);
         final Node tasksFilePicker = createFilePickerField(tasksFileField, this::chooseTasksFile);
+        taskGroupsField = createResizableTextField(settingsBox);
         dashboardTaskLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardTaskLimit(), settingsBox);
         final var taskLimitTile = createTile("settings.workspace.taskLimit.title", "settings.workspace.taskLimit.description");
         taskLimitTile.setAction(dashboardTaskLimitSpinner);
@@ -249,6 +253,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 tasksHeader,
                 tileFor(showDashboardTasksToggle, "settings.workspace.showTasks.title", "settings.workspace.showTasks.description"),
                 tileFor(tasksFilePicker, "settings.workspace.tasksFile.title", "settings.workspace.tasksFile.description"),
+                tileFor(taskGroupsField, "settings.workspace.taskGroups.title", "settings.workspace.taskGroups.description"),
                 taskLimitTile,
                 tasksRefreshTile,
                 // GitHub

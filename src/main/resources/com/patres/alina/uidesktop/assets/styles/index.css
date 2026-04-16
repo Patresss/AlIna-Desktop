@@ -430,6 +430,14 @@ ChatThreadHistoryCard {
     -fx-strikethrough: true;
 }
 
+.workspace-task-group-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-accent-fg;
+    -fx-padding: 6px 4px 2px 4px;
+    -fx-opacity: 0.85;
+}
+
 /* ══════════════════════════════════════════════════
    Media / Music widget
    ══════════════════════════════════════════════════ */

@@ -105,6 +105,7 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 alwaysOnTopToggle.isSelected(),
                 tasksFileField.getText(),
                 dashboardTaskLimitSpinner.getValue(),
+                settings.taskGroups(),
                 openCodeHostnameField.getText(),
                 parseInteger(openCodePortField.getText(), WorkspaceSettings.DEFAULT_OPENCODE_PORT),
                 openCodeWorkingDirectoryField.getText(),
