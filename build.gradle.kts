@@ -61,7 +61,7 @@ dependencies {
 
     // server module
     implementation("org.springframework.boot:spring-boot-starter")
-    implementation("org.springframework:spring-web")
+    implementation("org.springframework.boot:spring-boot-starter-json")
     implementation("io.projectreactor:reactor-core")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
