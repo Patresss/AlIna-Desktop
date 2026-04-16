@@ -368,6 +368,13 @@ public class ApplicationWindow extends BorderPane {
         });
     }
 
+    public void clearCurrentChatThread() {
+        Thread.startVirtualThread(() -> {
+            final ChatThread newThread = BackendApi.createChatThread();
+            Platform.runLater(() -> loadChatThreadInActiveTab(newThread, List.of()));
+        });
+    }
+
     /**
      * Load a chat thread in the currently active tab (replaces the content).
      * Used by command shortcuts and history selection when we want to replace

@@ -2,6 +2,7 @@ package com.patres.alina.uidesktop.quickaction;
 
 public enum QuickActionType {
 
+    CLEAR_CHAT("clear", "quickaction.clear.title", "quickaction.clear.description", "mdal-cleaning_services"),
     NEW_CHAT("new", "quickaction.new.title", "quickaction.new.description", "mdal-add_comment"),
     MODELS("models", "quickaction.models.title", "quickaction.models.description", "mdmz-model_training"),
     HISTORY("history", "quickaction.history.title", "quickaction.history.description", "mdal-history"),

@@ -549,6 +549,7 @@ public class ChatWindow extends BorderPane {
     private void executeQuickAction(QuickActionType actionType) {
         FxThreadRunner.run(() -> {
             switch (actionType) {
+                case CLEAR_CHAT -> applicationWindow.clearCurrentChatThread();
                 case NEW_CHAT -> applicationWindow.createNewChatThread();
                 case MODELS -> {
                     if (modelMenu != null) {
