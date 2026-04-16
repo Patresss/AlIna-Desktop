@@ -42,8 +42,6 @@ public class AssistantAppLauncher {
         var antialiasing = Platform.isSupported(ConditionalFeature.SCENE3D)
                 ? SceneAntialiasing.BALANCED
                 : SceneAntialiasing.DISABLED;
-        var scene = new Scene(root, WIDTH, screenHeight, false, antialiasing);
-        stage.initStyle(StageStyle.EXTENDED);
 
         var headerBar = new HeaderBar();
         var headerButtonBox = new ApplicationHeaderButtonBox(root);
@@ -53,6 +51,10 @@ public class AssistantAppLauncher {
 
         root.setTop(headerBar);
         root.setHeaderButtonBox(headerButtonBox);
+
+        var sceneRoot = new StackPane(root);
+        var scene = new Scene(sceneRoot, WIDTH, screenHeight, false, antialiasing);
+        stage.initStyle(StageStyle.EXTENDED);
 
         // TODO brzydkie
         var tm = ThemeManager.getInstance();
@@ -77,7 +79,7 @@ public class AssistantAppLauncher {
 
         // register event listeners
 
-        new SideExpandButton().attach(stage, root);
+        new SideExpandButton().attach(stage, root, sceneRoot);
 
         Platform.runLater(() -> {
             stage.setX(screenBounds.getMinX() + screenBounds.getWidth() - WIDTH);

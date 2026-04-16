@@ -3,17 +3,17 @@ package com.patres.alina.uidesktop.ui;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.uidesktop.common.event.UiSettingsUpdateEvent;
 import javafx.application.Platform;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.layout.StackPane;
-import javafx.stage.Popup;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 import static com.patres.alina.uidesktop.settings.SettingsMangers.UI_SETTINGS;
 
 /**
- * A floating button rendered entirely OUTSIDE the left edge of the main window
- * via a focus-safe {@link Popup}. Nearly invisible (opacity 0.1) until hovered.
+ * A floating button placed inside the scene graph on the left edge of the window.
+ * Nearly invisible (opacity 0.1) until hovered.
  * Clicking expands the window to the left; clicking again restores it.
  * When {@code autoSplitOnExpand} is enabled in UI settings, expanding also activates
  * split mode (chat left, dashboard right) and collapsing deactivates it.
@@ -25,7 +25,7 @@ public class SideExpandButton {
 
     private static final String STYLE_BASE =
             "-fx-background-color: -color-accent-emphasis;" +
-            "-fx-background-radius: 8 0 0 8;" +
+            "-fx-background-radius: 0 8 8 0;" +
             "-fx-text-fill: white;" +
             "-fx-font-size: 22px;" +
             "-fx-font-weight: bold;" +
@@ -34,13 +34,20 @@ public class SideExpandButton {
             "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0, -4, 0);";
 
     private boolean expanded = false;
+    private Button button;
 
-    public void attach(Stage mainStage, ApplicationWindow applicationWindow) {
-        var button = new Button("‹");
+    /**
+     * Creates the expand button and adds it to the given overlay container.
+     * The overlay StackPane should be the scene root wrapping the ApplicationWindow.
+     */
+    public void attach(Stage mainStage, ApplicationWindow applicationWindow, StackPane overlay) {
+        button = new Button("‹");
         button.setPrefSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         button.setMinSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         button.setMaxSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         button.setStyle(STYLE_BASE);
+        button.setFocusTraversable(false);
+        button.setPickOnBounds(false);
 
         // Nearly invisible by default — fully visible on hover
         button.setOpacity(0.1);
@@ -77,48 +84,18 @@ public class SideExpandButton {
             }
         });
 
-        var root = new StackPane(button);
-        root.setPrefSize(BUTTON_WIDTH, BUTTON_HEIGHT);
-        root.setMaxSize(BUTTON_WIDTH, BUTTON_HEIGHT);
-        root.setStyle("-fx-background-color: transparent;");
+        StackPane.setAlignment(button, Pos.CENTER_LEFT);
+        overlay.getChildren().add(button);
 
-        // Popup never steals focus from the owner stage
-        var popup = new Popup();
-        popup.setAutoFix(false);
-        popup.setHideOnEscape(false);
-        popup.getContent().add(root);
+        updateVisibility();
 
-        // Position popup so its RIGHT edge aligns exactly with the main stage's LEFT edge
-        Runnable syncPosition = () -> {
-            popup.setX(mainStage.getX() - BUTTON_WIDTH);
-            popup.setY(mainStage.getY() + (mainStage.getHeight() - BUTTON_HEIGHT) / 2.0);
-        };
-
-        mainStage.xProperty().addListener((obs, o, n) -> syncPosition.run());
-        mainStage.yProperty().addListener((obs, o, n) -> syncPosition.run());
-        mainStage.heightProperty().addListener((obs, o, n) -> syncPosition.run());
-        mainStage.widthProperty().addListener((obs, o, n) -> syncPosition.run());
-
-        mainStage.showingProperty().addListener((obs, wasShowing, isShowing) -> {
-            if (isShowing) {
-                syncPosition.run();
-                if (UI_SETTINGS.getSettings().isShowExpandButton()) popup.show(mainStage);
-            } else {
-                popup.hide();
-            }
-        });
-
-        // React to settings changes (show/hide toggle)
         DefaultEventBus.getInstance().subscribe(UiSettingsUpdateEvent.class, event ->
-                Platform.runLater(() -> {
-                    boolean show = UI_SETTINGS.getSettings().isShowExpandButton();
-                    if (show && mainStage.isShowing() && !popup.isShowing()) {
-                        syncPosition.run();
-                        popup.show(mainStage);
-                    } else if (!show && popup.isShowing()) {
-                        popup.hide();
-                    }
-                })
+                Platform.runLater(this::updateVisibility)
         );
+    }
+
+    private void updateVisibility() {
+        boolean show = UI_SETTINGS.getSettings().isShowExpandButton();
+        button.setVisible(show);
     }
 }
