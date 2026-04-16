@@ -16,6 +16,8 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Separator;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -41,6 +43,9 @@ public class UiSettingsPane extends SettingsModalPaneContent {
     private ToggleSwitch soundNotificationToggle;
     private ChoiceBox<NotificationSound> soundTypeSelector;
 
+    private ToggleSwitch expandButtonToggle;
+    private Spinner<Integer> expandWidthSpinner;
+
     private UiSettings uiSettings;
 
     public UiSettingsPane(Runnable backFunction) {
@@ -58,6 +63,8 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         soundNotificationToggle.setSelected(uiSettings.isSoundNotificationEnabled());
         soundTypeSelector.setValue(uiSettings.resolveNotificationSound());
         LanguageManager.setLanguage(uiSettings.language());
+        expandButtonToggle.setSelected(uiSettings.isShowExpandButton());
+        expandWidthSpinner.getValueFactory().setValue(uiSettings.resolveExpandWidth());
     }
 
     @Override
@@ -78,7 +85,11 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         final boolean soundEnabled = soundNotificationToggle.isSelected();
         final NotificationSound selectedSound = soundTypeSelector.getValue();
         final String soundType = selectedSound != null ? selectedSound.name() : null;
-        UI_SETTINGS.saveDocument(new UiSettings(theme, language, shortcutKeysSettings, soundEnabled, soundType));
+        final boolean showExpandButton = expandButtonToggle.isSelected();
+        final int expandWidth = expandWidthSpinner.getValue();
+
+        UI_SETTINGS.saveDocument(new UiSettings(theme, language, shortcutKeysSettings, soundEnabled, soundType,
+                showExpandButton, expandWidth));
     }
 
     private void loadDataFromSettings() {
@@ -145,12 +156,33 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         soundActionBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         soundTypeTile.setAction(soundActionBox);
 
+        // --- Expand button settings ---
+        expandButtonToggle = new ToggleSwitch();
+        expandButtonToggle.setSelected(uiSettings.isShowExpandButton());
+        var expandButtonTile = createTile(
+                "settings.expandButton.show.title",
+                "settings.expandButton.show.description"
+        );
+        expandButtonTile.setAction(expandButtonToggle);
+
+        expandWidthSpinner = new Spinner<>();
+        expandWidthSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(100, 3000, uiSettings.resolveExpandWidth(), 50));
+        expandWidthSpinner.setEditable(true);
+        expandWidthSpinner.setPrefWidth(110);
+        var expandWidthTile = createTile(
+                "settings.expandButton.width.title",
+                "settings.expandButton.width.description"
+        );
+        expandWidthTile.setAction(expandWidthSpinner);
+
         return List.of(
                 header, theme, language,
                 new Separator(),
                 focusShortcut, contextMenuShortcut,
                 new Separator(),
-                soundNotification, soundTypeTile
+                soundNotification, soundTypeTile,
+                new Separator(),
+                expandButtonTile, expandWidthTile
         );
     }
 

@@ -284,6 +284,7 @@ public class ApplicationWindow extends BorderPane {
         // Add tab and activate it
         chatTabBar.addTab(chatThread, true);
 
+        newWindow.focusTextArea();
         dashboardPane.refreshAsync();
     }
 

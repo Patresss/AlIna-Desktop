@@ -182,6 +182,10 @@ public class ChatWindow extends BorderPane {
         );
     }
 
+    public void focusTextArea() {
+        chatTextArea.requestFocus();
+    }
+
     public void unsubscribeEvents() {
         DefaultEventBus.getInstance().unsubscribe(
                 FocusShortcutTriggeredEvent.class,
@@ -655,7 +659,9 @@ public class ChatWindow extends BorderPane {
                     current.language(),
                     current.shortcutKeysSettings(),
                     current.soundNotificationEnabled(),
-                    current.notificationSoundType()
+                    current.notificationSoundType(),
+                    current.showExpandButton(),
+                    current.expandWidth()
             );
             UI_SETTINGS.saveDocument(updated);
         });
@@ -669,7 +675,9 @@ public class ChatWindow extends BorderPane {
                     language,
                     current.shortcutKeysSettings(),
                     current.soundNotificationEnabled(),
-                    current.notificationSoundType()
+                    current.notificationSoundType(),
+                    current.showExpandButton(),
+                    current.expandWidth()
                     );
             UI_SETTINGS.saveDocument(updated);
         });

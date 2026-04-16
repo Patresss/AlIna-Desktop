@@ -76,6 +76,8 @@ public class AssistantAppLauncher {
 
         // register event listeners
 
+        new SideExpandButton().attach(stage);
+
         Platform.runLater(() -> {
             stage.setX(screenBounds.getMinX() + screenBounds.getWidth() - WIDTH);
             stage.setY(screenBounds.getMinY());
