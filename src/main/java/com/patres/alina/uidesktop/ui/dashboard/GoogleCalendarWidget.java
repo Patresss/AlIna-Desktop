@@ -496,12 +496,18 @@ public class GoogleCalendarWidget extends VBox {
     }
 
     static TrackableItem toTrackableItem(final GoogleCalendarEvent event) {
-        final String key = event.summary();
+        // Use summary + rawStartDateTime as composite key so that recurring events
+        // with the same title are treated as distinct items. This prevents oscillating
+        // "modified" notifications when two instances of the same series exist and the
+        // API returns them in different orders across refreshes.
+        final String rawStart = event.rawStartDateTime() != null ? event.rawStartDateTime() : "";
+        final String key = event.summary() + "|" + rawStart;
         final String time = event.allDay() ? "" : event.startTime();
         final String displayName = time.isEmpty()
                 ? event.summary()
                 : time + " " + event.summary();
         final Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("summary", event.summary());
         fields.put("startTime", event.startTime());
         fields.put("endTime", event.endTime());
         return new TrackableItem(key, displayName, fields);
