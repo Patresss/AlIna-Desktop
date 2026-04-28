@@ -21,10 +21,6 @@ import org.kordamp.ikonli.material2.Material2ALIkonHandler;
 import org.kordamp.ikonli.material2.Material2MZIkonHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.events.EventTarget;
-import org.w3c.dom.html.HTMLAnchorElement;
 
 import java.awt.*;
 import java.io.IOException;
@@ -72,6 +68,14 @@ public class Browser extends StackPane {
         this.webView.setMaxHeight(Double.MAX_VALUE);
         this.webEngine = webView.getEngine();
         this.webEngine.setOnAlert(event -> handleBrowserAlert(event.getData()));
+        this.webEngine.locationProperty().addListener((_, _, newLocation) -> {
+            if (newLocation != null && (newLocation.startsWith("http://") || newLocation.startsWith("https://"))) {
+                Platform.runLater(() -> {
+                    webEngine.loadContent(initHtml(), "text/html");
+                    openWebpage(newLocation);
+                });
+            }
+        });
         this.webEngine.getLoadWorker().stateProperty().addListener((_, _, newState) -> {
             if (newState == Worker.State.SUCCEEDED) {
                 attachJavaBridge();
@@ -179,7 +183,6 @@ public class Browser extends StackPane {
                 tooltipData.prompt()
         );
         
-        stopOpeningUrlInWebView();
         executeJavaScript("scrollToBottom()");
     }
 
@@ -224,25 +227,6 @@ public class Browser extends StackPane {
             }
         }
         return null;
-    }
-
-    private void stopOpeningUrlInWebView() {
-        if (webEngine.getDocument() == null) {
-            return;
-        }
-        final NodeList nodeList = webEngine.getDocument().getElementsByTagName("a");
-        for (int i = 0; i < nodeList.getLength(); i++) {
-            Node node = nodeList.item(i);
-            EventTarget eventTarget = (EventTarget) node;
-            eventTarget.addEventListener("click", evt -> {
-                EventTarget target = evt.getCurrentTarget();
-                HTMLAnchorElement anchorElement = (HTMLAnchorElement) target;
-                String href = anchorElement.getHref();
-                //handle opening URL outside JavaFX WebView
-                openWebpage(href);
-                evt.preventDefault();
-            }, false);
-        }
     }
 
     /**
@@ -332,13 +316,10 @@ public class Browser extends StackPane {
             
             // Clear the content buffer for next streaming session
             streamingContent.setLength(0);
-            
-            stopOpeningUrlInWebView();
         } catch (final Exception e) {
             logger.error("Error finishing streaming message, using fallback", e);
             executeJavaScript("finishStreamingMessage()");
             streamingContent.setLength(0);
-            stopOpeningUrlInWebView();
         }
     }
 
@@ -528,7 +509,15 @@ public class Browser extends StackPane {
     }
 
     private void handleBrowserAlert(final String data) {
-        if (data == null || !data.startsWith("__ALINA_PERMISSION__|")) {
+        if (data == null) {
+            return;
+        }
+        if (data.startsWith("__ALINA_OPEN_URL__|")) {
+            final String url = data.substring("__ALINA_OPEN_URL__|".length());
+            openWebpage(url);
+            return;
+        }
+        if (!data.startsWith("__ALINA_PERMISSION__|")) {
             return;
         }
         final String payload = data.substring("__ALINA_PERMISSION__|".length());
@@ -653,6 +642,10 @@ public class Browser extends StackPane {
                 return;
             }
             permissionActionHandler.onPermissionAction(requestId, actionName);
+        }
+
+        public void handleOpenUrl(final String url) {
+            openWebpage(url);
         }
     }
 

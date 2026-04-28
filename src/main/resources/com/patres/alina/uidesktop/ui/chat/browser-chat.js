@@ -940,3 +940,27 @@
             delete container.dataset.todoTitle;
         }
     }
+
+    // Intercept all link clicks via event delegation so that dynamically added
+    // links (e.g. during streaming) are always caught and opened in the system
+    // browser instead of navigating the WebView.
+    document.addEventListener('click', function(event) {
+        var target = event.target;
+        while (target && target !== document) {
+            if (target.tagName && target.tagName.toLowerCase() === 'a') {
+                var href = target.getAttribute('href') || target.href;
+                if (href && (href.indexOf('http://') === 0 || href.indexOf('https://') === 0)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    // Notify Java side via the bridge or alert fallback
+                    if (window.alinaBrowserBridge && window.alinaBrowserBridge.handleOpenUrl) {
+                        window.alinaBrowserBridge.handleOpenUrl(href);
+                    } else if (window.alert) {
+                        window.alert('__ALINA_OPEN_URL__|' + href);
+                    }
+                }
+                return;
+            }
+            target = target.parentElement;
+        }
+    }, true);
