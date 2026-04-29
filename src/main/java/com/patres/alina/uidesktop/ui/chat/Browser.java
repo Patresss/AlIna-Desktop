@@ -3,7 +3,6 @@ package com.patres.alina.uidesktop.ui.chat;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageStyleType;
-import com.patres.alina.common.message.CommandUsageInfo;
 import com.patres.alina.common.message.TodoItem;
 import com.patres.alina.uidesktop.common.event.ThemeEvent;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
@@ -12,7 +11,6 @@ import javafx.concurrent.Worker;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
-import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.IkonHandler;
 import org.kordamp.ikonli.bootstrapicons.BootstrapIconsIkonHandler;
 import org.kordamp.ikonli.devicons.DeviconsIkonHandler;
@@ -26,9 +24,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -47,8 +43,6 @@ public class Browser extends StackPane {
     final WebEngine webEngine;
     
     private final StringBuilder streamingContent = new StringBuilder();
-    private static final int COMMAND_ICON_SIZE = 14;
-    private static final String DEFAULT_COMMAND_ICON_LITERAL = "bi-slash";
     private static final List<IkonHandler> ICON_HANDLERS = List.of(
             new Material2ALIkonHandler(),
             new Material2MZIkonHandler(),
@@ -56,7 +50,6 @@ public class Browser extends StackPane {
             new FeatherIkonHandler(),
             new BootstrapIconsIkonHandler()
     );
-    private final Map<String, CommandIconData> commandIconCache = new HashMap<>();
     private PermissionActionHandler permissionActionHandler;
     private SuggestionClickHandler suggestionClickHandler;
     private BrowserBridge browserBridge;
@@ -169,70 +162,15 @@ public class Browser extends StackPane {
     public void addContent(final String markdownContent,
                            final ChatMessageRole chatMessageRole,
                            final ChatMessageStyleType chatMessageStyleType) {
-        addContent(markdownContent, chatMessageRole, chatMessageStyleType, null);
-    }
-
-    public void addContent(final String markdownContent,
-                           final ChatMessageRole chatMessageRole,
-                           final ChatMessageStyleType chatMessageStyleType,
-                           final CommandUsageInfo commandUsageInfo) {
         final String htmlContent = convertMarkdownToHtml(markdownContent);
-        final CommandTooltipData tooltipData = buildCommandTooltipData(commandUsageInfo);
         safeJavaScriptCall(
                 "addHtmlContent",
                 htmlContent,
                 chatMessageRole.getChatMessageRole(),
-                chatMessageStyleType.getStyleType(),
-                tooltipData.iconFontFamily(),
-                tooltipData.iconGlyph(),
-                tooltipData.commandName(),
-                tooltipData.prompt()
+                chatMessageStyleType.getStyleType()
         );
         
         executeJavaScript("scrollToBottom()");
-    }
-
-    private CommandTooltipData buildCommandTooltipData(final CommandUsageInfo commandUsageInfo) {
-        if (commandUsageInfo == null) {
-            return CommandTooltipData.empty();
-        }
-        CommandIconData iconData = resolveCommandIconData(commandUsageInfo.commandIcon());
-        if (iconData == null) {
-            iconData = resolveCommandIconData(DEFAULT_COMMAND_ICON_LITERAL);
-        }
-        if (iconData == null) {
-            return CommandTooltipData.empty();
-        }
-        return new CommandTooltipData(
-                iconData.fontFamily(),
-                iconData.glyph(),
-                commandUsageInfo.commandName(),
-                commandUsageInfo.prompt()
-        );
-    }
-
-    private CommandIconData resolveCommandIconData(final String iconLiteral) {
-        if (iconLiteral == null || iconLiteral.isBlank()) {
-            return null;
-        }
-        return commandIconCache.computeIfAbsent(iconLiteral, this::createCommandIconData);
-    }
-
-    private CommandIconData createCommandIconData(final String iconLiteral) {
-        if (iconLiteral == null || iconLiteral.isBlank()) {
-            return null;
-        }
-        for (IkonHandler handler : ICON_HANDLERS) {
-            if (handler.supports(iconLiteral)) {
-                Ikon ikon = handler.resolve(iconLiteral);
-                if (ikon == null) {
-                    return null;
-                }
-                String glyph = new String(Character.toChars(ikon.getCode()));
-                return new CommandIconData(handler.getFontFamily(), glyph);
-            }
-        }
-        return null;
     }
 
     /**
@@ -627,23 +565,6 @@ public class Browser extends StackPane {
             valueColor
         );
         executeJavaScript(script);
-    }
-
-    private record CommandTooltipData(
-            String iconFontFamily,
-            String iconGlyph,
-            String commandName,
-            String prompt
-    ) {
-        private static CommandTooltipData empty() {
-            return new CommandTooltipData(null, null, null, null);
-        }
-    }
-
-    private record CommandIconData(
-            String fontFamily,
-            String glyph
-    ) {
     }
 
     public interface PermissionActionHandler {

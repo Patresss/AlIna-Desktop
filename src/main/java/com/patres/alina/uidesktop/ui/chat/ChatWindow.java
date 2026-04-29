@@ -413,7 +413,7 @@ public class ChatWindow extends BorderPane {
         setCurrentCommand(null);
         PreparedMessage prepared = prepareMessageToSend(message, commandId);
         final String displayText = resolveDisplayText(message, prepared.commandUsageInfo());
-        displayMessage(displayText, ChatMessageRole.USER, ChatMessageStyleType.NONE, prepared.commandUsageInfo());
+        displayMessage(displayText, ChatMessageRole.USER, ChatMessageStyleType.NONE);
         streamingController.markUserMessageSent();
         sendMessageToService(prepared.messageToSend(), commandId);
     }
@@ -421,7 +421,7 @@ public class ChatWindow extends BorderPane {
     public void sendMessage(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
         PreparedMessage prepared = prepareMessageToSend(message, commandId);
         final String displayText = resolveDisplayText(message, prepared.commandUsageInfo());
-        displayMessage(displayText, ChatMessageRole.USER, ChatMessageStyleType.NONE, prepared.commandUsageInfo());
+        displayMessage(displayText, ChatMessageRole.USER, ChatMessageStyleType.NONE);
         streamingController.markUserMessageSent();
         sendMessageToService(prepared.messageToSend(), commandId, onComplete);
     }
@@ -444,30 +444,25 @@ public class ChatWindow extends BorderPane {
     }
 
     private void displayMessage(final ChatMessageResponseModel message) {
-        displayMessage(message.content(), message.sender(), message.styleType(), message.commandUsageInfo());
-    }
-
-    private void displayMessage(final String text,
-                                final ChatMessageRole chatMessageRole,
-                                final ChatMessageStyleType chatMessageStyleType) {
-        displayMessage(text, chatMessageRole, chatMessageStyleType, null);
+        final String displayText = message.commandUsageInfo() != null
+                && message.commandUsageInfo().prompt() != null
+                && !message.commandUsageInfo().prompt().isBlank()
+                ? message.commandUsageInfo().prompt()
+                : message.content();
+        displayMessage(displayText, message.sender(), message.styleType());
     }
 
     private String resolveDisplayText(final String message, final CommandUsageInfo commandUsageInfo) {
-        if (!message.isBlank()) {
-            return message;
-        }
-        if (commandUsageInfo != null && commandUsageInfo.commandName() != null && !commandUsageInfo.commandName().isBlank()) {
-            return commandUsageInfo.commandName();
+        if (commandUsageInfo != null && commandUsageInfo.prompt() != null && !commandUsageInfo.prompt().isBlank()) {
+            return commandUsageInfo.prompt();
         }
         return message;
     }
 
     private void displayMessage(final String text,
                                 final ChatMessageRole chatMessageRole,
-                                final ChatMessageStyleType chatMessageStyleType,
-                                final CommandUsageInfo commandUsageInfo) {
-        FxThreadRunner.run(() -> browser.addContent(text, chatMessageRole, chatMessageStyleType, commandUsageInfo));
+                                final ChatMessageStyleType chatMessageStyleType) {
+        FxThreadRunner.run(() -> browser.addContent(text, chatMessageRole, chatMessageStyleType));
     }
 
     private void handleChatNotification(final ChatNotificationEvent event) {

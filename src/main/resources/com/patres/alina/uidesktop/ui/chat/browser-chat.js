@@ -159,42 +159,12 @@
 
     // ── Core chat functions ─────────────────────────
 
-    function addHtmlContent(htmlContent, messageType, notificationStyle, commandFontFamily, commandGlyph, commandName, commandPrompt) {
+    function addHtmlContent(htmlContent, messageType, notificationStyle) {
         removeWelcomeScreen();
 
         var div = document.createElement('div');
         div.className = 'chat-message ' + messageType + ' ' + notificationStyle;
-        if (commandGlyph && commandFontFamily) {
-            div.classList.add('command-message');
-        }
         div.innerHTML = htmlContent;
-
-        if (commandGlyph && commandFontFamily) {
-            var badge = document.createElement('div');
-            badge.className = 'command-badge';
-
-            var icon = document.createElement('span');
-            icon.className = 'command-icon';
-            icon.textContent = commandGlyph;
-            icon.style.fontFamily = commandFontFamily;
-            badge.appendChild(icon);
-
-            var tooltip = document.createElement('div');
-            tooltip.className = 'command-tooltip';
-
-            var title = document.createElement('div');
-            title.className = 'command-tooltip-title';
-            title.textContent = commandName ? commandName : '';
-            tooltip.appendChild(title);
-
-            var prompt = document.createElement('div');
-            prompt.className = 'command-tooltip-prompt';
-            prompt.textContent = commandPrompt ? commandPrompt : '';
-            tooltip.appendChild(prompt);
-
-            badge.appendChild(tooltip);
-            div.appendChild(badge);
-        }
 
         var chatContainer = document.getElementById('chat-container');
         chatContainer.appendChild(div);

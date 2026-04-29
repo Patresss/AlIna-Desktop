@@ -118,14 +118,6 @@ tr:last-child td {
     }
 }
 
-.chat-message.command-message {
-    padding-right: 36px;
-    padding-left: 15px;
-    padding-top: 2px;
-    padding-bottom: 2px;
-    overflow: visible;
-}
-
 .chat-message.user {
     margin-left: auto;
     border-left: none;
@@ -177,10 +169,6 @@ tr:last-child td {
     opacity: 1;
 }
 
-.command-message .message-actions {
-    right: 38px;
-}
-
 .message-action-btn {
     width: 28px;
     height: 28px;
@@ -211,74 +199,6 @@ tr:last-child td {
     background-color: var(--color-success-fg);
     color: #fff;
     border-color: var(--color-success-fg);
-}
-
-/* ── Command badge ───────────────────────────────── */
-.command-badge {
-    position: absolute;
-    top: 4px;
-    right: 6px;
-    width: 22px;
-    height: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    background-color: var(--color-bg-default);
-    border: 1px solid var(--color-border-default);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    cursor: help;
-    transition: box-shadow 0.2s ease;
-}
-
-.command-badge:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.command-icon {
-    font-size: 14px;
-    line-height: 1;
-    color: var(--color-fg-muted, var(--color-fg-default));
-}
-
-.command-tooltip {
-    position: absolute;
-    top: 26px;
-    right: 0;
-    background-color: var(--color-bg-default);
-    color: var(--color-fg-default);
-    border: 1px solid var(--color-border-default);
-    border-radius: 10px;
-    padding: 10px 12px;
-    min-width: 220px;
-    max-width: 420px;
-    max-height: 260px;
-    overflow: auto;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    display: none;
-    z-index: 10;
-    animation: tooltipFadeIn 0.15s ease;
-}
-
-@keyframes tooltipFadeIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.command-badge:hover .command-tooltip {
-    display: block;
-}
-
-.command-tooltip-title {
-    font-weight: 700;
-    margin-bottom: 6px;
-}
-
-.command-tooltip-prompt {
-    white-space: pre-wrap;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size: 12px;
-    color: var(--color-fg-muted, var(--color-fg-default));
 }
 
 /* ══════════════════════════════════════════════════
