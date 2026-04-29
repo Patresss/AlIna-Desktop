@@ -55,7 +55,6 @@ public class AssistantAppLauncher {
         var scene = new Scene(sceneRoot, WIDTH, screenHeight, false, antialiasing);
         stage.initStyle(StageStyle.EXTENDED);
 
-        // TODO brzydkie
         var tm = ThemeManager.getInstance();
         tm.setScene(scene);
         tm.setTheme(UI_SETTINGS.getSettings().theme());

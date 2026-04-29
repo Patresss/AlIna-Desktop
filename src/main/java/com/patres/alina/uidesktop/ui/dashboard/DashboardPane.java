@@ -24,6 +24,7 @@ import javafx.util.Duration;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -130,9 +131,9 @@ public class DashboardPane extends VBox {
             // Build ordered map: configured groups first, then ungrouped tasks
             final Map<String, List<DashboardTask>> byGroup = new LinkedHashMap<>();
             for (final String g : configuredGroups) {
-                byGroup.put(g, new java.util.ArrayList<>());
+                byGroup.put(g, new ArrayList<>());
             }
-            final List<DashboardTask> ungrouped = new java.util.ArrayList<>();
+            final List<DashboardTask> ungrouped = new ArrayList<>();
             for (final DashboardTask task : state.tasks()) {
                 if (task.group() != null && byGroup.containsKey(task.group())) {
                     byGroup.get(task.group()).add(task);

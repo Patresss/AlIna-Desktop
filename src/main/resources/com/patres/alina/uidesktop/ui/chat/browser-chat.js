@@ -2,16 +2,44 @@
        AlIna Chat — JavaScript Engine (2026 Edition)
        ══════════════════════════════════════════════════ */
 
+    // ── DOM helper ──────────────────────────────────
+    /**
+     * Tiny DOM builder:  h('div', { className: 'foo', onclick: fn }, child1, child2)
+     * Children can be strings (→ textNode) or DOM nodes.
+     */
+    function h(tag, attrs, ...children) {
+        const el = document.createElement(tag);
+        if (attrs) {
+            for (const [k, v] of Object.entries(attrs)) {
+                if (k.startsWith('on') && typeof v === 'function') {
+                    el.addEventListener(k.slice(2), v);
+                } else if (k === 'dataset') {
+                    Object.assign(el.dataset, v);
+                } else if (k === 'aria') {
+                    for (const [ak, av] of Object.entries(v)) {
+                        el.setAttribute(`aria-${ak}`, av);
+                    }
+                } else {
+                    el[k] = v;
+                }
+            }
+        }
+        for (const child of children) {
+            if (child == null) continue;
+            el.append(typeof child === 'string' ? document.createTextNode(child) : child);
+        }
+        return el;
+    }
+
+    // ── Utility: getElementById shorthand ───────────
+    const $ = (id) => document.getElementById(id);
+
     // ── Welcome screen ──────────────────────────────
     function showWelcomeScreen() {
-        var chatContainer = document.getElementById('chat-container');
-        if (!chatContainer) return;
-        if (chatContainer.children.length > 0) return;
+        const chatContainer = $('chat-container');
+        if (!chatContainer || chatContainer.children.length > 0) return;
 
-        var welcome = document.createElement('div');
-        welcome.className = 'welcome-screen';
-        welcome.id = 'welcome-screen';
-
+        const welcome = h('div', { className: 'welcome-screen', id: 'welcome-screen' });
         welcome.innerHTML =
             '<div class="welcome-logo">AI</div>' +
             '<div class="welcome-title">AlIna</div>' +
@@ -21,22 +49,24 @@
     }
 
     function updateWelcomeSubtitle(text) {
-        var el = document.getElementById('welcome-subtitle');
+        const el = $('welcome-subtitle');
         if (el) el.textContent = text;
     }
 
     function removeWelcomeScreen() {
-        var welcome = document.getElementById('welcome-screen');
+        const welcome = $('welcome-screen');
         if (welcome) {
-            welcome.style.opacity = '0';
-            welcome.style.transform = 'translateY(-10px)';
-            welcome.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-            setTimeout(function() { welcome.remove(); }, 200);
+            Object.assign(welcome.style, {
+                opacity: '0',
+                transform: 'translateY(-10px)',
+                transition: 'opacity 0.2s ease, transform 0.2s ease'
+            });
+            setTimeout(() => welcome.remove(), 200);
         }
     }
 
     // Show welcome screen on initial load
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', () => {
         showWelcomeScreen();
         initScrollToBottom();
     });
@@ -48,74 +78,69 @@
 
     // ── Scroll to bottom FAB ────────────────────────
     function initScrollToBottom() {
-        var fab = document.getElementById('scroll-to-bottom-fab');
-        if (fab) return; // already initialized
+        if ($('scroll-to-bottom-fab')) return; // already initialized
 
-        fab = document.createElement('div');
-        fab.className = 'scroll-to-bottom';
-        fab.id = 'scroll-to-bottom-fab';
-        fab.innerHTML = '\u25BE';
-        fab.onclick = function() {
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        };
+        const fab = h('div', {
+            className: 'scroll-to-bottom',
+            id: 'scroll-to-bottom-fab',
+            role: 'button',
+            tabIndex: 0,
+            innerHTML: '\u25BE',
+            onclick: () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }),
+            onkeydown: (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }
+            }
+        });
+        fab.setAttribute('aria-label', 'Scroll to bottom');
         document.body.appendChild(fab);
 
-        window.addEventListener('scroll', function() {
-            var scrollBottom = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
-            if (scrollBottom > 300) {
-                fab.classList.add('visible');
-            } else {
-                fab.classList.remove('visible');
-            }
+        window.addEventListener('scroll', () => {
+            const scrollBottom = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+            fab.classList.toggle('visible', scrollBottom > 300);
         });
     }
 
     // ── Code block enhancement ──────────────────────
     function enhanceCodeBlocks(container) {
         if (!container) return;
-        var preBlocks = container.querySelectorAll('pre');
-        Array.prototype.forEach.call(preBlocks, function(pre) {
-            if (pre.dataset.enhanced === 'true') return;
+
+        for (const pre of container.querySelectorAll('pre')) {
+            if (pre.dataset.enhanced === 'true') continue;
             pre.dataset.enhanced = 'true';
 
-            var codeEl = pre.querySelector('code');
-            if (!codeEl) return;
+            const codeEl = pre.querySelector('code');
+            if (!codeEl) continue;
 
             // Detect language from class
-            var language = 'code';
-            var classList = codeEl.className || '';
-            var langMatch = classList.match(/language-(\w+)/);
-            if (langMatch) {
-                language = langMatch[1];
-            }
+            const langMatch = (codeEl.className || '').match(/language-(\w+)/);
+            const language = langMatch ? langMatch[1] : 'code';
 
-            // Create header
-            var header = document.createElement('div');
-            header.className = 'code-block-header';
+            const copyBtn = h('button', {
+                className: 'code-copy-btn',
+                innerHTML: '\u2398 Copy',
+                onclick: (e) => {
+                    e.stopPropagation();
+                    copyToClipboard(codeEl.textContent || codeEl.innerText || '', copyBtn);
+                }
+            });
+            copyBtn.setAttribute('aria-label', `Copy ${language} code`);
 
-            var langLabel = document.createElement('span');
-            langLabel.className = 'code-block-language';
-            langLabel.textContent = language;
-            header.appendChild(langLabel);
-
-            var copyBtn = document.createElement('button');
-            copyBtn.className = 'code-copy-btn';
-            copyBtn.innerHTML = '\u2398 Copy';
-            copyBtn.onclick = function(e) {
-                e.stopPropagation();
-                var text = codeEl.textContent || codeEl.innerText || '';
-                copyToClipboard(text, copyBtn);
-            };
-            header.appendChild(copyBtn);
+            const header = h('div', { className: 'code-block-header' },
+                h('span', { className: 'code-block-language', textContent: language }),
+                copyBtn
+            );
 
             pre.insertBefore(header, pre.firstChild);
-        });
+        }
     }
 
     function copyToClipboard(text, buttonEl) {
         // WebView lacks a secure context, so navigator.clipboard never works.
         // Always use the Java bridge which copies via JavaFX Clipboard API.
-        if (window.alinaBrowserBridge && window.alinaBrowserBridge.handleCopyText) {
+        if (window.alinaBrowserBridge?.handleCopyText) {
             window.alinaBrowserBridge.handleCopyText(text);
             showCopiedFeedback(buttonEl);
         }
@@ -124,37 +149,30 @@
     function showCopiedFeedback(buttonEl) {
         if (!buttonEl) return;
         buttonEl.classList.add('copied');
-        setTimeout(function() {
-            buttonEl.classList.remove('copied');
-        }, 1200);
+        setTimeout(() => buttonEl.classList.remove('copied'), 1200);
     }
 
     // ── Message action buttons ──────────────────────
     function addMessageActions(messageDiv) {
         if (!messageDiv || messageDiv.querySelector('.message-actions')) return;
-        if (messageDiv.dataset && messageDiv.dataset.transient === 'true') return;
+        if (messageDiv.dataset?.transient === 'true') return;
 
-        var actions = document.createElement('div');
-        actions.className = 'message-actions';
+        const copyBtn = h('button', {
+            className: 'message-action-btn',
+            innerHTML: '\u2398',
+            title: 'Copy message',
+            onclick: (e) => {
+                e.stopPropagation();
+                // Get text content, excluding action buttons
+                const clone = messageDiv.cloneNode(true);
+                clone.querySelector('.message-actions')?.remove();
+                clone.querySelector('.message-footer')?.remove();
+                copyToClipboard((clone.textContent || clone.innerText || '').trim(), copyBtn);
+            }
+        });
+        copyBtn.setAttribute('aria-label', 'Copy message');
 
-        var copyBtn = document.createElement('button');
-        copyBtn.className = 'message-action-btn';
-        copyBtn.innerHTML = '\u2398';
-        copyBtn.title = 'Copy message';
-        copyBtn.onclick = function(e) {
-            e.stopPropagation();
-            // Get text content, excluding action buttons
-            var clone = messageDiv.cloneNode(true);
-            var actionsClone = clone.querySelector('.message-actions');
-            if (actionsClone) actionsClone.remove();
-            var footerClone = clone.querySelector('.message-footer');
-            if (footerClone) footerClone.remove();
-            var text = clone.textContent || clone.innerText || '';
-            copyToClipboard(text.trim(), copyBtn);
-        };
-        actions.appendChild(copyBtn);
-
-        messageDiv.appendChild(actions);
+        messageDiv.appendChild(h('div', { className: 'message-actions' }, copyBtn));
     }
 
     // ── Core chat functions ─────────────────────────
@@ -162,12 +180,10 @@
     function addHtmlContent(htmlContent, messageType, notificationStyle) {
         removeWelcomeScreen();
 
-        var div = document.createElement('div');
-        div.className = 'chat-message ' + messageType + ' ' + notificationStyle;
+        const div = h('div', { className: `chat-message ${messageType} ${notificationStyle}` });
         div.innerHTML = htmlContent;
 
-        var chatContainer = document.getElementById('chat-container');
-        chatContainer.appendChild(div);
+        $('chat-container').appendChild(div);
 
         // Enhance code blocks and add action buttons
         enhanceCodeBlocks(div);
@@ -179,142 +195,120 @@
 
     function showLoader() {
         removeWelcomeScreen();
-        document.getElementById('loader').classList.add('active');
-        document.getElementById('loader').classList.remove('user-message');
+        const loader = $('loader');
+        loader.classList.add('active');
+        loader.classList.remove('user-message');
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
     function showLoaderForUserMessage() {
         showLoader();
-        document.getElementById('loader').classList.add('user-message');
+        $('loader').classList.add('user-message');
     }
 
     function hideLoader() {
-        document.getElementById('loader').classList.remove('active');
-        document.getElementById('loader').classList.remove('user-message');
+        const loader = $('loader');
+        loader.classList.remove('active');
+        loader.classList.remove('user-message');
     }
 
     function showAssistantActivity(label, detail) {
-        var chatContainer = document.getElementById('chat-container');
-        if (!chatContainer) {
-            return;
-        }
-        var activity = document.getElementById('assistant-activity-message');
+        const chatContainer = $('chat-container');
+        if (!chatContainer) return;
+
+        let activity = $('assistant-activity-message');
         if (!activity) {
-            activity = document.createElement('div');
-            activity.className = 'chat-message assistant activity-message';
-            activity.id = 'assistant-activity-message';
-            activity.dataset.transient = 'true';
-            activity.dataset.count = '0';
-            activity.dataset.expanded = 'false';
+            const summaryText = h('span', {
+                className: 'activity-summary-text',
+                id: 'assistant-activity-summary-text',
+                textContent: `Tools \u00b7 ${stripActivityPrefix(label)}`
+            });
 
-            var shell = document.createElement('div');
-            shell.className = 'activity-shell';
+            const summaryBadge = h('span', {
+                className: 'activity-summary-badge',
+                id: 'assistant-activity-summary-badge',
+                textContent: '1'
+            });
 
-            var summary = document.createElement('div');
-            summary.className = 'activity-summary';
-
-            var summaryMain = document.createElement('div');
-            summaryMain.className = 'activity-summary-main';
-
-            var summaryText = document.createElement('span');
-            summaryText.className = 'activity-summary-text';
-            summaryText.id = 'assistant-activity-summary-text';
-            summaryText.textContent = 'Tools \u00b7 ' + stripActivityPrefix(label);
-
-            var summaryBadge = document.createElement('span');
-            summaryBadge.className = 'activity-summary-badge';
-            summaryBadge.id = 'assistant-activity-summary-badge';
-            summaryBadge.textContent = '1';
-
-            var toggleButton = document.createElement('button');
-            toggleButton.className = 'activity-toggle';
-            toggleButton.id = 'assistant-activity-toggle';
-            toggleButton.type = 'button';
-            toggleButton.textContent = '\u25b8';
-            toggleButton.setAttribute('aria-label', 'Show details');
-            toggleButton.onclick = function() {
-                var shell = this.parentElement ? this.parentElement.parentElement : null;
-                var activityEl = shell ? shell.parentElement : null;
-                var bodyEl = shell ? shell.querySelector('.activity-body') : null;
-                if (!activityEl || !bodyEl) return;
-                var expanded = activityEl.dataset.expanded === 'true';
-                if (expanded) {
-                    bodyEl.classList.remove('open');
-                    activityEl.dataset.expanded = 'false';
-                    this.textContent = '\u25b8';
-                    this.setAttribute('aria-label', 'Show details');
-                } else {
-                    bodyEl.classList.add('open');
-                    activityEl.dataset.expanded = 'true';
-                    this.textContent = '\u25be';
-                    this.setAttribute('aria-label', 'Hide details');
+            const toggleButton = h('button', {
+                className: 'activity-toggle',
+                id: 'assistant-activity-toggle',
+                type: 'button',
+                textContent: '\u25b8',
+                aria: { label: 'Show details' },
+                onclick(e) {
+                    const shell = this.parentElement?.parentElement;
+                    const activityEl = shell?.parentElement;
+                    const bodyEl = shell?.querySelector('.activity-body');
+                    if (!activityEl || !bodyEl) return;
+                    const expanded = activityEl.dataset.expanded === 'true';
+                    if (expanded) {
+                        bodyEl.classList.remove('open');
+                        activityEl.dataset.expanded = 'false';
+                        this.textContent = '\u25b8';
+                        this.setAttribute('aria-label', 'Show details');
+                    } else {
+                        bodyEl.classList.add('open');
+                        activityEl.dataset.expanded = 'true';
+                        this.textContent = '\u25be';
+                        this.setAttribute('aria-label', 'Hide details');
+                    }
                 }
-            };
+            });
 
-            summaryMain.appendChild(summaryText);
-            summaryMain.appendChild(summaryBadge);
-            summary.appendChild(summaryMain);
-            summary.appendChild(toggleButton);
+            const summaryMain = h('div', { className: 'activity-summary-main' }, summaryText, summaryBadge);
+            const summary = h('div', { className: 'activity-summary' }, summaryMain, toggleButton);
+            const body = h('div', { className: 'activity-body', id: 'assistant-activity-body' });
+            const shell = h('div', { className: 'activity-shell' }, summary, body);
 
-            var body = document.createElement('div');
-            body.className = 'activity-body';
-            body.id = 'assistant-activity-body';
+            activity = h('div', {
+                className: 'chat-message assistant activity-message',
+                id: 'assistant-activity-message',
+                dataset: { transient: 'true', count: '0', expanded: 'false' }
+            }, shell);
 
-            shell.appendChild(summary);
-            shell.appendChild(body);
-            activity.appendChild(shell);
             chatContainer.appendChild(activity);
         }
 
-        var bodyNode = document.getElementById('assistant-activity-body');
-        var lastEntry = bodyNode ? bodyNode.lastElementChild : null;
-        var shortLabel = stripActivityPrefix(label);
-        if (lastEntry && lastEntry.dataset && lastEntry.dataset.label === label) {
-            var count = parseInt(lastEntry.dataset.count ? lastEntry.dataset.count : '1', 10) + 1;
+        const bodyNode = $('assistant-activity-body');
+        const lastEntry = bodyNode?.lastElementChild;
+        const shortLabel = stripActivityPrefix(label);
+
+        if (lastEntry?.dataset?.label === label) {
+            const count = parseInt(lastEntry.dataset.count || '1', 10) + 1;
             lastEntry.dataset.count = String(count);
-            var nameEl = lastEntry.querySelector('.activity-entry-name');
-            if (nameEl) {
-                nameEl.textContent = shortLabel + ' \u00d7' + count;
-            }
-            if (detail && detail.trim()) {
-                var detailEl = lastEntry.querySelector('.activity-entry-detail');
-                if (detailEl) {
-                    detailEl.textContent = detail;
-                }
+            const nameEl = lastEntry.querySelector('.activity-entry-name');
+            if (nameEl) nameEl.textContent = `${shortLabel} \u00d7${count}`;
+            if (detail?.trim()) {
+                const detailEl = lastEntry.querySelector('.activity-entry-detail');
+                if (detailEl) detailEl.textContent = detail;
             }
         } else if (bodyNode) {
-            var entry = document.createElement('div');
-            entry.className = 'activity-entry';
-            entry.dataset.label = label;
-            entry.dataset.count = '1';
+            const entry = h('div', {
+                className: 'activity-entry',
+                dataset: { label, count: '1' }
+            },
+                h('span', { className: 'activity-entry-name', textContent: shortLabel })
+            );
 
-            var nameSpan = document.createElement('span');
-            nameSpan.className = 'activity-entry-name';
-            nameSpan.textContent = shortLabel;
-            entry.appendChild(nameSpan);
-
-            if (detail && detail.trim()) {
-                var detailSpan = document.createElement('span');
-                detailSpan.className = 'activity-entry-detail';
-                detailSpan.textContent = detail;
-                entry.appendChild(detailSpan);
+            if (detail?.trim()) {
+                entry.appendChild(h('span', { className: 'activity-entry-detail', textContent: detail }));
             }
 
             bodyNode.appendChild(entry);
         }
 
         if (activity.dataset) {
-            var totalCount = parseInt(activity.dataset.count ? activity.dataset.count : '0', 10) + 1;
+            const totalCount = parseInt(activity.dataset.count || '0', 10) + 1;
             activity.dataset.count = String(totalCount);
             activity.dataset.lastEntry = label;
         }
 
-        var summaryTextNode = document.getElementById('assistant-activity-summary-text');
+        const summaryTextNode = $('assistant-activity-summary-text');
         if (summaryTextNode) {
             summaryTextNode.textContent = buildAssistantActivitySummary(activity.dataset.count, label);
         }
-        var summaryBadgeNode = document.getElementById('assistant-activity-summary-badge');
+        const summaryBadgeNode = $('assistant-activity-summary-badge');
         if (summaryBadgeNode && activity.dataset) {
             summaryBadgeNode.textContent = activity.dataset.count;
         }
@@ -322,28 +316,21 @@
     }
 
     function finalizeAssistantActivity() {
-        var activity = document.getElementById('assistant-activity-message');
-        if (!activity) {
-            return;
-        }
+        const activity = $('assistant-activity-message');
+        if (!activity) return;
+
         activity.removeAttribute('id');
-        var childIds = ['assistant-activity-body', 'assistant-activity-toggle',
-                        'assistant-activity-summary-text', 'assistant-activity-summary-badge'];
-        childIds.forEach(function(cid) {
-            var el = document.getElementById(cid);
-            if (el) el.removeAttribute('id');
-        });
+        for (const cid of ['assistant-activity-body', 'assistant-activity-toggle',
+                            'assistant-activity-summary-text', 'assistant-activity-summary-badge']) {
+            $(cid)?.removeAttribute('id');
+        }
         if (activity.dataset) {
             delete activity.dataset.lastEntry;
         }
     }
 
     function clearAssistantActivity() {
-        var activity = document.getElementById('assistant-activity-message');
-        if (!activity) {
-            return;
-        }
-        activity.remove();
+        $('assistant-activity-message')?.remove();
     }
 
     function stripActivityPrefix(label) {
@@ -351,26 +338,22 @@
     }
 
     function buildAssistantActivitySummary(count, lastLabel) {
-        var parsedCount = parseInt(count ? count : '0', 10);
-        var safeCount = Number.isNaN(parsedCount) ? 0 : parsedCount;
-        var shortLabel = stripActivityPrefix(lastLabel);
-        if (safeCount <= 1) {
-            return 'Tools \u00b7 ' + shortLabel;
-        }
-        return 'Tools \u00b7 latest: ' + shortLabel;
+        const safeCount = parseInt(count || '0', 10) || 0;
+        const shortLabel = stripActivityPrefix(lastLabel);
+        return safeCount <= 1
+            ? `Tools \u00b7 ${shortLabel}`
+            : `Tools \u00b7 latest: ${shortLabel}`;
     }
 
     function toggleAssistantActivity() {
-        var activity = document.getElementById('assistant-activity-message');
-        if (!activity || !activity.dataset) {
-            return;
-        }
-        var body = document.getElementById('assistant-activity-body');
-        var toggle = document.getElementById('assistant-activity-toggle');
-        if (!body || !toggle) {
-            return;
-        }
-        var expanded = activity.dataset.expanded === 'true';
+        const activity = $('assistant-activity-message');
+        if (!activity?.dataset) return;
+
+        const body = $('assistant-activity-body');
+        const toggle = $('assistant-activity-toggle');
+        if (!body || !toggle) return;
+
+        const expanded = activity.dataset.expanded === 'true';
         if (expanded) {
             body.classList.remove('open');
             activity.dataset.expanded = 'false';
@@ -385,320 +368,194 @@
     }
 
     function showAssistantReasoning(title, htmlContent) {
-        var chatContainer = document.getElementById('chat-container');
-        if (!chatContainer) {
-            return;
-        }
-        var card = document.getElementById('assistant-reasoning-message');
+        const chatContainer = $('chat-container');
+        if (!chatContainer) return;
+
+        let card = $('assistant-reasoning-message');
         if (!card) {
-            card = document.createElement('div');
-            card.className = 'chat-message assistant reasoning-message';
-            card.id = 'assistant-reasoning-message';
-            card.dataset.transient = 'true';
-
-            var details = document.createElement('details');
-            details.className = 'reasoning-details';
-            details.open = true;
-
-            var summary = document.createElement('summary');
-            summary.className = 'reasoning-summary';
-            summary.textContent = title;
-
-            var body = document.createElement('div');
-            body.className = 'reasoning-body';
-            body.id = 'assistant-reasoning-body';
-
-            details.appendChild(summary);
-            details.appendChild(body);
-            card.appendChild(details);
+            const body = h('div', { className: 'reasoning-body', id: 'assistant-reasoning-body' });
+            const details = h('details', { className: 'reasoning-details', open: true },
+                h('summary', { className: 'reasoning-summary', textContent: title }),
+                body
+            );
+            card = h('div', {
+                className: 'chat-message assistant reasoning-message',
+                id: 'assistant-reasoning-message',
+                dataset: { transient: 'true' }
+            }, details);
             chatContainer.appendChild(card);
         }
-        var bodyNode = document.getElementById('assistant-reasoning-body');
-        if (bodyNode) {
-            bodyNode.innerHTML = htmlContent;
-        }
+        const bodyNode = $('assistant-reasoning-body');
+        if (bodyNode) bodyNode.innerHTML = htmlContent;
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
     function showAssistantCommentary(title, htmlContent) {
-        var chatContainer = document.getElementById('chat-container');
-        if (!chatContainer) {
-            return;
-        }
-        var card = document.getElementById('assistant-commentary-message');
+        const chatContainer = $('chat-container');
+        if (!chatContainer) return;
+
+        let card = $('assistant-commentary-message');
         if (!card) {
-            card = document.createElement('div');
-            card.className = 'chat-message assistant commentary-message';
-            card.id = 'assistant-commentary-message';
-            card.dataset.transient = 'true';
-
-            var details = document.createElement('details');
-            details.className = 'commentary-details';
-            details.open = true;
-
-            var summary = document.createElement('summary');
-            summary.className = 'commentary-summary';
-            summary.textContent = title;
-
-            var body = document.createElement('div');
-            body.className = 'commentary-body';
-            body.id = 'assistant-commentary-body';
-
-            details.appendChild(summary);
-            details.appendChild(body);
-            card.appendChild(details);
+            const body = h('div', { className: 'commentary-body', id: 'assistant-commentary-body' });
+            const details = h('details', { className: 'commentary-details', open: true },
+                h('summary', { className: 'commentary-summary', textContent: title }),
+                body
+            );
+            card = h('div', {
+                className: 'chat-message assistant commentary-message',
+                id: 'assistant-commentary-message',
+                dataset: { transient: 'true' }
+            }, details);
             chatContainer.appendChild(card);
         }
-        var bodyNode = document.getElementById('assistant-commentary-body');
-        if (bodyNode) {
-            bodyNode.innerHTML = htmlContent;
-        }
+        const bodyNode = $('assistant-commentary-body');
+        if (bodyNode) bodyNode.innerHTML = htmlContent;
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
     function finalizeAssistantReasoning() {
-        var card = document.getElementById('assistant-reasoning-message');
-        if (!card) {
-            return;
-        }
+        const card = $('assistant-reasoning-message');
+        if (!card) return;
         card.removeAttribute('id');
-        var body = document.getElementById('assistant-reasoning-body');
-        if (body) {
-            body.removeAttribute('id');
-        }
+        $('assistant-reasoning-body')?.removeAttribute('id');
     }
 
     function finalizeAssistantCommentary() {
-        var card = document.getElementById('assistant-commentary-message');
-        if (!card) {
-            return;
-        }
+        const card = $('assistant-commentary-message');
+        if (!card) return;
         card.removeAttribute('id');
-        var body = document.getElementById('assistant-commentary-body');
-        if (body) {
-            body.removeAttribute('id');
-        }
+        $('assistant-commentary-body')?.removeAttribute('id');
     }
 
     function clearAssistantReasoning() {
-        var card = document.getElementById('assistant-reasoning-message');
-        if (!card) {
-            return;
-        }
-        card.remove();
+        $('assistant-reasoning-message')?.remove();
     }
 
     function clearAssistantCommentary() {
-        var card = document.getElementById('assistant-commentary-message');
-        if (!card) {
-            return;
-        }
-        card.remove();
+        $('assistant-commentary-message')?.remove();
     }
 
     function attachProcessPanelToLastAssistantMessage(summaryText, reasoningTitle, reasoningHtml, commentaryTitle, commentaryHtml, toolsHtml) {
-        var chatContainer = document.getElementById('chat-container');
-        if (!chatContainer || !chatContainer.children) {
-            return;
-        }
+        const chatContainer = $('chat-container');
+        if (!chatContainer?.children) return;
 
-        var target = null;
-        for (var i = chatContainer.children.length - 1; i >= 0; i--) {
-            var node = chatContainer.children[i];
-            if (!node || !node.classList) {
-                continue;
-            }
-            if (node.id === 'streaming-message') {
-                target = node;
-                break;
-            }
+        // Find target: streaming message or last non-transient assistant message
+        let target = null;
+        for (let i = chatContainer.children.length - 1; i >= 0; i--) {
+            const node = chatContainer.children[i];
+            if (!node?.classList) continue;
+            if (node.id === 'streaming-message') { target = node; break; }
             if (node.classList.contains('chat-message')
                 && node.classList.contains('assistant')
-                && (!node.dataset || node.dataset.transient !== 'true')) {
+                && node.dataset?.transient !== 'true') {
                 target = node;
                 break;
             }
         }
+        if (!target) return;
 
-        if (!target) {
-            return;
-        }
+        target.querySelector('.assistant-process')?.remove();
 
-        var existing = target.querySelector('.assistant-process');
-        if (existing) {
-            existing.remove();
-        }
+        const hasReasoning = reasoningHtml?.trim();
+        const hasCommentary = commentaryHtml?.trim();
+        const hasTools = toolsHtml?.trim();
+        if (!hasReasoning && !hasCommentary && !hasTools) return;
 
-        var hasReasoning = reasoningHtml && reasoningHtml.trim() !== '';
-        var hasCommentary = commentaryHtml && commentaryHtml.trim() !== '';
-        var hasTools = toolsHtml && toolsHtml.trim() !== '';
-        if (!hasReasoning && !hasCommentary && !hasTools) {
-            return;
-        }
+        const body = h('div', { className: 'assistant-process-body' });
+        const chevron = h('span', { className: 'assistant-process-chevron', textContent: '\u25b8' });
 
-        var shell = document.createElement('div');
-        shell.className = 'assistant-process';
-
-        var toggle = document.createElement('button');
-        toggle.type = 'button';
-        toggle.className = 'assistant-process-toggle';
-
-        var summary = document.createElement('span');
-        summary.className = 'assistant-process-summary';
-        summary.textContent = summaryText ? summaryText : 'Process';
-
-        var chevron = document.createElement('span');
-        chevron.className = 'assistant-process-chevron';
-        chevron.textContent = '\u25b8';
-
-        toggle.appendChild(summary);
-        toggle.appendChild(chevron);
-
-        var body = document.createElement('div');
-        body.className = 'assistant-process-body';
-
-        function appendSection(title, html) {
-            if (!html || html.trim() === '') {
-                return;
-            }
-            var section = document.createElement('div');
-            section.className = 'assistant-process-section';
-
-            var titleNode = document.createElement('div');
-            titleNode.className = 'assistant-process-title';
-            titleNode.textContent = title;
-
-            var contentNode = document.createElement('div');
-            contentNode.className = 'assistant-process-content';
+        const appendSection = (title, html) => {
+            if (!html?.trim()) return;
+            const contentNode = h('div', { className: 'assistant-process-content' });
             contentNode.innerHTML = html;
-
-            section.appendChild(titleNode);
-            section.appendChild(contentNode);
-            body.appendChild(section);
-        }
+            body.appendChild(h('div', { className: 'assistant-process-section' },
+                h('div', { className: 'assistant-process-title', textContent: title }),
+                contentNode
+            ));
+        };
 
         appendSection(reasoningTitle, reasoningHtml);
         appendSection(commentaryTitle, commentaryHtml);
         appendSection('Tools', toolsHtml);
 
-        toggle.onclick = function() {
-            var expanded = body.classList.contains('open');
-            if (expanded) {
-                body.classList.remove('open');
-                chevron.textContent = '\u25b8';
-            } else {
-                body.classList.add('open');
-                chevron.textContent = '\u25be';
+        const toggle = h('button', {
+            type: 'button',
+            className: 'assistant-process-toggle',
+            onclick: () => {
+                const expanded = body.classList.toggle('open');
+                chevron.textContent = expanded ? '\u25be' : '\u25b8';
             }
-        };
+        },
+            h('span', { className: 'assistant-process-summary', textContent: summaryText || 'Process' }),
+            chevron
+        );
 
-        shell.appendChild(toggle);
-        shell.appendChild(body);
-        target.appendChild(shell);
+        target.appendChild(h('div', { className: 'assistant-process' }, toggle, body));
     }
 
     function showAssistantPermissionRequest(requestId, title, message, approveLabel, approveAlwaysLabel, denyLabel) {
-        var chatContainer = document.getElementById('chat-container');
-        if (!chatContainer || !requestId) {
+        const chatContainer = $('chat-container');
+        if (!chatContainer || !requestId) return;
+
+        const messageId = `assistant-permission-${requestId}`;
+        if ($(messageId)) {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
             return;
         }
 
-        var messageId = 'assistant-permission-' + requestId;
-        var card = document.getElementById(messageId);
-        if (!card) {
-            card = document.createElement('div');
-            card.className = 'chat-message assistant permission-message';
-            card.id = messageId;
-            card.dataset.transient = 'true';
-
-            var shell = document.createElement('div');
-            shell.className = 'permission-shell';
-
-            var header = document.createElement('div');
-            header.className = 'permission-header';
-
-            var titleNode = document.createElement('div');
-            titleNode.className = 'permission-title';
-            titleNode.textContent = title;
-            header.appendChild(titleNode);
-
-            var badge = document.createElement('div');
-            badge.className = 'permission-badge';
-            badge.textContent = 'Approval';
-            header.appendChild(badge);
-            shell.appendChild(header);
-
-            var body = document.createElement('div');
-            body.className = 'permission-message-body';
-            body.textContent = message;
-            shell.appendChild(body);
-
-            var actions = document.createElement('div');
-            actions.className = 'permission-actions';
-
-            function createButton(label, cssClass, actionName) {
-                var button = document.createElement('button');
-                button.type = 'button';
-                button.className = cssClass;
-                button.textContent = label;
-                button.onclick = function() {
-                    markAssistantPermissionRequestPending(requestId, label + '...');
-                    if (window.alinaBrowserBridge && window.alinaBrowserBridge.handlePermissionAction) {
+        const createButton = (label, cssClass, actionName) => {
+            return h('button', {
+                type: 'button',
+                className: cssClass,
+                textContent: label,
+                onclick: () => {
+                    markAssistantPermissionRequestPending(requestId, `${label}...`);
+                    if (window.alinaBrowserBridge?.handlePermissionAction) {
                         window.alinaBrowserBridge.handlePermissionAction(requestId, actionName);
-                    } else if (window.alert) {
-                        window.alert('__ALINA_PERMISSION__|' + requestId + '|' + actionName);
                     }
-                };
-                return button;
-            }
+                }
+            });
+        };
 
-            actions.appendChild(createButton(approveLabel, 'primary', 'APPROVE_ONCE'));
-            actions.appendChild(createButton(approveAlwaysLabel, 'always', 'APPROVE_ALWAYS'));
-            actions.appendChild(createButton(denyLabel, 'deny', 'DENY'));
-            shell.appendChild(actions);
+        const card = h('div', {
+            className: 'chat-message assistant permission-message',
+            id: messageId,
+            dataset: { transient: 'true' }
+        },
+            h('div', { className: 'permission-shell' },
+                h('div', { className: 'permission-header' },
+                    h('div', { className: 'permission-title', textContent: title }),
+                    h('div', { className: 'permission-badge', textContent: 'Approval' })
+                ),
+                h('div', { className: 'permission-message-body', textContent: message }),
+                h('div', { className: 'permission-actions' },
+                    createButton(approveLabel, 'primary', 'APPROVE_ONCE'),
+                    createButton(approveAlwaysLabel, 'always', 'APPROVE_ALWAYS'),
+                    createButton(denyLabel, 'deny', 'DENY')
+                ),
+                h('div', { className: 'permission-status', id: `${messageId}-status` })
+            )
+        );
 
-            var status = document.createElement('div');
-            status.className = 'permission-status';
-            status.id = messageId + '-status';
-            shell.appendChild(status);
-
-            card.appendChild(shell);
-
-            chatContainer.appendChild(card);
-        }
-
+        chatContainer.appendChild(card);
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
     function markAssistantPermissionRequestPending(requestId, statusLabel) {
-        var card = document.getElementById('assistant-permission-' + requestId);
-        if (!card) {
-            return;
-        }
-        var buttons = card.querySelectorAll('button');
-        Array.prototype.forEach.call(buttons, function(button) {
-            button.disabled = true;
-        });
-        var status = document.getElementById('assistant-permission-' + requestId + '-status');
-        if (status) {
-            status.textContent = statusLabel ? statusLabel : '';
-        }
+        const card = $(`assistant-permission-${requestId}`);
+        if (!card) return;
+        for (const btn of card.querySelectorAll('button')) btn.disabled = true;
+        const status = $(`assistant-permission-${requestId}-status`);
+        if (status) status.textContent = statusLabel || '';
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
     function resolveAssistantPermissionRequest(requestId, statusLabel) {
-        var card = document.getElementById('assistant-permission-' + requestId);
-        if (!card) {
-            return;
-        }
-        var buttons = card.querySelectorAll('button');
-        Array.prototype.forEach.call(buttons, function(button) {
-            button.disabled = true;
-        });
-        var status = document.getElementById('assistant-permission-' + requestId + '-status');
-        if (status) {
-            status.textContent = statusLabel ? statusLabel : '';
-        }
+        const card = $(`assistant-permission-${requestId}`);
+        if (!card) return;
+        for (const btn of card.querySelectorAll('button')) btn.disabled = true;
+        const status = $(`assistant-permission-${requestId}-status`);
+        if (status) status.textContent = statusLabel || '';
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
@@ -706,14 +563,12 @@
 
     function startStreamingAssistantMessage() {
         removeWelcomeScreen();
-        var chatContainer = document.getElementById('chat-container');
-        var streamingDiv = null;
+        const chatContainer = $('chat-container');
+        let streamingDiv = null;
 
         if (arguments.length > 0 && arguments[0] === true) {
-            var target = document.getElementById('regenerate-target');
-            if (target) {
-                streamingDiv = target;
-            }
+            const target = $('regenerate-target');
+            if (target) streamingDiv = target;
         }
 
         if (!streamingDiv) {
@@ -729,64 +584,45 @@
     }
 
     function appendToStreamingMessage(escapedToken) {
-        var streamingDiv = document.getElementById('streaming-message');
+        const streamingDiv = $('streaming-message');
         if (streamingDiv) {
             // Use textContent to preserve markdown syntax during streaming
-            if (streamingDiv.textContent === undefined) {
-                streamingDiv.innerText += escapedToken;
-            } else {
-                streamingDiv.textContent += escapedToken;
-            }
+            streamingDiv.textContent += escapedToken;
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
     }
 
     function updateStreamingMessageWithHtml(htmlContent) {
-        var streamingDiv = document.getElementById('streaming-message');
+        const streamingDiv = $('streaming-message');
         if (streamingDiv) {
-            // Update with processed HTML content in real-time
             streamingDiv.innerHTML = htmlContent;
-            // Enhance code blocks in real-time
             enhanceCodeBlocks(streamingDiv);
-            // Force synchronous reflow to fix WebKit border rendering bug
             void streamingDiv.offsetHeight;
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
     }
 
     function finishStreamingMessage() {
-        var streamingDiv = document.getElementById('streaming-message');
+        const streamingDiv = $('streaming-message');
         if (streamingDiv) {
-            // Remove the streaming ID so it becomes a regular message
             streamingDiv.removeAttribute('id');
-            // Mark this element so attachMessageFooter can find it even if
-            // new notification messages are appended before the footer arrives
             streamingDiv.dataset.awaitingFooter = 'true';
-            // Enhance code blocks and add message actions
             enhanceCodeBlocks(streamingDiv);
             addMessageActions(streamingDiv);
-            // Force synchronous reflow to fix WebKit border rendering bug
             void streamingDiv.offsetHeight;
-            // Scroll to bottom one final time
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
     }
 
     function finishStreamingMessageWithMarkdown(processedHtml) {
-        var streamingDiv = document.getElementById('streaming-message');
+        const streamingDiv = $('streaming-message');
         if (streamingDiv) {
-            // Replace raw content with processed markdown HTML
             streamingDiv.innerHTML = processedHtml;
-            // Remove the streaming ID so it becomes a regular message
             streamingDiv.removeAttribute('id');
-            // Mark this element so attachMessageFooter can find it
             streamingDiv.dataset.awaitingFooter = 'true';
-            // Enhance code blocks and add message actions
             enhanceCodeBlocks(streamingDiv);
             addMessageActions(streamingDiv);
-            // Force synchronous reflow to fix WebKit border rendering bug
             void streamingDiv.offsetHeight;
-            // Scroll to bottom one final time
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
     }
@@ -796,63 +632,50 @@
     }
 
     function attachMessageFooter(footerText) {
-        var chatContainer = document.getElementById('chat-container');
-        if (!chatContainer || !chatContainer.children) return;
+        const chatContainer = $('chat-container');
+        if (!chatContainer?.children) return;
 
-        var target = null;
-        for (var i = chatContainer.children.length - 1; i >= 0; i--) {
-            var node = chatContainer.children[i];
-            if (!node || !node.classList) continue;
-            if (node.dataset && node.dataset.awaitingFooter === 'true') {
-                target = node;
-                break;
-            }
+        // First try: message awaiting footer
+        let target = null;
+        for (let i = chatContainer.children.length - 1; i >= 0; i--) {
+            const node = chatContainer.children[i];
+            if (node?.dataset?.awaitingFooter === 'true') { target = node; break; }
         }
 
+        // Fallback: last non-transient assistant message
         if (!target) {
-            for (var j = chatContainer.children.length - 1; j >= 0; j--) {
-                var fallbackNode = chatContainer.children[j];
-                if (!fallbackNode || !fallbackNode.classList) continue;
-                if (fallbackNode.classList.contains('chat-message')
-                    && fallbackNode.classList.contains('assistant')
-                    && (!fallbackNode.dataset || fallbackNode.dataset.transient !== 'true')) {
-                    target = fallbackNode;
+            for (let j = chatContainer.children.length - 1; j >= 0; j--) {
+                const node = chatContainer.children[j];
+                if (!node?.classList) continue;
+                if (node.classList.contains('chat-message')
+                    && node.classList.contains('assistant')
+                    && node.dataset?.transient !== 'true') {
+                    target = node;
                     break;
                 }
             }
         }
 
         if (!target) return;
-
         delete target.dataset.awaitingFooter;
 
-        var existing = target.querySelector('.message-footer');
-        if (existing) existing.remove();
-        var footer = document.createElement('div');
-        footer.className = 'message-footer';
-        footer.textContent = footerText;
-        target.appendChild(footer);
+        target.querySelector('.message-footer')?.remove();
+        target.appendChild(h('div', { className: 'message-footer', textContent: footerText }));
     }
 
     // ── Regeneration ────────────────────────────────
 
     function prepareRegenerationTarget() {
-        var chatContainer = document.getElementById('chat-container');
-        if (!chatContainer || !chatContainer.children) {
-            return false;
-        }
+        const chatContainer = $('chat-container');
+        if (!chatContainer?.children) return false;
 
-        for (var i = chatContainer.children.length - 1; i >= 0; i--) {
-            var node = chatContainer.children[i];
-            if (!node || !node.classList) {
-                continue;
-            }
+        for (let i = chatContainer.children.length - 1; i >= 0; i--) {
+            const node = chatContainer.children[i];
+            if (!node?.classList) continue;
             if (node.classList.contains('chat-message')
                 && node.classList.contains('assistant')
-                && (!node.dataset || node.dataset.transient !== 'true')) {
-                if (node.dataset) {
-                    node.dataset.prevHtml = node.innerHTML;
-                }
+                && node.dataset?.transient !== 'true') {
+                node.dataset.prevHtml = node.innerHTML;
                 node.id = 'regenerate-target';
                 return true;
             }
@@ -861,15 +684,10 @@
     }
 
     function restoreRegenerationTarget() {
-        var node = document.getElementById('streaming-message');
-        if (!node) {
-            node = document.getElementById('regenerate-target');
-        }
-        if (!node) {
-            return;
-        }
+        let node = $('streaming-message') || $('regenerate-target');
+        if (!node) return;
 
-        if (node.dataset && node.dataset.prevHtml !== undefined) {
+        if (node.dataset?.prevHtml !== undefined) {
             node.innerHTML = node.dataset.prevHtml;
             delete node.dataset.prevHtml;
         }
@@ -878,14 +696,8 @@
     }
 
     function discardRegenerationBackup() {
-        var node = document.getElementById('streaming-message');
-        if (!node) {
-            node = document.getElementById('regenerate-target');
-        }
-        if (!node) {
-            return;
-        }
-        if (node.dataset && node.dataset.prevHtml !== undefined) {
+        const node = $('streaming-message') || $('regenerate-target');
+        if (node?.dataset?.prevHtml !== undefined) {
             delete node.dataset.prevHtml;
         }
     }
@@ -893,29 +705,19 @@
     // ── Todo list ───────────────────────────────────
 
     function showTodoList(jsonString, title) {
-        var items;
-        try {
-            items = JSON.parse(jsonString);
-        } catch (e) {
-            return;
-        }
-        if (!items || items.length === 0) {
-            return;
-        }
+        let items;
+        try { items = JSON.parse(jsonString); } catch { return; }
+        if (!items?.length) return;
 
-        var container = document.getElementById('todo-sticky-container');
-        if (!container) {
-            return;
-        }
+        const container = $('todo-sticky-container');
+        if (!container) return;
 
         container.dataset.todoJson = jsonString;
         container.dataset.todoTitle = title;
 
-        var card = document.getElementById('assistant-todo-sticky');
+        let card = $('assistant-todo-sticky');
         if (!card) {
-            card = document.createElement('div');
-            card.className = 'todo-sticky';
-            card.id = 'assistant-todo-sticky';
+            card = h('div', { className: 'todo-sticky', id: 'assistant-todo-sticky' });
             container.appendChild(card);
         }
 
@@ -924,39 +726,27 @@
     }
 
     function buildTodoHtml(items, title) {
-        var completed = 0;
-        var total = items.length;
-        for (var i = 0; i < items.length; i++) {
-            if (items[i].status === 'completed') completed++;
-        }
+        const completed = items.filter(it => it.status === 'completed').length;
+        const total = items.length;
+        const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-        var html = '';
-
-        html += '<div class="todo-header">';
-        html += '<div class="todo-title">' + escapeHtmlTodo(title) + '</div>';
-        html += '<div class="todo-progress-info">' + completed + '/' + total + '</div>';
-        html += '</div>';
-
-        var percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-        html += '<div class="todo-progress-bar-track">';
-        html += '<div class="todo-progress-bar-fill" style="width:' + percent + '%"></div>';
-        html += '</div>';
-
-        html += '<div class="todo-items">';
-        for (var j = 0; j < items.length; j++) {
-            var item = items[j];
-            var statusClass = 'todo-status-' + (item.status || 'pending');
-            var priorityClass = 'todo-priority-' + (item.priority || 'medium');
-            var icon = getTodoStatusIcon(item.status);
-
-            html += '<div class="todo-item ' + statusClass + ' ' + priorityClass + '">';
-            html += '<span class="todo-item-icon">' + icon + '</span>';
-            html += '<span class="todo-item-content">' + escapeHtmlTodo(item.content) + '</span>';
-            html += '</div>';
-        }
-        html += '</div>';
-
-        return html;
+        return `<div class="todo-header">` +
+            `<div class="todo-title">${escapeHtmlTodo(title)}</div>` +
+            `<div class="todo-progress-info">${completed}/${total}</div>` +
+            `</div>` +
+            `<div class="todo-progress-bar-track">` +
+            `<div class="todo-progress-bar-fill" style="width:${percent}%"></div>` +
+            `</div>` +
+            `<div class="todo-items">` +
+            items.map(item => {
+                const statusClass = `todo-status-${item.status || 'pending'}`;
+                const priorityClass = `todo-priority-${item.priority || 'medium'}`;
+                return `<div class="todo-item ${statusClass} ${priorityClass}">` +
+                    `<span class="todo-item-icon">${getTodoStatusIcon(item.status)}</span>` +
+                    `<span class="todo-item-content">${escapeHtmlTodo(item.content)}</span>` +
+                    `</div>`;
+            }).join('') +
+            `</div>`;
     }
 
     function getTodoStatusIcon(status) {
@@ -978,101 +768,64 @@
     }
 
     function finalizeTodoList() {
-        var container = document.getElementById('todo-sticky-container');
-        if (!container) {
-            return;
-        }
-        var card = document.getElementById('assistant-todo-sticky');
-        if (!card) {
-            return;
-        }
-        var jsonString = container.dataset.todoJson;
-        var title = container.dataset.todoTitle || 'Todo';
+        const container = $('todo-sticky-container');
+        if (!container) return;
+        const card = $('assistant-todo-sticky');
+        if (!card) return;
+
+        const jsonString = container.dataset.todoJson;
+        const title = container.dataset.todoTitle || 'Todo';
         card.remove();
         delete container.dataset.todoJson;
         delete container.dataset.todoTitle;
 
-        var items;
-        try {
-            items = JSON.parse(jsonString);
-        } catch (e) {
-            return;
-        }
-        if (!items || items.length === 0) {
-            return;
-        }
+        let items;
+        try { items = JSON.parse(jsonString); } catch { return; }
+        if (!items?.length) return;
 
-        var chatContainer = document.getElementById('chat-container');
-        if (!chatContainer || !chatContainer.children) {
-            return;
-        }
-        var target = null;
-        for (var i = chatContainer.children.length - 1; i >= 0; i--) {
-            var node = chatContainer.children[i];
-            if (!node || !node.classList) continue;
-            if (node.id === 'streaming-message') {
-                target = node;
-                break;
-            }
+        // Find target message
+        const chatContainer = $('chat-container');
+        if (!chatContainer?.children) return;
+
+        let target = null;
+        for (let i = chatContainer.children.length - 1; i >= 0; i--) {
+            const node = chatContainer.children[i];
+            if (!node?.classList) continue;
+            if (node.id === 'streaming-message') { target = node; break; }
             if (node.classList.contains('chat-message')
                 && node.classList.contains('assistant')
-                && (!node.dataset || node.dataset.transient !== 'true')) {
+                && node.dataset?.transient !== 'true') {
                 target = node;
                 break;
             }
         }
-        if (!target) {
-            return;
-        }
+        if (!target) return;
 
-        var existing = target.querySelector('.todo-finalized');
-        if (existing) existing.remove();
+        target.querySelector('.todo-finalized')?.remove();
 
-        var completed = 0;
-        for (var k = 0; k < items.length; k++) {
-            if (items[k].status === 'completed') completed++;
-        }
+        const completed = items.filter(it => it.status === 'completed').length;
 
-        var shell = document.createElement('div');
-        shell.className = 'todo-finalized';
-
-        var toggle = document.createElement('button');
-        toggle.type = 'button';
-        toggle.className = 'todo-finalized-toggle';
-
-        var summary = document.createElement('span');
-        summary.className = 'todo-finalized-summary';
-        summary.textContent = title + ' (' + completed + '/' + items.length + ')';
-
-        var chevron = document.createElement('span');
-        chevron.className = 'todo-finalized-chevron';
-        chevron.textContent = '\u25b8';
-
-        toggle.appendChild(summary);
-        toggle.appendChild(chevron);
-
-        var body = document.createElement('div');
-        body.className = 'todo-finalized-body';
+        const chevron = h('span', { className: 'todo-finalized-chevron', textContent: '\u25b8' });
+        const body = h('div', { className: 'todo-finalized-body' });
         body.innerHTML = buildTodoHtml(items, title);
 
-        toggle.onclick = function() {
-            var expanded = body.classList.contains('open');
-            if (expanded) {
-                body.classList.remove('open');
-                chevron.style.transform = 'rotate(0deg)';
-            } else {
-                body.classList.add('open');
-                chevron.style.transform = 'rotate(90deg)';
+        const toggle = h('button', {
+            type: 'button',
+            className: 'todo-finalized-toggle',
+            onclick: () => {
+                const expanded = body.classList.toggle('open');
+                chevron.style.transform = expanded ? 'rotate(90deg)' : 'rotate(0deg)';
             }
-        };
+        },
+            h('span', { className: 'todo-finalized-summary', textContent: `${title} (${completed}/${items.length})` }),
+            chevron
+        );
 
-        shell.appendChild(toggle);
-        shell.appendChild(body);
-        target.appendChild(shell);
+        target.appendChild(h('div', { className: 'todo-finalized' }, toggle, body));
     }
 
     function clearTodoList() {
-        var container = document.getElementById('todo-sticky-container');
+        const container = $('todo-sticky-container');
         if (container) {
             container.innerHTML = '';
             delete container.dataset.todoJson;
@@ -1081,18 +834,16 @@
     }
 
     // ── Link interception ───────────────────────────
-    document.addEventListener('click', function(event) {
-        var target = event.target;
+    document.addEventListener('click', (event) => {
+        let target = event.target;
         while (target && target !== document) {
-            if (target.tagName && target.tagName.toLowerCase() === 'a') {
-                var href = target.getAttribute('href') || target.href;
-                if (href && (href.indexOf('http://') === 0 || href.indexOf('https://') === 0)) {
+            if (target.tagName?.toLowerCase() === 'a') {
+                const href = target.getAttribute('href') || target.href;
+                if (href?.startsWith('http://') || href?.startsWith('https://')) {
                     event.preventDefault();
                     event.stopPropagation();
-                    if (window.alinaBrowserBridge && window.alinaBrowserBridge.handleOpenUrl) {
+                    if (window.alinaBrowserBridge?.handleOpenUrl) {
                         window.alinaBrowserBridge.handleOpenUrl(href);
-                    } else if (window.alert) {
-                        window.alert('__ALINA_OPEN_URL__|' + href);
                     }
                 }
                 return;
@@ -1100,5 +851,3 @@
             target = target.parentElement;
         }
     }, true);
-
-

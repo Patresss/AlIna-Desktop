@@ -150,10 +150,6 @@
    Misc controls — Enhanced with transitions
    ══════════════════════════════════════════════════ */
 
-.plugin-button {
-  -fx-background-radius: 15px;
-}
-
 .toggle-button {
   -fx-background-insets: 0;
 }
@@ -257,7 +253,7 @@ ChatThreadHistoryCard {
 
 .dashboard-area {
     -fx-background-color: transparent;
-    -fx-padding: 4px 8px 8px 8px;
+    -fx-padding: 6px 10px 10px 10px;
 }
 
 .dashboard-chat-separator {
@@ -265,82 +261,84 @@ ChatThreadHistoryCard {
     -fx-min-height: 1px;
     -fx-pref-height: 1px;
     -fx-max-height: 1px;
-    -fx-opacity: 0.3;
+    -fx-opacity: 0.15;
 }
 
-/* ── Dashboard container (transparent wrapper) ── */
+/* ── Dashboard container ─────────────────────── */
 .workspace-dashboard-container {
     -fx-background-color: transparent;
     -fx-padding: 0;
 }
 
-/* ── WORKSPACE section label ─────────────────── */
+/* ── WORKSPACE section label — elegant uppercase ─ */
 .workspace-container-title {
     -fx-text-fill: -color-fg-subtle;
-    -fx-font-size: 10px;
-    -fx-font-weight: 700;
-    -fx-letter-spacing: 0.08em;
+    -fx-font-size: 9px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.14em;
+    -fx-opacity: 0.7;
 }
 
 /* ══════════════════════════════════════════════════
-   Widget card — the main card design (enhanced)
+   Widget card — frosted glass design
    ══════════════════════════════════════════════════ */
 
 .workspace-dashboard {
     -fx-background-color: -color-glass-bg;
-    -fx-background-radius: 14px;
-    -fx-border-radius: 14px;
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
     -fx-border-color: -color-glass-border;
     -fx-border-width: 1px;
-    -fx-padding: 10px 14px 12px 14px;
-    -fx-effect: dropshadow(gaussian, -color-shadow-default, 6, 0, 0, 2);
+    -fx-padding: 12px 16px 14px 16px;
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 4, 0, 0, 1);
 }
 
 .workspace-dashboard:hover {
     -fx-border-color: -color-glass-border-hover;
     -fx-background-color: -color-glass-bg-hover;
-    -fx-effect: dropshadow(gaussian, -color-shadow-default, 10, 0, 0, 3);
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 12, 0, 0, 3);
 }
 
 /* ── Widget header ──────────────────────────── */
 .workspace-dashboard-header {
     -fx-alignment: center-left;
-    -fx-padding: 0 0 4px 0;
+    -fx-padding: 0 0 6px 0;
 }
 
 /* ── Widget title ──────────────────────────── */
 .workspace-dashboard-title {
     -fx-text-fill: -color-fg-default;
-    -fx-font-size: 12px;
-    -fx-font-weight: 700;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.02em;
 }
 
 .workspace-dashboard-title .ikonli-font-icon {
-    -fx-icon-size: 14px;
+    -fx-icon-size: 13px;
     -fx-icon-color: -color-accent-fg;
     -fx-fill: -color-accent-fg;
 }
 
-/* ── Count badge — Pill style ────────────────── */
+/* ── Count badge — Glowing pill ──────────────── */
 .workspace-dashboard-count {
     -fx-background-color: -color-accent-subtle;
     -fx-background-radius: 999px;
     -fx-font-size: 9px;
-    -fx-font-weight: 700;
-    -fx-padding: 2px 8px;
+    -fx-font-weight: 800;
+    -fx-padding: 2px 9px;
     -fx-text-fill: -color-accent-fg;
 }
 
 /* ── Content area ────────────────────────────── */
 .workspace-dashboard-content {
-    -fx-padding: 4px 0 0 0;
+    -fx-padding: 2px 0 0 0;
 }
 
 /* ── Collapse button ─────────────────────────── */
 .workspace-collapse-button {
     -fx-text-fill: -color-fg-muted;
     -fx-padding: 2px;
-    -fx-opacity: 0.6;
+    -fx-opacity: 0.45;
 }
 
 .workspace-collapse-button:hover {
@@ -348,7 +346,7 @@ ChatThreadHistoryCard {
 }
 
 .workspace-collapse-button .ikonli-font-icon {
-    -fx-icon-size: 12px;
+    -fx-icon-size: 11px;
 }
 
 /* ── Divider ─────────────────────────────────── */
@@ -358,28 +356,28 @@ ChatThreadHistoryCard {
     -fx-pref-height: 1px;
     -fx-max-height: 1px;
     -fx-padding: 0;
+    -fx-opacity: 0.5;
 }
 
 /* ── Empty state ─────────────────────────────── */
 .workspace-dashboard-empty {
     -fx-text-fill: -color-fg-subtle;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-font-style: italic;
-    -fx-padding: 6px 4px;
-    -fx-min-height: 24px;
-    -fx-pref-height: 24px;
+    -fx-padding: 8px 4px;
+    -fx-opacity: 0.7;
 }
 
 /* ══════════════════════════════════════════════════
-   Universal item row
+   Universal item row — smooth interactive rows
    ══════════════════════════════════════════════════ */
 
 .workspace-item-row {
     -fx-alignment: center-left;
-    -fx-padding: 4px 6px;
-    -fx-background-radius: 8px;
-    -fx-min-height: 26px;
-    -fx-pref-height: 26px;
+    -fx-padding: 5px 8px;
+    -fx-background-radius: 10px;
+    -fx-min-height: 28px;
+    -fx-pref-height: 28px;
 }
 
 .workspace-item-row:hover {
@@ -388,9 +386,9 @@ ChatThreadHistoryCard {
 
 /* ── Inline badge (repo, draft, status) ─────── */
 .workspace-item-badge {
-    -fx-font-size: 10px;
-    -fx-font-weight: 700;
-    -fx-background-radius: 6px;
+    -fx-font-size: 9px;
+    -fx-font-weight: 800;
+    -fx-background-radius: 8px;
     -fx-padding: 2px 8px;
     -fx-background-color: -color-bg-subtle;
     -fx-text-fill: -color-fg-muted;
@@ -410,13 +408,13 @@ ChatThreadHistoryCard {
 }
 
 .workspace-task-list .check-box:selected {
-    -fx-opacity: 0.6;
+    -fx-opacity: 0.5;
 }
 
 .workspace-task-item {
     -fx-alignment: top-left;
-    -fx-padding: 4px 6px;
-    -fx-background-radius: 8px;
+    -fx-padding: 5px 8px;
+    -fx-background-radius: 10px;
 }
 
 .workspace-task-item:hover {
@@ -432,16 +430,17 @@ ChatThreadHistoryCard {
 }
 
 .workspace-task-label:selected {
-    -fx-opacity: 0.5;
+    -fx-opacity: 0.4;
     -fx-strikethrough: true;
 }
 
 .workspace-task-group-label {
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
     -fx-text-fill: -color-accent-fg;
-    -fx-padding: 6px 4px 2px 4px;
-    -fx-opacity: 0.85;
+    -fx-padding: 8px 4px 3px 4px;
+    -fx-opacity: 0.8;
+    -fx-letter-spacing: 0.03em;
 }
 
 /* ══════════════════════════════════════════════════
@@ -450,8 +449,9 @@ ChatThreadHistoryCard {
 
 .workspace-media-track-info {
     -fx-text-fill: -color-fg-muted;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-text-overrun: ellipsis;
+    -fx-opacity: 0.85;
 }
 
 /* ══════════════════════════════════════════════════
@@ -460,10 +460,10 @@ ChatThreadHistoryCard {
 
 .workspace-pr-item {
     -fx-alignment: center-left;
-    -fx-padding: 4px 6px;
-    -fx-background-radius: 8px;
-    -fx-min-height: 26px;
-    -fx-pref-height: 26px;
+    -fx-padding: 5px 8px;
+    -fx-background-radius: 10px;
+    -fx-min-height: 28px;
+    -fx-pref-height: 28px;
 }
 
 .workspace-pr-item:hover {
@@ -472,17 +472,17 @@ ChatThreadHistoryCard {
 
 .workspace-pr-repo {
     -fx-text-fill: -color-fg-muted;
-    -fx-font-size: 10px;
-    -fx-font-weight: 700;
+    -fx-font-size: 9px;
+    -fx-font-weight: 800;
     -fx-background-color: -color-bg-subtle;
-    -fx-background-radius: 6px;
+    -fx-background-radius: 8px;
     -fx-padding: 2px 8px;
 }
 
 .workspace-pr-number {
     -fx-text-fill: -color-accent-fg;
     -fx-font-family: monospace;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-cursor: hand;
     -fx-min-width: 36px;
@@ -490,6 +490,7 @@ ChatThreadHistoryCard {
 
 .workspace-pr-number:hover {
     -fx-underline: true;
+    -fx-opacity: 0.85;
 }
 
 .workspace-pr-title {
@@ -500,16 +501,18 @@ ChatThreadHistoryCard {
 
 .workspace-pr-link-icon {
     -fx-icon-color: -color-fg-muted;
-    -fx-icon-size: 12px;
+    -fx-icon-size: 11px;
+    -fx-opacity: 0.6;
 }
 
 .workspace-pr-draft {
     -fx-text-fill: -color-fg-subtle;
-    -fx-font-size: 10px;
+    -fx-font-size: 9px;
     -fx-font-style: italic;
     -fx-background-color: -color-bg-subtle;
-    -fx-background-radius: 6px;
-    -fx-padding: 2px 6px;
+    -fx-background-radius: 8px;
+    -fx-padding: 2px 7px;
+    -fx-opacity: 0.8;
 }
 
 /* ══════════════════════════════════════════════════
@@ -518,10 +521,10 @@ ChatThreadHistoryCard {
 
 .workspace-jira-item {
     -fx-alignment: center-left;
-    -fx-padding: 4px 6px;
-    -fx-background-radius: 8px;
-    -fx-min-height: 26px;
-    -fx-pref-height: 26px;
+    -fx-padding: 5px 8px;
+    -fx-background-radius: 10px;
+    -fx-min-height: 28px;
+    -fx-pref-height: 28px;
 }
 
 .workspace-jira-item:hover {
@@ -531,7 +534,7 @@ ChatThreadHistoryCard {
 .workspace-jira-key {
     -fx-text-fill: -color-accent-fg;
     -fx-font-family: monospace;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-cursor: hand;
     -fx-min-width: 70px;
@@ -539,14 +542,15 @@ ChatThreadHistoryCard {
 
 .workspace-jira-key:hover {
     -fx-underline: true;
+    -fx-opacity: 0.85;
 }
 
-/* ── Status badges — Pill design ─────────────── */
+/* ── Status badges — Modern pill design ────────── */
 .workspace-jira-status {
-    -fx-font-size: 10px;
-    -fx-font-weight: 700;
-    -fx-background-radius: 6px;
-    -fx-padding: 2px 8px;
+    -fx-font-size: 9px;
+    -fx-font-weight: 800;
+    -fx-background-radius: 8px;
+    -fx-padding: 3px 10px;
     -fx-text-fill: -color-info-fg;
     -fx-background-color: -color-info-subtle;
     -fx-min-width: 62px;
@@ -577,8 +581,9 @@ ChatThreadHistoryCard {
 
 /* ── Issue type icon ──────────────────────────── */
 .workspace-jira-type-icon {
-    -fx-icon-size: 14px;
+    -fx-icon-size: 13px;
     -fx-icon-color: -color-fg-muted;
+    -fx-opacity: 0.7;
 }
 
 /* ══════════════════════════════════════════════════
@@ -587,31 +592,36 @@ ChatThreadHistoryCard {
 
 .workspace-calendar-item {
     -fx-alignment: center-left;
-    -fx-padding: 4px 6px;
-    -fx-background-radius: 8px;
+    -fx-padding: 5px 8px;
+    -fx-background-radius: 10px;
 }
 
 .workspace-calendar-item:hover {
     -fx-background-color: -color-glass-bg-hover;
 }
 
+/* ── Currently active event — accent glow ──────── */
 .workspace-calendar-item-current {
     -fx-alignment: center-left;
-    -fx-background-color: -color-accent-muted;
-    -fx-background-radius: 8px;
-    -fx-padding: 4px 6px;
+    -fx-background-color: -color-accent-subtle;
+    -fx-background-radius: 10px;
+    -fx-padding: 5px 8px;
+    -fx-border-color: -color-accent-muted;
+    -fx-border-radius: 10px;
+    -fx-border-width: 1px;
 }
 
 .workspace-calendar-remaining {
     -fx-text-fill: -color-fg-muted;
     -fx-font-size: 10px;
     -fx-padding: 0;
+    -fx-opacity: 0.8;
 }
 
 .workspace-calendar-upcoming {
     -fx-text-fill: -color-accent-fg;
     -fx-font-size: 10px;
-    -fx-font-weight: 700;
+    -fx-font-weight: 800;
     -fx-padding: 0;
 }
 
@@ -622,18 +632,23 @@ ChatThreadHistoryCard {
 .workspace-calendar-time {
     -fx-text-fill: -color-accent-fg;
     -fx-font-family: monospace;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-font-weight: bold;
 }
 
 .workspace-calendar-video-icon {
     -fx-icon-color: -color-accent-fg;
-    -fx-icon-size: 14px;
+    -fx-icon-size: 13px;
+    -fx-opacity: 0.8;
 }
 
 .workspace-calendar-video-button {
     -fx-cursor: hand;
     -fx-padding: 0;
+}
+
+.workspace-calendar-video-button:hover .ikonli-font-icon {
+    -fx-opacity: 1.0;
 }
 
 .workspace-calendar-summary {
@@ -653,7 +668,8 @@ ChatThreadHistoryCard {
 
 .workspace-calendar-error {
     -fx-text-fill: -color-danger-fg;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
+    -fx-opacity: 0.9;
 }
 
 .workspace-calendar-auth-button {
