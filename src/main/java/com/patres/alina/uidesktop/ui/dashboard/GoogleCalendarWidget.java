@@ -328,14 +328,26 @@ public class GoogleCalendarWidget extends VBox {
         if (minutes <= 0) {
             return LanguageManager.getLanguageString("dashboard.calendar.remainingLessThanOne");
         }
-        return LanguageManager.getLanguageString("dashboard.calendar.remaining", minutes);
+        return LanguageManager.getLanguageString("dashboard.calendar.remaining", formatDuration(minutes));
     }
 
     private String formatUpcomingText(final long minutes) {
         if (minutes <= 0) {
             return LanguageManager.getLanguageString("dashboard.calendar.upcomingLessThanOne");
         }
-        return LanguageManager.getLanguageString("dashboard.calendar.upcoming", minutes);
+        return LanguageManager.getLanguageString("dashboard.calendar.upcoming", formatDuration(minutes));
+    }
+
+    private String formatDuration(final long totalMinutes) {
+        if (totalMinutes < 60) {
+            return totalMinutes + " min";
+        }
+        final long hours = totalMinutes / 60;
+        final long mins = totalMinutes % 60;
+        if (mins == 0) {
+            return hours + "h";
+        }
+        return hours + "h " + mins + " min";
     }
 
     // ── Notifications ─────────────────────────────────────────────
@@ -379,8 +391,8 @@ public class GoogleCalendarWidget extends VBox {
                     : LanguageManager.getLanguageString("dashboard.calendar.notificationNow", summary);
         }
         return hasLink
-                ? LanguageManager.getLanguageString("dashboard.calendar.notificationWithLink", summary, minutesUntilStart, meetUrl)
-                : LanguageManager.getLanguageString("dashboard.calendar.notification", summary, minutesUntilStart);
+                ? LanguageManager.getLanguageString("dashboard.calendar.notificationWithLink", summary, formatDuration(minutesUntilStart), meetUrl)
+                : LanguageManager.getLanguageString("dashboard.calendar.notification", summary, formatDuration(minutesUntilStart));
     }
 
     // ── Event filtering ──────────────────────────────────────────
