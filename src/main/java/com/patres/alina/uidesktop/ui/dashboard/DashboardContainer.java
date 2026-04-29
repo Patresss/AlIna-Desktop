@@ -1,6 +1,5 @@
 package com.patres.alina.uidesktop.ui.dashboard;
 
-import atlantafx.base.theme.Styles;
 import com.patres.alina.common.event.WorkspaceSettingsUpdatedEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.settings.WorkspaceSettings;
@@ -8,7 +7,6 @@ import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -24,8 +22,9 @@ import org.kordamp.ikonli.javafx.FontIcon;
 public class DashboardContainer extends VBox {
 
     private final Label titleLabel = new Label("WORKSPACE");
-    private final Button collapseButton = new Button();
     private final VBox widgetsBox = new VBox(6);
+    private final FontIcon collapseIcon = new FontIcon(Feather.CHEVRON_UP);
+    private final HBox collapseBar = new HBox();
 
     private final MediaControlWidget mediaControlWidget;
     private final DashboardPane dashboardPane;
@@ -46,13 +45,7 @@ public class DashboardContainer extends VBox {
 
         titleLabel.getStyleClass().add("workspace-container-title");
 
-        collapseButton.getStyleClass().addAll(Styles.BUTTON_CIRCLE, Styles.FLAT, "workspace-collapse-button");
-        collapseButton.setOnAction(event -> toggleCollapsed());
-        collapseButton.setFocusTraversable(false);
-
-        final Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        final HBox header = new HBox(6, titleLabel, spacer, collapseButton);
+        final HBox header = new HBox(6, titleLabel);
         header.getStyleClass().add("workspace-dashboard-header");
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(2, 4, 4, 4));
@@ -65,11 +58,18 @@ public class DashboardContainer extends VBox {
                 jiraWidget
         );
 
-        setSpacing(6);
-        setMinWidth(0);
-        getChildren().addAll(header, widgetsBox);
+        // Bottom collapse bar
+        collapseIcon.getStyleClass().add("workspace-collapse-bar-icon");
+        collapseBar.getStyleClass().add("workspace-collapse-bar");
+        collapseBar.setAlignment(Pos.CENTER);
+        collapseBar.getChildren().add(collapseIcon);
+        collapseBar.setOnMouseClicked(event -> toggleCollapsed());
 
-        updateCollapseButton();
+        setSpacing(4);
+        setMinWidth(0);
+        getChildren().addAll(header, widgetsBox, collapseBar);
+
+        updateCollapseBar();
 
         DefaultEventBus.getInstance().subscribe(WorkspaceSettingsUpdatedEvent.class, event -> refreshVisibility());
         refreshVisibility();
@@ -77,14 +77,15 @@ public class DashboardContainer extends VBox {
 
     private void toggleCollapsed() {
         collapsed = !collapsed;
-        updateCollapseButton();
+        updateCollapseBar();
         widgetsBox.setManaged(!collapsed);
         widgetsBox.setVisible(!collapsed);
+        titleLabel.setManaged(!collapsed);
+        titleLabel.setVisible(!collapsed);
     }
 
-    private void updateCollapseButton() {
-        collapseButton.setText(null);
-        collapseButton.setGraphic(new FontIcon(collapsed ? Feather.CHEVRON_DOWN : Feather.CHEVRON_UP));
+    private void updateCollapseBar() {
+        collapseIcon.setIconCode(collapsed ? Feather.CHEVRON_DOWN : Feather.CHEVRON_UP);
     }
 
     private void refreshVisibility() {

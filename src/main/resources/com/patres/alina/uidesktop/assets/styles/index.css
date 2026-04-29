@@ -332,19 +332,29 @@ ChatThreadHistoryCard {
     -fx-padding: 2px 0 0 0;
 }
 
-/* ── Collapse button ─────────────────────────── */
-.workspace-collapse-button {
-    -fx-text-fill: -color-fg-muted;
-    -fx-padding: 2px;
-    -fx-opacity: 0.45;
+/* ── Bottom collapse bar ─────────────────────── */
+.workspace-collapse-bar {
+    -fx-padding: 4px 0 2px 0;
+    -fx-cursor: hand;
+    -fx-background-color: transparent;
+    -fx-background-radius: 8px;
+    -fx-min-height: 20px;
+    -fx-pref-height: 20px;
 }
 
-.workspace-collapse-button:hover {
+.workspace-collapse-bar:hover {
+    -fx-background-color: -color-glass-bg-hover;
+}
+
+.workspace-collapse-bar-icon {
+    -fx-icon-size: 14px;
+    -fx-icon-color: -color-fg-muted;
+    -fx-opacity: 0.4;
+}
+
+.workspace-collapse-bar:hover .workspace-collapse-bar-icon {
     -fx-opacity: 1.0;
-}
-
-.workspace-collapse-button .ikonli-font-icon {
-    -fx-icon-size: 11px;
+    -fx-icon-color: -color-accent-fg;
 }
 
 /* ── Divider ─────────────────────────────────── */
