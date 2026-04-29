@@ -1,4 +1,167 @@
+    /* ══════════════════════════════════════════════════
+       AlIna Chat — JavaScript Engine (2026 Edition)
+       ══════════════════════════════════════════════════ */
+
+    // ── Welcome screen ──────────────────────────────
+    function showWelcomeScreen() {
+        var chatContainer = document.getElementById('chat-container');
+        if (!chatContainer) return;
+        if (chatContainer.children.length > 0) return;
+
+        var welcome = document.createElement('div');
+        welcome.className = 'welcome-screen';
+        welcome.id = 'welcome-screen';
+
+        welcome.innerHTML =
+            '<div class="welcome-logo">AI</div>' +
+            '<div class="welcome-title">AlIna</div>' +
+            '<div class="welcome-subtitle" id="welcome-subtitle">Type a message to start, or press <kbd>/</kbd> for quick actions.</div>';
+
+        chatContainer.appendChild(welcome);
+    }
+
+    function updateWelcomeSubtitle(text) {
+        var el = document.getElementById('welcome-subtitle');
+        if (el) el.textContent = text;
+    }
+
+    function removeWelcomeScreen() {
+        var welcome = document.getElementById('welcome-screen');
+        if (welcome) {
+            welcome.style.opacity = '0';
+            welcome.style.transform = 'translateY(-10px)';
+            welcome.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+            setTimeout(function() { welcome.remove(); }, 200);
+        }
+    }
+
+    // Show welcome screen on initial load
+    document.addEventListener('DOMContentLoaded', function() {
+        showWelcomeScreen();
+        initScrollToBottom();
+    });
+    // Fallback for immediate execution (WebView may not fire DOMContentLoaded)
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        showWelcomeScreen();
+        initScrollToBottom();
+    }
+
+    // ── Scroll to bottom FAB ────────────────────────
+    function initScrollToBottom() {
+        var fab = document.getElementById('scroll-to-bottom-fab');
+        if (fab) return; // already initialized
+
+        fab = document.createElement('div');
+        fab.className = 'scroll-to-bottom';
+        fab.id = 'scroll-to-bottom-fab';
+        fab.innerHTML = '\u25BE';
+        fab.onclick = function() {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        };
+        document.body.appendChild(fab);
+
+        window.addEventListener('scroll', function() {
+            var scrollBottom = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+            if (scrollBottom > 300) {
+                fab.classList.add('visible');
+            } else {
+                fab.classList.remove('visible');
+            }
+        });
+    }
+
+    // ── Code block enhancement ──────────────────────
+    function enhanceCodeBlocks(container) {
+        if (!container) return;
+        var preBlocks = container.querySelectorAll('pre');
+        Array.prototype.forEach.call(preBlocks, function(pre) {
+            if (pre.dataset.enhanced === 'true') return;
+            pre.dataset.enhanced = 'true';
+
+            var codeEl = pre.querySelector('code');
+            if (!codeEl) return;
+
+            // Detect language from class
+            var language = 'code';
+            var classList = codeEl.className || '';
+            var langMatch = classList.match(/language-(\w+)/);
+            if (langMatch) {
+                language = langMatch[1];
+            }
+
+            // Create header
+            var header = document.createElement('div');
+            header.className = 'code-block-header';
+
+            var langLabel = document.createElement('span');
+            langLabel.className = 'code-block-language';
+            langLabel.textContent = language;
+            header.appendChild(langLabel);
+
+            var copyBtn = document.createElement('button');
+            copyBtn.className = 'code-copy-btn';
+            copyBtn.innerHTML = '\u2398 Copy';
+            copyBtn.onclick = function(e) {
+                e.stopPropagation();
+                var text = codeEl.textContent || codeEl.innerText || '';
+                copyToClipboard(text, copyBtn);
+            };
+            header.appendChild(copyBtn);
+
+            pre.insertBefore(header, pre.firstChild);
+        });
+    }
+
+    function copyToClipboard(text, buttonEl) {
+        // WebView lacks a secure context, so navigator.clipboard never works.
+        // Always use the Java bridge which copies via JavaFX Clipboard API.
+        if (window.alinaBrowserBridge && window.alinaBrowserBridge.handleCopyText) {
+            window.alinaBrowserBridge.handleCopyText(text);
+            showCopiedFeedback(buttonEl);
+        }
+    }
+
+    function showCopiedFeedback(buttonEl) {
+        if (!buttonEl) return;
+        buttonEl.classList.add('copied');
+        setTimeout(function() {
+            buttonEl.classList.remove('copied');
+        }, 1200);
+    }
+
+    // ── Message action buttons ──────────────────────
+    function addMessageActions(messageDiv) {
+        if (!messageDiv || messageDiv.querySelector('.message-actions')) return;
+        if (messageDiv.dataset && messageDiv.dataset.transient === 'true') return;
+
+        var actions = document.createElement('div');
+        actions.className = 'message-actions';
+
+        var copyBtn = document.createElement('button');
+        copyBtn.className = 'message-action-btn';
+        copyBtn.innerHTML = '\u2398';
+        copyBtn.title = 'Copy message';
+        copyBtn.onclick = function(e) {
+            e.stopPropagation();
+            // Get text content, excluding action buttons
+            var clone = messageDiv.cloneNode(true);
+            var actionsClone = clone.querySelector('.message-actions');
+            if (actionsClone) actionsClone.remove();
+            var footerClone = clone.querySelector('.message-footer');
+            if (footerClone) footerClone.remove();
+            var text = clone.textContent || clone.innerText || '';
+            copyToClipboard(text.trim(), copyBtn);
+        };
+        actions.appendChild(copyBtn);
+
+        messageDiv.appendChild(actions);
+    }
+
+    // ── Core chat functions ─────────────────────────
+
     function addHtmlContent(htmlContent, messageType, notificationStyle, commandFontFamily, commandGlyph, commandName, commandPrompt) {
+        removeWelcomeScreen();
+
         var div = document.createElement('div');
         div.className = 'chat-message ' + messageType + ' ' + notificationStyle;
         if (commandGlyph && commandFontFamily) {
@@ -35,11 +198,17 @@
 
         var chatContainer = document.getElementById('chat-container');
         chatContainer.appendChild(div);
+
+        // Enhance code blocks and add action buttons
+        enhanceCodeBlocks(div);
+        addMessageActions(div);
+
         // Force synchronous reflow to fix WebKit border rendering bug
         void div.offsetHeight;
     }
 
     function showLoader() {
+        removeWelcomeScreen();
         document.getElementById('loader').classList.add('active');
         document.getElementById('loader').classList.remove('user-message');
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
@@ -81,7 +250,7 @@
             var summaryText = document.createElement('span');
             summaryText.className = 'activity-summary-text';
             summaryText.id = 'assistant-activity-summary-text';
-            summaryText.textContent = 'Tools · ' + stripActivityPrefix(label);
+            summaryText.textContent = 'Tools \u00b7 ' + stripActivityPrefix(label);
 
             var summaryBadge = document.createElement('span');
             summaryBadge.className = 'activity-summary-badge';
@@ -92,7 +261,7 @@
             toggleButton.className = 'activity-toggle';
             toggleButton.id = 'assistant-activity-toggle';
             toggleButton.type = 'button';
-            toggleButton.textContent = '▸';
+            toggleButton.textContent = '\u25b8';
             toggleButton.setAttribute('aria-label', 'Show details');
             toggleButton.onclick = function() {
                 var shell = this.parentElement ? this.parentElement.parentElement : null;
@@ -136,7 +305,7 @@
             lastEntry.dataset.count = String(count);
             var nameEl = lastEntry.querySelector('.activity-entry-name');
             if (nameEl) {
-                nameEl.textContent = shortLabel + ' ×' + count;
+                nameEl.textContent = shortLabel + ' \u00d7' + count;
             }
             if (detail && detail.trim()) {
                 var detailEl = lastEntry.querySelector('.activity-entry-detail');
@@ -216,9 +385,9 @@
         var safeCount = Number.isNaN(parsedCount) ? 0 : parsedCount;
         var shortLabel = stripActivityPrefix(lastLabel);
         if (safeCount <= 1) {
-            return 'Tools · ' + shortLabel;
+            return 'Tools \u00b7 ' + shortLabel;
         }
-        return 'Tools · latest: ' + shortLabel;
+        return 'Tools \u00b7 latest: ' + shortLabel;
     }
 
     function toggleAssistantActivity() {
@@ -235,12 +404,12 @@
         if (expanded) {
             body.classList.remove('open');
             activity.dataset.expanded = 'false';
-            toggle.textContent = '▸';
+            toggle.textContent = '\u25b8';
             toggle.setAttribute('aria-label', 'Show details');
         } else {
             body.classList.add('open');
             activity.dataset.expanded = 'true';
-            toggle.textContent = '▾';
+            toggle.textContent = '\u25be';
             toggle.setAttribute('aria-label', 'Hide details');
         }
     }
@@ -410,7 +579,7 @@
 
         var chevron = document.createElement('span');
         chevron.className = 'assistant-process-chevron';
-        chevron.textContent = '▸';
+        chevron.textContent = '\u25b8';
 
         toggle.appendChild(summary);
         toggle.appendChild(chevron);
@@ -446,10 +615,10 @@
             var expanded = body.classList.contains('open');
             if (expanded) {
                 body.classList.remove('open');
-                chevron.textContent = '▸';
+                chevron.textContent = '\u25b8';
             } else {
                 body.classList.add('open');
-                chevron.textContent = '▾';
+                chevron.textContent = '\u25be';
             }
         };
 
@@ -563,7 +732,10 @@
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
+    // ── Streaming messages ──────────────────────────
+
     function startStreamingAssistantMessage() {
+        removeWelcomeScreen();
         var chatContainer = document.getElementById('chat-container');
         var streamingDiv = null;
 
@@ -604,6 +776,8 @@
         if (streamingDiv) {
             // Update with processed HTML content in real-time
             streamingDiv.innerHTML = htmlContent;
+            // Enhance code blocks in real-time
+            enhanceCodeBlocks(streamingDiv);
             // Force synchronous reflow to fix WebKit border rendering bug
             void streamingDiv.offsetHeight;
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
@@ -618,6 +792,9 @@
             // Mark this element so attachMessageFooter can find it even if
             // new notification messages are appended before the footer arrives
             streamingDiv.dataset.awaitingFooter = 'true';
+            // Enhance code blocks and add message actions
+            enhanceCodeBlocks(streamingDiv);
+            addMessageActions(streamingDiv);
             // Force synchronous reflow to fix WebKit border rendering bug
             void streamingDiv.offsetHeight;
             // Scroll to bottom one final time
@@ -632,9 +809,11 @@
             streamingDiv.innerHTML = processedHtml;
             // Remove the streaming ID so it becomes a regular message
             streamingDiv.removeAttribute('id');
-            // Mark this element so attachMessageFooter can find it even if
-            // new notification messages are appended before the footer arrives
+            // Mark this element so attachMessageFooter can find it
             streamingDiv.dataset.awaitingFooter = 'true';
+            // Enhance code blocks and add message actions
+            enhanceCodeBlocks(streamingDiv);
+            addMessageActions(streamingDiv);
             // Force synchronous reflow to fix WebKit border rendering bug
             void streamingDiv.offsetHeight;
             // Scroll to bottom one final time
@@ -650,9 +829,6 @@
         var chatContainer = document.getElementById('chat-container');
         if (!chatContainer || !chatContainer.children) return;
 
-        // Prefer the element that was explicitly marked as the message awaiting a footer.
-        // Walk backwards to find the LAST element with data-awaiting-footer, so that
-        // when multiple responses are streamed sequentially each gets the right footer.
         var target = null;
         for (var i = chatContainer.children.length - 1; i >= 0; i--) {
             var node = chatContainer.children[i];
@@ -664,7 +840,6 @@
         }
 
         if (!target) {
-            // Fallback: walk backwards and find the last non-transient assistant message
             for (var j = chatContainer.children.length - 1; j >= 0; j--) {
                 var fallbackNode = chatContainer.children[j];
                 if (!fallbackNode || !fallbackNode.classList) continue;
@@ -679,7 +854,6 @@
 
         if (!target) return;
 
-        // Clear the awaiting-footer marker now that we are attaching it
         delete target.dataset.awaitingFooter;
 
         var existing = target.querySelector('.message-footer');
@@ -689,6 +863,8 @@
         footer.textContent = footerText;
         target.appendChild(footer);
     }
+
+    // ── Regeneration ────────────────────────────────
 
     function prepareRegenerationTarget() {
         var chatContainer = document.getElementById('chat-container');
@@ -744,6 +920,8 @@
         }
     }
 
+    // ── Todo list ───────────────────────────────────
+
     function showTodoList(jsonString, title) {
         var items;
         try {
@@ -760,7 +938,6 @@
             return;
         }
 
-        // Store latest data for finalize
         container.dataset.todoJson = jsonString;
         container.dataset.todoTitle = title;
 
@@ -785,19 +962,16 @@
 
         var html = '';
 
-        // Header with title and progress
         html += '<div class="todo-header">';
         html += '<div class="todo-title">' + escapeHtmlTodo(title) + '</div>';
         html += '<div class="todo-progress-info">' + completed + '/' + total + '</div>';
         html += '</div>';
 
-        // Progress bar
         var percent = total > 0 ? Math.round((completed / total) * 100) : 0;
         html += '<div class="todo-progress-bar-track">';
         html += '<div class="todo-progress-bar-fill" style="width:' + percent + '%"></div>';
         html += '</div>';
 
-        // Items
         html += '<div class="todo-items">';
         for (var j = 0; j < items.length; j++) {
             var item = items[j];
@@ -844,12 +1018,10 @@
         }
         var jsonString = container.dataset.todoJson;
         var title = container.dataset.todoTitle || 'Todo';
-        // Remove the sticky card
         card.remove();
         delete container.dataset.todoJson;
         delete container.dataset.todoTitle;
 
-        // Parse the items to build the collapsed panel
         var items;
         try {
             items = JSON.parse(jsonString);
@@ -860,7 +1032,6 @@
             return;
         }
 
-        // Attach as collapsible panel to the last assistant message
         var chatContainer = document.getElementById('chat-container');
         if (!chatContainer || !chatContainer.children) {
             return;
@@ -884,11 +1055,9 @@
             return;
         }
 
-        // Remove old todo panel if exists on this message
         var existing = target.querySelector('.todo-finalized');
         if (existing) existing.remove();
 
-        // Build collapsible panel
         var completed = 0;
         for (var k = 0; k < items.length; k++) {
             if (items[k].status === 'completed') completed++;
@@ -941,9 +1110,7 @@
         }
     }
 
-    // Intercept all link clicks via event delegation so that dynamically added
-    // links (e.g. during streaming) are always caught and opened in the system
-    // browser instead of navigating the WebView.
+    // ── Link interception ───────────────────────────
     document.addEventListener('click', function(event) {
         var target = event.target;
         while (target && target !== document) {
@@ -952,7 +1119,6 @@
                 if (href && (href.indexOf('http://') === 0 || href.indexOf('https://') === 0)) {
                     event.preventDefault();
                     event.stopPropagation();
-                    // Notify Java side via the bridge or alert fallback
                     if (window.alinaBrowserBridge && window.alinaBrowserBridge.handleOpenUrl) {
                         window.alinaBrowserBridge.handleOpenUrl(href);
                     } else if (window.alert) {
@@ -964,3 +1130,5 @@
             target = target.parentElement;
         }
     }, true);
+
+

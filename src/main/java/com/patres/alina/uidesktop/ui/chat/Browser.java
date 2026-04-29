@@ -58,6 +58,8 @@ public class Browser extends StackPane {
     );
     private final Map<String, CommandIconData> commandIconCache = new HashMap<>();
     private PermissionActionHandler permissionActionHandler;
+    private SuggestionClickHandler suggestionClickHandler;
+    private BrowserBridge browserBridge;
     private volatile boolean webViewReady = false;
     private final java.util.List<Runnable> pendingActions = new java.util.ArrayList<>();
     private final Consumer<ThemeEvent> themeEventConsumer = ignored -> updateCssColors();
@@ -94,6 +96,10 @@ public class Browser extends StackPane {
 
     public void setPermissionActionHandler(final PermissionActionHandler permissionActionHandler) {
         this.permissionActionHandler = permissionActionHandler;
+    }
+
+    public void setSuggestionClickHandler(final SuggestionClickHandler suggestionClickHandler) {
+        this.suggestionClickHandler = suggestionClickHandler;
     }
 
     /**
@@ -493,6 +499,13 @@ public class Browser extends StackPane {
         safeJavaScriptCall("discardRegenerationBackup");
     }
 
+    /**
+     * Updates the welcome screen subtitle text with a localized string.
+     */
+    public void updateWelcomeSubtitle(final String text) {
+        safeJavaScriptCall("updateWelcomeSubtitle", text);
+    }
+
     private String initHtml() {
         final String iconFontCss = buildIconFontFaceCss();
         return CHAT_HTML_TEMPLATE.formatted(iconFontCss, getCssStyles(), getJavaScript());
@@ -502,7 +515,8 @@ public class Browser extends StackPane {
     private void attachJavaBridge() {
         try {
             final var window = (netscape.javascript.JSObject) webEngine.executeScript("window");
-            window.setMember("alinaBrowserBridge", new BrowserBridge());
+            browserBridge = new BrowserBridge();
+            window.setMember("alinaBrowserBridge", browserBridge);
         } catch (final Exception e) {
             logger.warn("Failed to attach JavaScript bridge", e);
         }
@@ -647,6 +661,29 @@ public class Browser extends StackPane {
         public void handleOpenUrl(final String url) {
             openWebpage(url);
         }
+
+        public void handleCopyText(final String text) {
+            Platform.runLater(() -> {
+                try {
+                    final var clipboard = javafx.scene.input.Clipboard.getSystemClipboard();
+                    final var content = new javafx.scene.input.ClipboardContent();
+                    content.putString(text);
+                    clipboard.setContent(content);
+                } catch (final Exception e) {
+                    logger.warn("Failed to copy text to clipboard", e);
+                }
+            });
+        }
+
+        public void handleSuggestionClick(final String text) {
+            if (suggestionClickHandler != null) {
+                Platform.runLater(() -> suggestionClickHandler.onSuggestionClick(text));
+            }
+        }
+    }
+
+    public interface SuggestionClickHandler {
+        void onSuggestionClick(String text);
     }
 
 }

@@ -213,11 +213,15 @@ public class ChatWindow extends BorderPane {
     public void initialize() {
         statusPrompt = new ChatStatusPrompt(chatTextArea);
         browser = new Browser();
+        browser.setSuggestionClickHandler(this::handleSuggestionClick);
         chatAnswersPane.getChildren().add(browser);
 
         actionNodes = List.of(sendButton);
 
-        browser.whenReady(() -> messages.forEach(this::displayMessage));
+        browser.whenReady(() -> {
+            messages.forEach(this::displayMessage);
+            localizeWelcomeScreen();
+        });
         boolean hasAnyUserMessages = messages.stream().anyMatch(m -> m.sender() == ChatMessageRole.USER);
 
         streamingController = new ChatStreamingController(
@@ -727,6 +731,16 @@ public class ChatWindow extends BorderPane {
             });
         }
 
+    }
+
+    private void handleSuggestionClick(final String text) {
+        chatTextArea.setText(text);
+        chatTextArea.positionCaret(text.length());
+        chatTextArea.requestFocus();
+    }
+
+    private void localizeWelcomeScreen() {
+        browser.updateWelcomeSubtitle(LanguageManager.getLanguageString("welcome.subtitle"));
     }
 
     private record PreparedMessage(

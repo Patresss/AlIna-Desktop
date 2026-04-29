@@ -124,6 +124,7 @@ class OpenCodeConfigurationServiceTest {
                 true,
                 WorkspaceSettings.DEFAULT_TASKS_FILE,
                 WorkspaceSettings.DEFAULT_DASHBOARD_TASK_LIMIT,
+                "",
                 WorkspaceSettings.DEFAULT_OPENCODE_HOSTNAME,
                 WorkspaceSettings.DEFAULT_OPENCODE_PORT,
                 workingDirectory.toString(),
