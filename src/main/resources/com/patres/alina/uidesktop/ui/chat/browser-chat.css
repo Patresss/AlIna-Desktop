@@ -120,8 +120,8 @@ tr:last-child td {
 
 .chat-message.user {
     margin-left: auto;
-    border-left: none;
-    border-right: 3px solid var(--color-accent-fg);
+    border-left: 3px solid var(--color-accent-fg);
+    border-right: none;
     background: linear-gradient(135deg, var(--color-bg-subtle) 0%, var(--color-bg-default) 100%);
 }
 
