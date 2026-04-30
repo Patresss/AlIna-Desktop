@@ -1095,9 +1095,8 @@ blockquote {
 
 .welcome-logo-canvas {
     display: block;
-    width: 260px;
-    height: 80px;
-    /* crisp pixels — no blurring */
+    width: 420px;
+    height: 100px;
     image-rendering: crisp-edges;
 }
 

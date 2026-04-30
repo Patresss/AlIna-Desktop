@@ -62,7 +62,7 @@
 
         const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight).data;
         const pixels = [];
-        const step = 2; // sample every 2px for high density
+        const step = 2;
         for (let y = 0; y < canvasHeight; y += step) {
             for (let x = 0; x < canvasWidth; x += step) {
                 const alpha = imageData[(y * canvasWidth + x) * 4 + 3];
@@ -127,11 +127,11 @@
                 x:  p.x + Math.cos(angle) * dist,  // start scattered
                 y:  p.y + Math.sin(angle) * dist,
                 color: charColorFor(p.x),
-                r: 1.0 + Math.random() * 0.8,      // radius
+                r: 0.4 + Math.random() * 0.4,      // smaller dots
                 // drift orbit params
                 orbitAngle: Math.random() * Math.PI * 2,
-                orbitSpeed: (Math.random() - 0.5) * 0.022,
-                orbitRadius: 0.6 + Math.random() * 1.2,
+                orbitSpeed: (Math.random() < 0.5 ? 1 : -1) * (0.015 + Math.random() * 0.025),
+                orbitRadius: 1.0 + Math.random() * 1.5,
                 // ease-in progress [0..1]
                 progress: 0,
                 delay: Math.random() * 0.4,        // staggered arrival
