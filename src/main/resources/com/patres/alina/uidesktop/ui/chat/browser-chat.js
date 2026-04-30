@@ -119,17 +119,21 @@
 
         // Build particles
         const particles = pixels.map(p => {
+            // Start from random position outside canvas — full circle using random offset
+            const margin = 80 + Math.random() * 150;
+            const sx = p.x + (Math.random() - 0.5) * (W + margin * 2) * (1.5 + Math.random());
+            const sy = p.y + (Math.random() - 0.5) * (H + margin * 2) * (1.5 + Math.random());
             return {
-                tx: p.x,   // target x
-                ty: p.y,   // target y
-                x:  Math.random() * W,   // start scattered across canvas
-                y:  Math.random() * H,
+                tx: p.x,
+                ty: p.y,
+                x:  sx,
+                y:  sy,
                 color: charColorFor(p.x),
                 r: 0.3 + Math.random() * 0.3,      // small dots
                 // drift orbit params
                 orbitAngle: Math.random() * Math.PI * 2,
                 orbitSpeed: (Math.random() < 0.5 ? 1 : -1) * (0.015 + Math.random() * 0.025),
-                orbitRadius: 1.0 + Math.random() * 1.5,
+                orbitRadius: 0.8 + Math.random() * 1.2,
                 // ease-in progress [0..1]
                 progress: 0,
                 delay: Math.random() * 0.5,        // staggered arrival
