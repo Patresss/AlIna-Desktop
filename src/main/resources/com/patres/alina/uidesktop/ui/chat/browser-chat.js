@@ -62,7 +62,7 @@
 
         const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight).data;
         const pixels = [];
-        const step = 2;
+        const step = 1;
         for (let y = 0; y < canvasHeight; y += step) {
             for (let x = 0; x < canvasWidth; x += step) {
                 const alpha = imageData[(y * canvasWidth + x) * 4 + 3];
@@ -119,30 +119,33 @@
 
         // Build particles
         const particles = pixels.map(p => {
-            const angle = Math.random() * Math.PI * 2;
-            const dist  = 200 + Math.random() * 300;
             return {
                 tx: p.x,   // target x
                 ty: p.y,   // target y
-                x:  p.x + Math.cos(angle) * dist,  // start scattered
-                y:  p.y + Math.sin(angle) * dist,
+                x:  Math.random() * W,   // start scattered across canvas
+                y:  Math.random() * H,
                 color: charColorFor(p.x),
-                r: 0.4 + Math.random() * 0.4,      // smaller dots
+                r: 0.3 + Math.random() * 0.3,      // small dots
                 // drift orbit params
                 orbitAngle: Math.random() * Math.PI * 2,
                 orbitSpeed: (Math.random() < 0.5 ? 1 : -1) * (0.015 + Math.random() * 0.025),
                 orbitRadius: 1.0 + Math.random() * 1.5,
                 // ease-in progress [0..1]
                 progress: 0,
-                delay: Math.random() * 0.4,        // staggered arrival
+                delay: Math.random() * 0.5,        // staggered arrival
             };
         });
 
         let startTime = null;
-        const GATHER_DURATION = 900; // ms for particles to arrive
+        let firstFrame = true;
+        const GATHER_DURATION = 1000; // ms for particles to arrive
 
         function draw(ts) {
-            if (!startTime) startTime = ts;
+            // Reset startTime on first actual frame so build-time doesn't count
+            if (firstFrame) {
+                startTime = ts;
+                firstFrame = false;
+            }
             const elapsed = ts - startTime;
 
             ctx.clearRect(0, 0, W, H);
@@ -164,11 +167,10 @@
                 const ox = Math.cos(p.orbitAngle) * p.orbitRadius * orbitFactor;
                 const oy = Math.sin(p.orbitAngle) * p.orbitRadius * orbitFactor;
 
-                ctx.beginPath();
-                ctx.arc(cx + ox, cy + oy, p.r, 0, Math.PI * 2);
                 ctx.fillStyle = p.color;
-                ctx.globalAlpha = 0.15 + ease * 0.85;
-                ctx.fill();
+                ctx.globalAlpha = 0.7;
+                const s = p.r * 2;
+                ctx.fillRect(cx + ox - p.r, cy + oy - p.r, s, s);
             }
             ctx.globalAlpha = 1;
 
