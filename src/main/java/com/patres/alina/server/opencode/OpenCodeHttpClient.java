@@ -74,6 +74,16 @@ public class OpenCodeHttpClient {
         return response.body();
     }
 
+    public void delete(final String path) throws Exception {
+        final HttpRequest request = HttpRequest.newBuilder(uri(path))
+                .DELETE()
+                .build();
+        final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IllegalStateException("OpenCode DELETE failed: HTTP " + response.statusCode() + " " + response.body());
+        }
+    }
+
     public boolean isHealthy() {
         try {
             final HttpRequest request = HttpRequest.newBuilder(uri("/global/health")).GET().build();

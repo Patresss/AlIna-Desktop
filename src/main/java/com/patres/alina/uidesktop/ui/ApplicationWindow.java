@@ -1,6 +1,7 @@
 package com.patres.alina.uidesktop.ui;
 
 import com.patres.alina.common.event.bus.DefaultEventBus;
+import com.patres.alina.common.event.ChatThreadTitleUpdatedEvent;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.uidesktop.Resources;
@@ -167,6 +168,15 @@ public class ApplicationWindow extends BorderPane {
         DefaultEventBus.getInstance().subscribe(
                 com.patres.alina.common.event.WorkspaceSettingsUpdatedEvent.class,
                 event -> Platform.runLater(this::refreshIntegrationWidgets)
+        );
+
+        // Update tab name and thread history when OpenCode generates a session title
+        DefaultEventBus.getInstance().subscribe(
+                ChatThreadTitleUpdatedEvent.class,
+                event -> {
+                    chatTabBar.updateTabName(event.getThreadId(), event.getNewTitle());
+                    BackendApi.renameChatThread(new com.patres.alina.common.thread.ChatThreadRenameRequest(event.getThreadId(), event.getNewTitle()));
+                }
         );
 
         // Initialize scheduler task executor

@@ -30,6 +30,16 @@ public class OpenCodeSessionRegistry {
         return load().get(threadId);
     }
 
+    /** Reverse lookup: given an OpenCode sessionId, return the AlIna threadId. */
+    public synchronized String getThreadId(final String sessionId) {
+        if (sessionId == null) return null;
+        return load().entrySet().stream()
+                .filter(e -> sessionId.equals(e.getValue()))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+    }
+
     public synchronized void put(final String threadId, final String sessionId) {
         final Map<String, String> mapping = load();
         mapping.put(threadId, sessionId);
@@ -39,6 +49,15 @@ public class OpenCodeSessionRegistry {
     public synchronized void remove(final String threadId) {
         final Map<String, String> mapping = load();
         if (mapping.remove(threadId) != null) {
+            save(mapping);
+        }
+    }
+
+    public synchronized void rename(final String oldThreadId, final String newThreadId) {
+        final Map<String, String> mapping = load();
+        final String sessionId = mapping.remove(oldThreadId);
+        if (sessionId != null) {
+            mapping.put(newThreadId, sessionId);
             save(mapping);
         }
     }

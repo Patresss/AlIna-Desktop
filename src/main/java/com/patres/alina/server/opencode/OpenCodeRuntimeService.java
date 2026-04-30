@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
+import com.patres.alina.common.event.ChatThreadTitleUpdatedEvent;
 import com.patres.alina.common.event.Event;
 import com.patres.alina.common.message.TodoItem;
 import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
@@ -248,6 +249,13 @@ public class OpenCodeRuntimeService {
             return new SessionBootstrap(existing, false);
         }
 
+        // If the chatThreadId itself is already an OpenCode sessionId (loaded from history),
+        // register it and reuse it instead of creating a new session.
+        if (chatThreadId != null && chatThreadId.startsWith("ses_")) {
+            sessionRegistry.put(chatThreadId, chatThreadId);
+            return new SessionBootstrap(chatThreadId, false);
+        }
+
         final ObjectNode body = objectMapper.createObjectNode();
         // Leave title empty so OpenCode's built-in title agent can generate it automatically
         if (title != null && !title.isBlank()) {
@@ -332,6 +340,7 @@ public class OpenCodeRuntimeService {
                 case "permission.asked" -> handlePermissionAsked(properties);
                 case "session.error" -> handleSessionError(stream, properties, sink);
                 case "session.idle" -> handleSessionIdle(stream, properties);
+                case "session.updated" -> handleSessionUpdated(properties);
                 default -> {
                 }
             }
@@ -544,6 +553,19 @@ public class OpenCodeRuntimeService {
         // with another assistant message in the same session.
     }
 
+    private void handleSessionUpdated(final JsonNode properties) {
+        final String sessionId = properties.path("session").path("id").asText(null);
+        final String newTitle = properties.path("session").path("title").asText(null);
+        if (sessionId == null || sessionId.isBlank() || newTitle == null || newTitle.isBlank()) {
+            return;
+        }
+        final String threadId = threadIdForSession(sessionId);
+        if (threadId == null) {
+            return;
+        }
+        Event.publish(new ChatThreadTitleUpdatedEvent(threadId, newTitle));
+    }
+
     private void publishActivity(final String threadId, final String toolName, final JsonNode state) {
         final String title = state.path("title").asText(toolName);
         final ChatMessageStreamEvent.ActivityType activityType = "skill".equalsIgnoreCase(toolName)
@@ -680,11 +702,17 @@ public class OpenCodeRuntimeService {
     }
 
     private String threadIdForSession(final String sessionId) {
-        return activeStreams.values().stream()
+        // First check active streams (fast path during streaming)
+        final String fromStream = activeStreams.values().stream()
                 .filter(stream -> sessionId.equals(stream.sessionId))
                 .map(stream -> stream.threadId)
                 .findFirst()
                 .orElse(null);
+        if (fromStream != null) {
+            return fromStream;
+        }
+        // Fallback: reverse lookup in registry (handles title updates arriving after stream ends)
+        return sessionRegistry.getThreadId(sessionId);
     }
 
     private boolean matchesSession(final ActiveStream stream, final String sessionId) {
