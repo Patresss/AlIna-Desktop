@@ -63,7 +63,7 @@
         chatContainer.appendChild(welcome);
     }
 
-    function populateWelcomeData(greetingText, commandsJson, commandsLabel) {
+    function populateWelcomeData(greetingText, commandsJson, commandsLabel, recentJson, tipPrefix, tipText, recentLabel) {
         const greetingEl = $('welcome-greeting');
         if (greetingEl && greetingText) {
             greetingEl.textContent = greetingText;
@@ -73,11 +73,50 @@
         if (!sections) return;
         sections.innerHTML = '';
 
+        // Tip of the day
+        if (tipText) {
+            sections.appendChild(
+                h('div', { className: 'welcome-tip' },
+                    h('span', { className: 'welcome-tip-star' }, '\u2736'),
+                    h('span', { className: 'welcome-tip-prefix' }, tipPrefix || 'Tip:'),
+                    h('span', {}, tipText)
+                )
+            );
+        }
+
+        // Recent conversations
+        let recent = [];
+        try { recent = JSON.parse(recentJson || '[]'); } catch { /* ignore */ }
+        if (recent.length > 0) {
+            const recentSection = h('div', { className: 'welcome-section' });
+            recentSection.appendChild(h('div', { className: 'welcome-section-label' }, recentLabel || 'Recent'));
+            const recentRow = h('div', { className: 'welcome-chips welcome-chips-recent' });
+            for (const conv of recent) {
+                const chip = h('button', {
+                    type: 'button',
+                    className: 'welcome-chip welcome-chip-recent',
+                    onclick: () => {
+                        if (window.alinaBrowserBridge?.handleOpenThread) {
+                            window.alinaBrowserBridge.handleOpenThread(conv.id);
+                        }
+                    }
+                },
+                    h('span', { className: 'welcome-chip-recent-icon' }, '↩'),
+                    h('span', { className: 'welcome-chip-name' }, conv.name)
+                );
+                recentRow.appendChild(chip);
+            }
+            recentSection.appendChild(recentRow);
+            sections.appendChild(recentSection);
+        }
+
         let commands = [];
         try { commands = JSON.parse(commandsJson); } catch { /* ignore */ }
 
-        // Commands as chips (no label)
+        // Commands as chips with label
         if (commands.length > 0) {
+            const cmdSection = h('div', { className: 'welcome-section' });
+            cmdSection.appendChild(h('div', { className: 'welcome-section-label' }, commandsLabel || 'Commands'));
             const chipRow = h('div', { className: 'welcome-chips' });
             for (const cmd of commands) {
                 const chip = h('button', {
@@ -96,7 +135,8 @@
                 }
                 chipRow.appendChild(chip);
             }
-            sections.appendChild(chipRow);
+            cmdSection.appendChild(chipRow);
+            sections.appendChild(cmdSection);
         }
 
         // Fade in sections

@@ -144,6 +144,9 @@ public class OpenCodeSessionService {
             return Optional.empty();
         }
         final String title = node.path("title").asText(id);
+        if (title.startsWith("_")) {
+            return Optional.empty();
+        }
         final long createdMs = node.path("time").path("created").asLong(0);
         final long updatedMs = node.path("time").path("updated").asLong(0);
         final LocalDateTime createdAt = createdMs > 0 ? toLocalDateTime(createdMs) : null;

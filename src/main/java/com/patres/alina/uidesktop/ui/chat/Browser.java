@@ -451,16 +451,16 @@ public class Browser extends StackPane {
     }
 
     /**
-     * Populates the welcome screen with greeting and commands data.
-     *
-     * @param greeting      Greeting text (e.g. "Good morning")
-     * @param commandsJson  JSON array of commands: [{id, name, description}]
-     * @param commandsLabel Localized label for the "Commands" section
+     * Populates the welcome screen with greeting, commands, recent threads and tip data.
      */
     public void populateWelcomeData(final String greeting,
                                      final String commandsJson,
-                                     final String commandsLabel) {
-        safeJavaScriptCall("populateWelcomeData", greeting, commandsJson, commandsLabel);
+                                     final String commandsLabel,
+                                     final String recentJson,
+                                     final String tipPrefix,
+                                     final String tipText,
+                                     final String recentLabel) {
+        safeJavaScriptCall("populateWelcomeData", greeting, commandsJson, commandsLabel, recentJson, tipPrefix, tipText, recentLabel);
     }
 
     private String initHtml() {
@@ -626,6 +626,12 @@ public class Browser extends StackPane {
                 Platform.runLater(() -> welcomeActionHandler.onSelectCommand(commandId));
             }
         }
+
+        public void handleOpenThread(final String threadId) {
+            if (welcomeActionHandler != null) {
+                Platform.runLater(() -> welcomeActionHandler.onOpenThread(threadId));
+            }
+        }
     }
 
     public interface SuggestionClickHandler {
@@ -634,6 +640,7 @@ public class Browser extends StackPane {
 
     public interface WelcomeActionHandler {
         void onSelectCommand(String commandId);
+        void onOpenThread(String threadId);
     }
 
 }

@@ -80,6 +80,7 @@ public class ChatWindow extends BorderPane {
     private ChatInputMode inputMode = ChatInputMode.CHAT;
     private volatile String selectedModel;
     private boolean settingFromHistory = false;
+    private final java.util.Map<String, ChatThread> recentThreadCache = new java.util.HashMap<>();
 
     @FXML
     private StackPane chatAnswersPane;
@@ -230,22 +231,55 @@ public class ChatWindow extends BorderPane {
         statusPrompt = new ChatStatusPrompt(chatTextArea);
         browser = new Browser();
         browser.setSuggestionClickHandler(this::handleSuggestionClick);
-        browser.setWelcomeActionHandler(commandId -> {
-            try {
-                final Command command = BackendApi.getCommand(commandId);
-                if (command != null) {
-                    final var item = new CardListItem(
-                            command.id(),
-                            command.name(),
-                            command.description(),
-                            command.icon(),
-                            command.state()
-                    );
-                    setCurrentCommand(item);
-                    chatTextArea.requestFocus();
+        browser.setWelcomeActionHandler(new Browser.WelcomeActionHandler() {
+            @Override
+            public void onSelectCommand(final String commandId) {
+                try {
+                    final Command command = BackendApi.getCommand(commandId);
+                    if (command != null) {
+                        final var item = new CardListItem(
+                                command.id(),
+                                command.name(),
+                                command.description(),
+                                command.icon(),
+                                command.state()
+                        );
+                        setCurrentCommand(item);
+                        chatTextArea.requestFocus();
+                    }
+                } catch (final Exception e) {
+                    logger.warn("Cannot load command from welcome screen: {}", commandId, e);
                 }
-            } catch (final Exception e) {
-                logger.warn("Cannot load command from welcome screen: {}", commandId, e);
+            }
+
+            @Override
+            public void onOpenThread(final String threadId) {
+                // Use cached thread to avoid registry lookup issues, load in current tab
+                final ChatThread cached = recentThreadCache.get(threadId);
+                if (cached != null) {
+                    Thread.startVirtualThread(() -> {
+                        try {
+                            final var msgs = BackendApi.getMessagesByThreadId(threadId);
+                            FxThreadRunner.run(() -> applicationWindow.loadChatThreadInActiveTab(cached, msgs));
+                        } catch (final Exception e) {
+                            logger.warn("Cannot load messages for thread from welcome screen: {}", threadId, e);
+                            FxThreadRunner.run(() -> applicationWindow.loadChatThreadInActiveTab(cached, List.of()));
+                        }
+                    });
+                    return;
+                }
+                // Fallback: fetch via API on virtual thread
+                Thread.startVirtualThread(() -> {
+                    try {
+                        final var optThread = BackendApi.getChatThread(threadId);
+                        optThread.ifPresent(thread -> {
+                            final var msgs = BackendApi.getMessagesByThreadId(threadId);
+                            FxThreadRunner.run(() -> applicationWindow.loadChatThreadInActiveTab(thread, msgs));
+                        });
+                    } catch (final Exception e) {
+                        logger.warn("Cannot open thread from welcome screen: {}", threadId, e);
+                    }
+                });
             }
         });
         chatAnswersPane.getChildren().add(browser);
@@ -806,14 +840,26 @@ public class ChatWindow extends BorderPane {
             try {
                 final String greeting = buildGreeting();
                 final String commandsLabel = LanguageManager.getLanguageString("welcome.commands");
+                final String recentLabel = LanguageManager.getLanguageString("welcome.recent");
+                final String tipPrefix = LanguageManager.getLanguageString("welcome.tip.prefix");
 
                 final List<Command> commands = BackendApi.getEnabledCommands().stream()
                         .filter(c -> c.visibility().showInWelcomeScreen())
                         .toList();
                 final String commandsJson = buildCommandsJson(commands);
 
+                final List<ChatThread> allThreads = BackendApi.getChatThreads();
+                final String recentJson = buildRecentThreadsJson(allThreads, chatThread.id(), 3);
+
+                // Cache the recent threads so onOpenThread can use them without extra API calls
+                allThreads.stream()
+                        .filter(t -> !t.id().equals(chatThread.id()))
+                        .forEach(t -> recentThreadCache.put(t.id(), t));
+
+                final String tipText = WelcomeTips.getRandom();
+
                 FxThreadRunner.run(() ->
-                        browser.populateWelcomeData(greeting, commandsJson, commandsLabel)
+                        browser.populateWelcomeData(greeting, commandsJson, commandsLabel, recentJson, tipPrefix, tipText, recentLabel)
                 );
             } catch (final Exception e) {
                 logger.warn("Failed to populate welcome screen data", e);
@@ -830,6 +876,27 @@ public class ChatWindow extends BorderPane {
         } else {
             return LanguageManager.getLanguageString("welcome.greeting.evening");
         }
+    }
+
+    private static String buildRecentThreadsJson(final List<ChatThread> threads, final String currentThreadId, final int limit) {
+        final var sb = new StringBuilder("[");
+        int count = 0;
+        final List<ChatThread> sorted = threads.stream()
+                .filter(t -> !t.id().equals(currentThreadId))
+                .sorted(java.util.Comparator.comparing(
+                        t -> t.createdAt() != null ? t.createdAt() : java.time.LocalDateTime.MIN,
+                        java.util.Comparator.reverseOrder()))
+                .toList();
+        for (final ChatThread t : sorted) {
+            final String name = t.name() != null && !t.name().isBlank() ? t.name() : "…";
+            if (count > 0) sb.append(",");
+            sb.append("{\"id\":\"").append(escapeJson(t.id()))
+                    .append("\",\"name\":\"").append(escapeJson(name))
+                    .append("\"}");
+            count++;
+            if (count >= limit) break;
+        }
+        return sb.append("]").toString();
     }
 
     private static String buildCommandsJson(final List<Command> commands) {
