@@ -616,9 +616,6 @@ ChatThreadHistoryCard {
     -fx-background-color: -color-accent-subtle;
     -fx-background-radius: 12px;
     -fx-padding: 5px 8px;
-    -fx-border-color: transparent transparent transparent -color-accent-fg;
-    -fx-border-radius: 12px;
-    -fx-border-width: 0 0 0 2px;
 }
 
 .workspace-calendar-remaining {
