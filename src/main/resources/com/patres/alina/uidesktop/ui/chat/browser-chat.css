@@ -1104,6 +1104,10 @@ blockquote {
     color: var(--color-accent-fg);
 }
 
+.welcome-logo-subtle {
+    color: var(--color-fg-muted);
+}
+
 .welcome-greeting {
     font-size: 15px;
     font-weight: 500;

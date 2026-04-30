@@ -276,7 +276,6 @@ ChatThreadHistoryCard {
     -fx-font-size: 8px;
     -fx-font-weight: 700;
     -fx-letter-spacing: 0.18em;
-    -fx-opacity: 0.45;
 }
 
 /* ══════════════════════════════════════════════════
@@ -316,7 +315,7 @@ ChatThreadHistoryCard {
 
 /* ── Widget title ──────────────────────────── */
 .workspace-dashboard-title {
-    -fx-text-fill: -color-fg-muted;
+    -fx-text-fill: -color-fg-default;
     -fx-font-size: 10px;
     -fx-font-weight: 700;
     -fx-letter-spacing: 0.04em;
@@ -625,7 +624,7 @@ ChatThreadHistoryCard {
 .workspace-calendar-item-current {
     -fx-alignment: center-left;
     -fx-background-color: -color-accent-subtle;
-    -fx-background-radius: 12px;
+    -fx-background-radius: 6px;
     -fx-padding: 5px 8px;
 }
 

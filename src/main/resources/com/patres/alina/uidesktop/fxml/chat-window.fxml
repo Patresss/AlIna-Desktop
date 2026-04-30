@@ -31,13 +31,22 @@
                                     <String fx:value="flat" />
                                  </styleClass>
                               </Button>
-                              <Button fx:id="streamControlButton" alignment="CENTER" mnemonicParsing="false" onAction="#streamControlFromUi" text="Button">
-                                 <styleClass>
-                                    <String fx:value="button-circle" />
-                                    <String fx:value="flat" />
-                                 </styleClass>
-                              </Button>
-                           </children>
+                               <Button fx:id="streamControlButton" alignment="CENTER" mnemonicParsing="false" onAction="#streamControlFromUi" text="Button">
+                                  <styleClass>
+                                     <String fx:value="button-circle" />
+                                     <String fx:value="flat" />
+                                  </styleClass>
+                               </Button>
+                               <Button fx:id="clearChatButton" alignment="CENTER" mnemonicParsing="false" onAction="#clearChatFromUi" text="Button">
+                                  <graphic>
+                                     <FontIcon iconLiteral="mdal-cleaning_services" />
+                                  </graphic>
+                                  <styleClass>
+                                     <String fx:value="button-circle" />
+                                     <String fx:value="flat" />
+                                  </styleClass>
+                               </Button>
+                            </children>
                         </VBox>
                      </children>
                      <padding>

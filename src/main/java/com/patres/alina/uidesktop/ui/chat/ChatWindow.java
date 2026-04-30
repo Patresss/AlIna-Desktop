@@ -99,6 +99,9 @@ public class ChatWindow extends BorderPane {
     private Button streamControlButton;
 
     @FXML
+    private Button clearChatButton;
+
+    @FXML
     private TextArea chatTextArea;
 
     @FXML
@@ -546,6 +549,11 @@ public class ChatWindow extends BorderPane {
         if (streamingController != null) {
             streamingController.streamControlFromUi();
         }
+    }
+
+    @FXML
+    public void clearChatFromUi() {
+        applicationWindow.clearCurrentChatThread();
     }
 
     private String getCurrentCommandId() {

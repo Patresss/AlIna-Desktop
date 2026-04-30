@@ -45,9 +45,9 @@
         const header = h('div', { className: 'welcome-header' },
             h('div', { className: 'welcome-logo' },
                 h('span', { className: 'welcome-logo-accent' }, 'A'),
-                h('span', {}, 'l'),
+                h('span', { className: 'welcome-logo-subtle' }, 'l'),
                 h('span', { className: 'welcome-logo-accent' }, 'I'),
-                h('span', {}, 'na')
+                h('span', { className: 'welcome-logo-subtle' }, 'na')
             ),
             h('div', { className: 'welcome-subtitle', id: 'welcome-subtitle' },
                 'Type a message to start, or press ',
