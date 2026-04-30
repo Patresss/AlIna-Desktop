@@ -673,7 +673,8 @@ ChatThreadHistoryCard {
 .workspace-calendar-item-current:hover .workspace-calendar-ai-button,
 .workspace-task-item:hover .workspace-calendar-ai-button,
 .workspace-pr-item:hover .workspace-calendar-ai-button,
-.workspace-jira-item:hover .workspace-calendar-ai-button {
+.workspace-jira-item:hover .workspace-calendar-ai-button,
+.workspace-obsidian-item:hover .workspace-calendar-ai-button {
     -fx-opacity: 0.6;
 }
 
@@ -681,7 +682,8 @@ ChatThreadHistoryCard {
 .workspace-calendar-item-current:hover .workspace-calendar-ai-button:hover,
 .workspace-task-item:hover .workspace-calendar-ai-button:hover,
 .workspace-pr-item:hover .workspace-calendar-ai-button:hover,
-.workspace-jira-item:hover .workspace-calendar-ai-button:hover {
+.workspace-jira-item:hover .workspace-calendar-ai-button:hover,
+.workspace-obsidian-item:hover .workspace-calendar-ai-button:hover {
     -fx-opacity: 1.0;
 }
 
@@ -708,6 +710,54 @@ ChatThreadHistoryCard {
 
 .workspace-calendar-auth-button {
     -fx-cursor: hand;
+}
+
+/* ══════════════════════════════════════════════════
+   Obsidian Notes widget
+   ══════════════════════════════════════════════════ */
+
+.workspace-obsidian-item {
+    -fx-alignment: center-left;
+    -fx-padding: 4px 8px;
+    -fx-background-radius: 10px;
+    -fx-min-height: 26px;
+    -fx-pref-height: 26px;
+}
+
+.workspace-obsidian-item:hover {
+    -fx-background-color: -color-glass-bg;
+}
+
+.workspace-obsidian-name {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 11px;
+    -fx-text-overrun: ellipsis;
+}
+
+.workspace-obsidian-folder {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 8px;
+    -fx-font-weight: 700;
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 999px;
+    -fx-padding: 1px 7px 2px 7px;
+}
+
+.workspace-obsidian-clickable {
+    -fx-cursor: hand;
+}
+
+.workspace-obsidian-clickable:hover {
+    -fx-text-fill: -color-accent-fg;
+    -fx-icon-color: -color-accent-fg;
+    -fx-underline: true;
+}
+
+/* ── File icon ────────────────────────────────── */
+.workspace-obsidian-item .ikonli-font-icon {
+    -fx-icon-size: 12px;
+    -fx-icon-color: -color-fg-muted;
+    -fx-opacity: 0.55;
 }
 
 /* ══════════════════════════════════════════════════

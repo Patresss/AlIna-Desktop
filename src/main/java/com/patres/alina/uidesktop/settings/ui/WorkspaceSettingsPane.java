@@ -135,7 +135,15 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 settings.calendarAiPrompt(),
                 settings.tasksAiPrompt(),
                 settings.jiraAiPrompt(),
-                settings.githubAiPrompt()
+                settings.githubAiPrompt(),
+                settings.showDashboardObsidian(),
+                settings.obsidianCliPath(),
+                settings.obsidianVaultName(),
+                settings.dashboardObsidianNoteLimit(),
+                settings.dashboardObsidianRefreshSeconds(),
+                settings.obsidianChangeNotificationsEnabled(),
+                settings.obsidianAiPrompt(),
+                settings.obsidianExcludePatterns()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;

@@ -8,7 +8,8 @@ public enum DashboardSection {
 
     CALENDAR("calendar", "dashboard.changes.section.calendar"),
     JIRA("jira", "dashboard.changes.section.jira"),
-    GITHUB("github", "dashboard.changes.section.github");
+    GITHUB("github", "dashboard.changes.section.github"),
+    OBSIDIAN("obsidian", "dashboard.changes.section.obsidian");
 
     private final String id;
     private final String titleKey;

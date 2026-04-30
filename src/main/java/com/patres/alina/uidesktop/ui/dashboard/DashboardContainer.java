@@ -31,15 +31,17 @@ public class DashboardContainer extends VBox {
     private final GitHubWidget gitHubWidget;
     private final JiraWidget jiraWidget;
     private final GoogleCalendarWidget googleCalendarWidget;
+    private final ObsidianWidget obsidianWidget;
 
     private boolean collapsed = false;
 
-    public DashboardContainer(MediaControlWidget mediaControlWidget, DashboardPane dashboardPane, GitHubWidget gitHubWidget, JiraWidget jiraWidget, GoogleCalendarWidget googleCalendarWidget) {
+    public DashboardContainer(MediaControlWidget mediaControlWidget, DashboardPane dashboardPane, GitHubWidget gitHubWidget, JiraWidget jiraWidget, GoogleCalendarWidget googleCalendarWidget, ObsidianWidget obsidianWidget) {
         this.mediaControlWidget = mediaControlWidget;
         this.dashboardPane = dashboardPane;
         this.gitHubWidget = gitHubWidget;
         this.jiraWidget = jiraWidget;
         this.googleCalendarWidget = googleCalendarWidget;
+        this.obsidianWidget = obsidianWidget;
 
         getStyleClass().add("workspace-dashboard-container");
 
@@ -55,7 +57,8 @@ public class DashboardContainer extends VBox {
                 googleCalendarWidget,
                 dashboardPane,
                 gitHubWidget,
-                jiraWidget
+                jiraWidget,
+                obsidianWidget
         );
 
         // Bottom collapse bar
@@ -101,6 +104,7 @@ public class DashboardContainer extends VBox {
             updateWidgetVisibility(gitHubWidget, settings.showDashboardGithub());
             updateWidgetVisibility(jiraWidget, settings.showDashboardJira());
             updateWidgetVisibility(googleCalendarWidget, settings.showDashboardCalendar());
+            updateWidgetVisibility(obsidianWidget, settings.showDashboardObsidian());
         });
     }
 

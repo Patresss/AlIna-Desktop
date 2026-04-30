@@ -36,7 +36,16 @@ public record WorkspaceSettings(
         String calendarAiPrompt,
         String tasksAiPrompt,
         String jiraAiPrompt,
-        String githubAiPrompt
+        String githubAiPrompt,
+        // Obsidian
+        boolean showDashboardObsidian,
+        String obsidianCliPath,
+        String obsidianVaultName,
+        int dashboardObsidianNoteLimit,
+        int dashboardObsidianRefreshSeconds,
+        boolean obsidianChangeNotificationsEnabled,
+        String obsidianAiPrompt,
+        String obsidianExcludePatterns
 ) {
 
     public static final String DEFAULT_TASKS_FILE = "profile/default/focus.md";
@@ -52,6 +61,9 @@ public record WorkspaceSettings(
     public static final int DEFAULT_DASHBOARD_JIRA_ISSUE_LIMIT = 10;
     public static final int DEFAULT_DASHBOARD_CALENDAR_REFRESH_SECONDS = 300;
     public static final int DEFAULT_CALENDAR_NOTIFICATION_MINUTES_BEFORE = 1;
+    public static final int DEFAULT_DASHBOARD_OBSIDIAN_NOTE_LIMIT = 5;
+    public static final int DEFAULT_DASHBOARD_OBSIDIAN_REFRESH_SECONDS = 120;
+    public static final String DEFAULT_OBSIDIAN_EXCLUDE_PATTERNS = "AGENTS.md,**/Memory/**,**/Templates/**";
 
     public WorkspaceSettings() {
         this(
@@ -90,7 +102,16 @@ public record WorkspaceSettings(
                 "",
                 "",
                 "",
-                ""
+                "",
+                // Obsidian defaults
+                false,
+                "",
+                "",
+                DEFAULT_DASHBOARD_OBSIDIAN_NOTE_LIMIT,
+                DEFAULT_DASHBOARD_OBSIDIAN_REFRESH_SECONDS,
+                false,
+                "",
+                DEFAULT_OBSIDIAN_EXCLUDE_PATTERNS
         );
     }
 
@@ -116,6 +137,13 @@ public record WorkspaceSettings(
         tasksAiPrompt = tasksAiPrompt == null ? "" : tasksAiPrompt.trim();
         jiraAiPrompt = jiraAiPrompt == null ? "" : jiraAiPrompt.trim();
         githubAiPrompt = githubAiPrompt == null ? "" : githubAiPrompt.trim();
+        // Obsidian
+        obsidianCliPath = obsidianCliPath == null ? "" : obsidianCliPath.trim();
+        obsidianVaultName = obsidianVaultName == null ? "" : obsidianVaultName.trim();
+        dashboardObsidianNoteLimit = dashboardObsidianNoteLimit > 0 ? dashboardObsidianNoteLimit : DEFAULT_DASHBOARD_OBSIDIAN_NOTE_LIMIT;
+        dashboardObsidianRefreshSeconds = dashboardObsidianRefreshSeconds > 0 ? dashboardObsidianRefreshSeconds : DEFAULT_DASHBOARD_OBSIDIAN_REFRESH_SECONDS;
+        obsidianAiPrompt = obsidianAiPrompt == null ? "" : obsidianAiPrompt.trim();
+        obsidianExcludePatterns = obsidianExcludePatterns == null ? "" : obsidianExcludePatterns.trim();
     }
 
     public WorkspaceSettings withKeepWindowAlwaysOnTop(final boolean value) {
@@ -129,7 +157,10 @@ public record WorkspaceSettings(
                 calendarHideAllDayEvents, calendarShowOnlyCurrentAndFuture, calendarNotificationsEnabled,
                 calendarNotificationMinutesBefore, calendarChangeNotificationsEnabled,
                 githubChangeNotificationsEnabled, jiraChangeNotificationsEnabled, splitMode,
-                calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt
+                calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt,
+                showDashboardObsidian, obsidianCliPath, obsidianVaultName,
+                dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
+                obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns
         );
     }
 
@@ -144,7 +175,10 @@ public record WorkspaceSettings(
                 calendarHideAllDayEvents, calendarShowOnlyCurrentAndFuture, calendarNotificationsEnabled,
                 calendarNotificationMinutesBefore, calendarChangeNotificationsEnabled,
                 githubChangeNotificationsEnabled, jiraChangeNotificationsEnabled, splitMode,
-                calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt
+                calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt,
+                showDashboardObsidian, obsidianCliPath, obsidianVaultName,
+                dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
+                obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns
         );
     }
 
@@ -159,7 +193,10 @@ public record WorkspaceSettings(
                 calendarHideAllDayEvents, calendarShowOnlyCurrentAndFuture, calendarNotificationsEnabled,
                 calendarNotificationMinutesBefore, calendarChangeNotificationsEnabled,
                 githubChangeNotificationsEnabled, jiraChangeNotificationsEnabled, value,
-                calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt
+                calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt,
+                showDashboardObsidian, obsidianCliPath, obsidianVaultName,
+                dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
+                obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns
         );
     }
 

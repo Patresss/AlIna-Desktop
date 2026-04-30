@@ -25,6 +25,7 @@ import com.patres.alina.uidesktop.ui.dashboard.GitHubWidget;
 import com.patres.alina.uidesktop.ui.dashboard.GoogleCalendarWidget;
 import com.patres.alina.uidesktop.ui.dashboard.JiraWidget;
 import com.patres.alina.uidesktop.ui.dashboard.MediaControlWidget;
+import com.patres.alina.uidesktop.ui.dashboard.ObsidianWidget;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -79,7 +80,8 @@ public class ApplicationWindow extends BorderPane {
     private final GitHubWidget gitHubWidget = new GitHubWidget();
     private final JiraWidget jiraWidget = new JiraWidget();
     private final GoogleCalendarWidget googleCalendarWidget = new GoogleCalendarWidget();
-    private final DashboardContainer dashboardContainer = new DashboardContainer(mediaControlWidget, dashboardPane, gitHubWidget, jiraWidget, googleCalendarWidget);
+    private final ObsidianWidget obsidianWidget = new ObsidianWidget();
+    private final DashboardContainer dashboardContainer = new DashboardContainer(mediaControlWidget, dashboardPane, gitHubWidget, jiraWidget, googleCalendarWidget, obsidianWidget);
 
     // Split mode layout
     private final VBox chatContentPane = new VBox();
@@ -176,6 +178,7 @@ public class ApplicationWindow extends BorderPane {
         gitHubWidget.refresh(settings.githubToken());
         jiraWidget.refresh();
         googleCalendarWidget.refresh();
+        obsidianWidget.refresh();
         // Keep chat separator in sync with dashboard visibility (only in normal mode)
         if (!splitModeActive) {
             final boolean showDashboard = settings.showDashboard();

@@ -76,6 +76,16 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     private ToggleSwitch jiraChangeNotificationsToggle;
     private TextArea jiraAiPromptField;
 
+    // Obsidian
+    private ToggleSwitch showDashboardObsidianToggle;
+    private TextField obsidianCliPathField;
+    private TextField obsidianVaultNameField;
+    private Spinner<Integer> dashboardObsidianNoteLimitSpinner;
+    private Spinner<Integer> dashboardObsidianRefreshSpinner;
+    private ToggleSwitch obsidianChangeNotificationsToggle;
+    private TextArea obsidianAiPromptField;
+    private TextField obsidianExcludePatternsField;
+
     private WorkspaceSettings settings;
 
     public DashboardSettingsPane(final Runnable backFunction) {
@@ -128,6 +138,16 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         dashboardJiraIssueLimitSpinner.getValueFactory().setValue(settings.dashboardJiraIssueLimit());
         jiraChangeNotificationsToggle.setSelected(settings.jiraChangeNotificationsEnabled());
         jiraAiPromptField.setText(orEmpty(settings.jiraAiPrompt()));
+
+        // Obsidian
+        showDashboardObsidianToggle.setSelected(settings.showDashboardObsidian());
+        obsidianCliPathField.setText(orEmpty(settings.obsidianCliPath()));
+        obsidianVaultNameField.setText(orEmpty(settings.obsidianVaultName()));
+        dashboardObsidianNoteLimitSpinner.getValueFactory().setValue(settings.dashboardObsidianNoteLimit());
+        dashboardObsidianRefreshSpinner.getValueFactory().setValue(settings.dashboardObsidianRefreshSeconds());
+        obsidianChangeNotificationsToggle.setSelected(settings.obsidianChangeNotificationsEnabled());
+        obsidianAiPromptField.setText(orEmpty(settings.obsidianAiPrompt()));
+        obsidianExcludePatternsField.setText(orEmpty(settings.obsidianExcludePatterns()));
     }
 
     @Override
@@ -168,7 +188,16 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 calendarAiPromptField.getText(),
                 tasksAiPromptField.getText(),
                 jiraAiPromptField.getText(),
-                githubAiPromptField.getText()
+                githubAiPromptField.getText(),
+                // Obsidian
+                showDashboardObsidianToggle.isSelected(),
+                obsidianCliPathField.getText(),
+                obsidianVaultNameField.getText(),
+                dashboardObsidianNoteLimitSpinner.getValue(),
+                dashboardObsidianRefreshSpinner.getValue(),
+                obsidianChangeNotificationsToggle.isSelected(),
+                obsidianAiPromptField.getText(),
+                obsidianExcludePatternsField.getText()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;
@@ -248,6 +277,21 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         jiraChangeNotificationsToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         jiraAiPromptField = createAiPromptField();
 
+        // ── Obsidian ──
+        final var obsidianHeader = createTextSeparator("settings.dashboard.obsidian.section", Styles.TITLE_4);
+        showDashboardObsidianToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        obsidianCliPathField = createResizableTextField(settingsBox);
+        obsidianVaultNameField = createResizableTextField(settingsBox);
+        dashboardObsidianNoteLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardObsidianNoteLimit(), settingsBox);
+        final var obsidianNoteLimitTile = createTile("settings.workspace.obsidianNoteLimit.title", "settings.workspace.obsidianNoteLimit.description");
+        obsidianNoteLimitTile.setAction(dashboardObsidianNoteLimitSpinner);
+        dashboardObsidianRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardObsidianRefreshSeconds(), settingsBox);
+        final var obsidianRefreshTile = createTile("settings.workspace.obsidianRefresh.title", "settings.workspace.obsidianRefresh.description");
+        obsidianRefreshTile.setAction(dashboardObsidianRefreshSpinner);
+        obsidianChangeNotificationsToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        obsidianAiPromptField = createAiPromptField();
+        obsidianExcludePatternsField = createResizableTextField(settingsBox);
+
         return List.of(
                 header,
                 // General
@@ -292,7 +336,17 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 jiraRefreshTile,
                 jiraIssueLimitTile,
                 tileFor(jiraChangeNotificationsToggle, "settings.workspace.jiraChangeNotifications.title", "settings.workspace.jiraChangeNotifications.description"),
-                tileFor(jiraAiPromptField, "settings.workspace.aiPrompt.title", "settings.workspace.aiPrompt.description")
+                tileFor(jiraAiPromptField, "settings.workspace.aiPrompt.title", "settings.workspace.aiPrompt.description"),
+                // Obsidian
+                obsidianHeader,
+                tileFor(showDashboardObsidianToggle, "settings.workspace.showObsidian.title", "settings.workspace.showObsidian.description"),
+                tileFor(obsidianCliPathField, "settings.workspace.obsidian.cliPath.title", "settings.workspace.obsidian.cliPath.description"),
+                tileFor(obsidianVaultNameField, "settings.workspace.obsidian.vaultName.title", "settings.workspace.obsidian.vaultName.description"),
+                obsidianNoteLimitTile,
+                obsidianRefreshTile,
+                tileFor(obsidianChangeNotificationsToggle, "settings.workspace.obsidianChangeNotifications.title", "settings.workspace.obsidianChangeNotifications.description"),
+                tileFor(obsidianExcludePatternsField, "settings.workspace.obsidian.excludePatterns.title", "settings.workspace.obsidian.excludePatterns.description"),
+                tileFor(obsidianAiPromptField, "settings.workspace.aiPrompt.title", "settings.workspace.aiPrompt.description")
         );
     }
 
