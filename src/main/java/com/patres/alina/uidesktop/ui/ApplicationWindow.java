@@ -492,6 +492,14 @@ public class ApplicationWindow extends BorderPane {
                 .ifPresent(Browser::openWebpage);
     }
 
+    public void collapseDashboard() {
+        dashboardContainer.collapse();
+    }
+
+    public void expandDashboard() {
+        dashboardContainer.expand();
+    }
+
     public Stage getStage() {
         return (Stage) getScene().getWindow();
     }

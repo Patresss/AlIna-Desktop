@@ -35,12 +35,17 @@ public class SideExpandButton {
 
     private boolean expanded = false;
     private Button button;
+    private Stage mainStage;
+    private ApplicationWindow applicationWindow;
 
     /**
      * Creates the expand button and adds it to the given overlay container.
      * The overlay StackPane should be the scene root wrapping the ApplicationWindow.
      */
     public void attach(Stage mainStage, ApplicationWindow applicationWindow, StackPane overlay) {
+        this.mainStage = mainStage;
+        this.applicationWindow = applicationWindow;
+
         button = new Button("‹");
         button.setPrefSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         button.setMinSize(BUTTON_WIDTH, BUTTON_HEIGHT);
@@ -55,32 +60,10 @@ public class SideExpandButton {
         button.setOnMouseExited(e -> button.setOpacity(0.1));
 
         button.setOnAction(e -> {
-            var settings = UI_SETTINGS.getSettings();
-            var screenBounds = Screen.getPrimary().getVisualBounds();
-            int expandBy = settings.resolveExpandWidth();
-
             if (!expanded) {
-                double newX = Math.max(screenBounds.getMinX(), mainStage.getX() - expandBy);
-                double actualExpand = mainStage.getX() - newX;
-                mainStage.setX(newX);
-                mainStage.setWidth(mainStage.getWidth() + actualExpand);
-                button.setText("›");
-                expanded = true;
-                if (settings.isAutoSplitOnExpand()) {
-                    Platform.runLater(() -> applicationWindow.setSplitMode(true));
-                }
+                expand();
             } else {
-                double originalWidth = AssistantAppLauncher.WIDTH;
-                double shrinkBy = mainStage.getWidth() - originalWidth;
-                if (shrinkBy > 0) {
-                    mainStage.setX(mainStage.getX() + shrinkBy);
-                    mainStage.setWidth(originalWidth);
-                }
-                button.setText("‹");
-                expanded = false;
-                if (settings.isAutoSplitOnExpand()) {
-                    Platform.runLater(() -> applicationWindow.setSplitMode(false));
-                }
+                shrink();
             }
         });
 
@@ -92,6 +75,47 @@ public class SideExpandButton {
         DefaultEventBus.getInstance().subscribe(UiSettingsUpdateEvent.class, event ->
                 Platform.runLater(this::updateVisibility)
         );
+    }
+
+    public void expand() {
+        if (expanded || mainStage == null) {
+            return;
+        }
+        var settings = UI_SETTINGS.getSettings();
+        var screenBounds = Screen.getPrimary().getVisualBounds();
+        int expandBy = settings.resolveExpandWidth();
+
+        double newX = Math.max(screenBounds.getMinX(), mainStage.getX() - expandBy);
+        double actualExpand = mainStage.getX() - newX;
+        mainStage.setX(newX);
+        mainStage.setWidth(mainStage.getWidth() + actualExpand);
+        if (button != null) {
+            button.setText("›");
+        }
+        expanded = true;
+        if (settings.isAutoSplitOnExpand()) {
+            Platform.runLater(() -> applicationWindow.setSplitMode(true));
+        }
+    }
+
+    public void shrink() {
+        if (!expanded || mainStage == null) {
+            return;
+        }
+        var settings = UI_SETTINGS.getSettings();
+        double originalWidth = AssistantAppLauncher.WIDTH;
+        double shrinkBy = mainStage.getWidth() - originalWidth;
+        if (shrinkBy > 0) {
+            mainStage.setX(mainStage.getX() + shrinkBy);
+            mainStage.setWidth(originalWidth);
+        }
+        if (button != null) {
+            button.setText("‹");
+        }
+        expanded = false;
+        if (settings.isAutoSplitOnExpand()) {
+            Platform.runLater(() -> applicationWindow.setSplitMode(false));
+        }
     }
 
     private void updateVisibility() {

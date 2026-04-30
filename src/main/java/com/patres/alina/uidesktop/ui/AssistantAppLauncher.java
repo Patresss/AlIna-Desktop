@@ -16,6 +16,8 @@ import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.SceneAntialiasing;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -77,7 +79,32 @@ public class AssistantAppLauncher {
 
         // register event listeners
 
-        new SideExpandButton().attach(stage, root, sceneRoot);
+        var sideExpandButton = new SideExpandButton();
+        sideExpandButton.attach(stage, root, sceneRoot);
+
+        // Register in-app keyboard shortcuts (Shift + Arrow keys)
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.isShiftDown()) {
+                switch (event.getCode()) {
+                    case UP -> {
+                        root.collapseDashboard();
+                        event.consume();
+                    }
+                    case DOWN -> {
+                        root.expandDashboard();
+                        event.consume();
+                    }
+                    case LEFT -> {
+                        sideExpandButton.expand();
+                        event.consume();
+                    }
+                    case RIGHT -> {
+                        sideExpandButton.shrink();
+                        event.consume();
+                    }
+                }
+            }
+        });
 
         Platform.runLater(() -> {
             stage.setX(screenBounds.getMinX() + screenBounds.getWidth() - WIDTH);

@@ -80,6 +80,24 @@ public class DashboardContainer extends VBox {
 
     private void toggleCollapsed() {
         collapsed = !collapsed;
+        applyCollapsedState();
+    }
+
+    public void collapse() {
+        if (!collapsed) {
+            collapsed = true;
+            applyCollapsedState();
+        }
+    }
+
+    public void expand() {
+        if (collapsed) {
+            collapsed = false;
+            applyCollapsedState();
+        }
+    }
+
+    private void applyCollapsedState() {
         updateCollapseBar();
         widgetsBox.setManaged(!collapsed);
         widgetsBox.setVisible(!collapsed);
