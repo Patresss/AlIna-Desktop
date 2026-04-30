@@ -112,6 +112,7 @@ public class DashboardPane extends VBox {
         collapseButton.setOnAction(event -> toggleCollapsed(state.collapsed()));
         detailsBox.setManaged(!state.collapsed());
         detailsBox.setVisible(!state.collapsed());
+        updateCollapsedStyle(state.collapsed());
 
         tasksBox.getChildren().clear();
         if (state.tasks().isEmpty()) {
@@ -216,6 +217,16 @@ public class DashboardPane extends VBox {
             );
             refreshAsync();
         });
+    }
+
+    private void updateCollapsedStyle(final boolean collapsed) {
+        if (collapsed) {
+            if (!getStyleClass().contains("workspace-dashboard-collapsed")) {
+                getStyleClass().add("workspace-dashboard-collapsed");
+            }
+        } else {
+            getStyleClass().remove("workspace-dashboard-collapsed");
+        }
     }
 
     private void updateTask(final DashboardTask task, final boolean completed) {

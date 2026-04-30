@@ -273,6 +273,7 @@ public class ObsidianWidget extends VBox {
     private void toggleCollapsed() {
         collapsed = !collapsed;
         updateCollapseButton();
+        updateCollapsedStyle();
         detailsBox.setManaged(!collapsed);
         detailsBox.setVisible(!collapsed);
     }
@@ -280,5 +281,15 @@ public class ObsidianWidget extends VBox {
     private void updateCollapseButton() {
         collapseButton.setText(null);
         collapseButton.setGraphic(new FontIcon(collapsed ? Feather.CHEVRON_DOWN : Feather.CHEVRON_UP));
+    }
+
+    private void updateCollapsedStyle() {
+        if (collapsed) {
+            if (!getStyleClass().contains("workspace-dashboard-collapsed")) {
+                getStyleClass().add("workspace-dashboard-collapsed");
+            }
+        } else {
+            getStyleClass().remove("workspace-dashboard-collapsed");
+        }
     }
 }

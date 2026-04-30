@@ -297,6 +297,17 @@ ChatThreadHistoryCard {
     -fx-border-color: transparent transparent transparent -color-accent-fg;
 }
 
+/* ── Widget card — compact collapsed state ───── */
+.workspace-dashboard-collapsed {
+    -fx-padding: 4px 14px 4px 14px;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+}
+
+.workspace-dashboard-collapsed .workspace-dashboard-header {
+    -fx-padding: 0;
+}
+
 /* ── Widget header ──────────────────────────── */
 .workspace-dashboard-header {
     -fx-alignment: center-left;
