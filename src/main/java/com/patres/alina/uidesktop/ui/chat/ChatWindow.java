@@ -387,10 +387,16 @@ public class ChatWindow extends BorderPane {
 
     @FXML
     public void chatTextAreaOnKeyPressed(KeyEvent event) {
-        if (event.getCode() == KeyCode.ESCAPE && inputMode != ChatInputMode.CHAT) {
-            exitInputMode();
-            event.consume();
-            return;
+        if (event.getCode() == KeyCode.ESCAPE) {
+            if (inputMode != ChatInputMode.CHAT) {
+                exitInputMode();
+                event.consume();
+                return;
+            } else if (currentCommand != null) {
+                setCurrentCommand(null);
+                event.consume();
+                return;
+            }
         }
         if (event.getCode() == KeyCode.UP && !popup.isShowing()) {
             PromptHistoryManager historyManager = PromptHistoryManager.getInstance();
