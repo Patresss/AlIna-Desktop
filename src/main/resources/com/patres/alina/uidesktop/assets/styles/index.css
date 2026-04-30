@@ -729,9 +729,21 @@ ChatThreadHistoryCard {
 }
 
 .workspace-obsidian-name {
-    -fx-text-fill: -color-fg-default;
+    -fx-text-fill: -color-accent-fg;
     -fx-font-size: 11px;
+    -fx-cursor: hand;
     -fx-text-overrun: ellipsis;
+}
+
+.workspace-obsidian-name:hover {
+    -fx-underline: true;
+    -fx-opacity: 0.85;
+}
+
+.workspace-obsidian-date {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 10px;
+    -fx-opacity: 0.7;
 }
 
 .workspace-obsidian-folder {
@@ -741,23 +753,6 @@ ChatThreadHistoryCard {
     -fx-background-color: -color-bg-subtle;
     -fx-background-radius: 999px;
     -fx-padding: 1px 7px 2px 7px;
-}
-
-.workspace-obsidian-clickable {
-    -fx-cursor: hand;
-}
-
-.workspace-obsidian-clickable:hover {
-    -fx-text-fill: -color-accent-fg;
-    -fx-icon-color: -color-accent-fg;
-    -fx-underline: true;
-}
-
-/* ── File icon ────────────────────────────────── */
-.workspace-obsidian-item .ikonli-font-icon {
-    -fx-icon-size: 12px;
-    -fx-icon-color: -color-fg-muted;
-    -fx-opacity: 0.55;
 }
 
 /* ══════════════════════════════════════════════════

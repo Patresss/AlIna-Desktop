@@ -26,6 +26,10 @@ import javafx.util.Duration;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +51,7 @@ public class ObsidianWidget extends VBox {
     private static final String STYLE_OBSIDIAN_ITEM = "workspace-obsidian-item";
     private static final String STYLE_OBSIDIAN_NAME = "workspace-obsidian-name";
     private static final String STYLE_OBSIDIAN_FOLDER = "workspace-obsidian-folder";
-    private static final String STYLE_OBSIDIAN_CLICKABLE = "workspace-obsidian-clickable";
+    private static final String STYLE_OBSIDIAN_DATE = "workspace-obsidian-date";
     private static final String STYLE_OBSIDIAN_ERROR = "workspace-calendar-error";
 
     private final Label titleLabel = new Label();
@@ -179,35 +183,32 @@ public class ObsidianWidget extends VBox {
     // ── Note row ─────────────────────────────────────────────────
 
     private HBox createNoteRow(final ObsidianNote note) {
-        final FontIcon fileIcon = new FontIcon(Feather.FILE_TEXT);
-        fileIcon.getStyleClass().add(STYLE_OBSIDIAN_CLICKABLE);
-
         final Label nameLabel = new Label();
         EmojiLabelHelper.applyEmojiText(nameLabel, note.name());
-        nameLabel.getStyleClass().addAll(STYLE_OBSIDIAN_NAME, STYLE_OBSIDIAN_CLICKABLE);
+        nameLabel.getStyleClass().add(STYLE_OBSIDIAN_NAME);
         nameLabel.setWrapText(false);
         nameLabel.setOnMouseClicked(e -> openNoteInObsidian(note));
 
         final Region rowSpacer = new Region();
         HBox.setHgrow(rowSpacer, Priority.ALWAYS);
 
-        final HBox row;
+        final String aiPrompt = BackendApi.getWorkspaceSettings().obsidianAiPrompt();
+        final Region aiSlot = DashboardAiButton.createSlot(aiPrompt, buildNoteArguments(note));
 
+        final Label dateLabel = new Label(formatDate(note.lastModified()));
+        dateLabel.getStyleClass().add(STYLE_OBSIDIAN_DATE);
+        dateLabel.setWrapText(false);
+        dateLabel.setMinWidth(Region.USE_PREF_SIZE);
+
+        final HBox row;
         if (!note.folder().isEmpty()) {
             final Label folderLabel = new Label(note.folder());
             folderLabel.getStyleClass().add(STYLE_OBSIDIAN_FOLDER);
             folderLabel.setWrapText(false);
             folderLabel.setMinWidth(Region.USE_PREF_SIZE);
-
-            final String aiPrompt = BackendApi.getWorkspaceSettings().obsidianAiPrompt();
-            final Region aiSlot = DashboardAiButton.createSlot(aiPrompt, buildNoteArguments(note));
-
-            row = new HBox(6, fileIcon, nameLabel, rowSpacer, folderLabel, aiSlot);
+            row = new HBox(6, nameLabel, folderLabel, rowSpacer, dateLabel, aiSlot);
         } else {
-            final String aiPrompt = BackendApi.getWorkspaceSettings().obsidianAiPrompt();
-            final Region aiSlot = DashboardAiButton.createSlot(aiPrompt, buildNoteArguments(note));
-
-            row = new HBox(6, fileIcon, nameLabel, rowSpacer, aiSlot);
+            row = new HBox(6, nameLabel, rowSpacer, dateLabel, aiSlot);
         }
 
         row.setAlignment(Pos.CENTER_LEFT);
@@ -215,6 +216,16 @@ public class ObsidianWidget extends VBox {
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
         return row;
+    }
+
+    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd (HH:mm)");
+
+    private String formatDate(final Instant instant) {
+        if (instant == null || instant.equals(Instant.EPOCH)) {
+            return "";
+        }
+        final LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        return dateTime.format(DATE_TIME_FORMAT);
     }
 
     private void openNoteInObsidian(final ObsidianNote note) {

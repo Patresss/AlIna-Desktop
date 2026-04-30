@@ -49,7 +49,6 @@
                 h('span', { className: 'welcome-logo-accent' }, 'I'),
                 h('span', {}, 'na')
             ),
-            h('div', { className: 'welcome-greeting', id: 'welcome-greeting' }),
             h('div', { className: 'welcome-subtitle', id: 'welcome-subtitle' },
                 'Type a message to start, or press ',
                 h('kbd', {}, '/'),
@@ -58,14 +57,13 @@
         );
         welcome.appendChild(header);
 
-        // Placeholder containers for async sections
+        // Command chips container at the bottom
         welcome.appendChild(h('div', { className: 'welcome-sections', id: 'welcome-sections' }));
 
         chatContainer.appendChild(welcome);
     }
 
     function populateWelcomeData(greetingText, commandsJson, commandsLabel) {
-        // Greeting
         const greetingEl = $('welcome-greeting');
         if (greetingEl && greetingText) {
             greetingEl.textContent = greetingText;
@@ -78,10 +76,8 @@
         let commands = [];
         try { commands = JSON.parse(commandsJson); } catch { /* ignore */ }
 
-        // Commands as chips
+        // Commands as chips (no label)
         if (commands.length > 0) {
-            const chips = h('div', { className: 'welcome-section welcome-commands' });
-            chips.appendChild(h('div', { className: 'welcome-section-label' }, commandsLabel || 'Commands'));
             const chipRow = h('div', { className: 'welcome-chips' });
             for (const cmd of commands) {
                 const chip = h('button', {
@@ -100,8 +96,7 @@
                 }
                 chipRow.appendChild(chip);
             }
-            chips.appendChild(chipRow);
-            sections.appendChild(chips);
+            sections.appendChild(chipRow);
         }
 
         // Fade in sections

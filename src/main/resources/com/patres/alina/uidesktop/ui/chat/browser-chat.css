@@ -1076,7 +1076,7 @@ blockquote {
     text-align: center;
     padding: 40px 24px;
     animation: welcomeFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    gap: 0;
+    gap: 24px;
 }
 
 @keyframes welcomeFadeIn {
@@ -1091,7 +1091,6 @@ blockquote {
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    margin-bottom: 40px;
 }
 
 .welcome-logo {
@@ -1109,7 +1108,6 @@ blockquote {
     font-size: 15px;
     font-weight: 500;
     color: var(--color-fg-default);
-    margin-top: 4px;
     min-height: 1.3em;
 }
 
@@ -1118,7 +1116,6 @@ blockquote {
     color: var(--color-fg-muted);
     max-width: 360px;
     line-height: 1.5;
-    margin-top: 2px;
 }
 
 .welcome-subtitle kbd {
@@ -1138,7 +1135,7 @@ blockquote {
 .welcome-sections {
     display: flex;
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     gap: 28px;
     width: 100%;
     max-width: 440px;
@@ -1152,28 +1149,12 @@ blockquote {
     transform: translateY(0);
 }
 
-/* ── Section labels ─────────────────────────── */
-
-.welcome-section-label {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--color-fg-muted);
-    margin-bottom: 10px;
-    text-align: left;
-}
-
 /* ── Command chips ──────────────────────────── */
-
-.welcome-commands {
-    display: flex;
-    flex-direction: column;
-}
 
 .welcome-chips {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 8px;
 }
 
@@ -1182,17 +1163,17 @@ blockquote {
     align-items: center;
     gap: 4px;
     padding: 7px 16px;
-    border: 1px solid var(--color-border-default);
+    border: 1px solid var(--color-accent-muted);
     border-radius: 999px;
-    background: var(--color-bg-subtle);
+    background: transparent;
     cursor: pointer;
     transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     font-family: inherit;
 }
 
 .welcome-chip:hover {
-    background-color: var(--color-bg-default);
-    border-color: var(--color-accent-muted);
+    background-color: var(--color-accent-subtle);
+    border-color: var(--color-accent-fg);
     box-shadow: 0 0 0 1px var(--color-accent-muted);
 }
 

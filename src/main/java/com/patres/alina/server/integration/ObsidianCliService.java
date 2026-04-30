@@ -254,7 +254,8 @@ public final class ObsidianCliService {
         final String relativePath = vaultRoot.relativize(absolutePath).toString();
         final String name = extractNoteName(relativePath);
         final String folder = extractFolder(relativePath);
-        return new ObsidianNote(relativePath, name, folder);
+        final Instant lastModified = getLastModified(absolutePath);
+        return new ObsidianNote(relativePath, name, folder, lastModified);
     }
 
     // ── Command building ─────────────────────────────────────────
