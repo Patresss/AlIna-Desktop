@@ -42,7 +42,8 @@ public class CommandEditPane extends CommandSavePane {
                 showInChatToggleSwitch.isSelected(),
                 showInContextMenuPasteToggleSwitch.isSelected(),
                 showInContextMenuDisplayToggleSwitch.isSelected(),
-                showInContextMenuExecuteToggleSwitch.isSelected()
+                showInContextMenuExecuteToggleSwitch.isSelected(),
+                showInWelcomeScreenToggleSwitch.isSelected()
         );
 
         final Command commandEditRequest = new Command(
@@ -98,6 +99,7 @@ public class CommandEditPane extends CommandSavePane {
         showInContextMenuPasteToggleSwitch.setSelected(command.visibility().showInContextMenuPaste());
         showInContextMenuDisplayToggleSwitch.setSelected(command.visibility().showInContextMenuDisplay());
         showInContextMenuExecuteToggleSwitch.setSelected(command.visibility().showInContextMenuExecute());
+        showInWelcomeScreenToggleSwitch.setSelected(command.visibility().showInWelcomeScreen());
         commandNameTextField.setText(command.name());
         commandDescriptionTextArea.setText(command.description());
         commandSystemPromptTextArea.setText(command.systemPrompt());

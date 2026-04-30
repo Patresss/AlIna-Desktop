@@ -44,7 +44,8 @@ public class CommandCreatePane extends CommandSavePane {
                         showInChatToggleSwitch.isSelected(),
                         showInContextMenuPasteToggleSwitch.isSelected(),
                         showInContextMenuDisplayToggleSwitch.isSelected(),
-                        showInContextMenuExecuteToggleSwitch.isSelected()
+                        showInContextMenuExecuteToggleSwitch.isSelected(),
+                        showInWelcomeScreenToggleSwitch.isSelected()
                 )
         );
 

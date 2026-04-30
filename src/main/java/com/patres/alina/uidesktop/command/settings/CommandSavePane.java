@@ -28,6 +28,7 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
     protected ToggleSwitch showInContextMenuPasteToggleSwitch;
     protected ToggleSwitch showInContextMenuDisplayToggleSwitch;
     protected ToggleSwitch showInContextMenuExecuteToggleSwitch;
+    protected ToggleSwitch showInWelcomeScreenToggleSwitch;
     protected ShortcutKeyPane pasteShortcutKeyPane;
     protected ShortcutKeyPane displayShortcutKeyPane;
     protected ShortcutKeyPane executeShortcutKeyPane;
@@ -91,6 +92,14 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
         showInChatTile.setAction(showInChatToggleSwitch);
         showInChatTile.setActionHandler(showInChatToggleSwitch::fire);
 
+        showInWelcomeScreenToggleSwitch = new ToggleSwitch();
+        var showInWelcomeScreenTile = new CustomTile(
+                getLanguageString("command.visibility.welcome.title"),
+                getLanguageString("command.visibility.welcome.description")
+        );
+        showInWelcomeScreenTile.setAction(showInWelcomeScreenToggleSwitch);
+        showInWelcomeScreenTile.setActionHandler(showInWelcomeScreenToggleSwitch::fire);
+
         showInContextMenuPasteToggleSwitch = new ToggleSwitch();
         var showInContextMenuPasteTile = new CustomTile(
                 getLanguageString("command.visibility.contextmenu.paste.title"),
@@ -144,6 +153,7 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
                 iconTile,
                 new Separator(),
                 showInChatTile,
+                showInWelcomeScreenTile,
                 showInContextMenuPasteTile,
                 showInContextMenuDisplayTile,
                 showInContextMenuExecuteTile,
@@ -157,6 +167,7 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
 
     protected void resetVisibilityAndShortcuts() {
         showInChatToggleSwitch.setSelected(true);
+        showInWelcomeScreenToggleSwitch.setSelected(true);
         showInContextMenuPasteToggleSwitch.setSelected(true);
         showInContextMenuDisplayToggleSwitch.setSelected(true);
         showInContextMenuExecuteToggleSwitch.setSelected(false);

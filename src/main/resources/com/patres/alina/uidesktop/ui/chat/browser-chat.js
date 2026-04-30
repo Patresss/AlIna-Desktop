@@ -40,12 +40,72 @@
         if (!chatContainer || chatContainer.children.length > 0) return;
 
         const welcome = h('div', { className: 'welcome-screen', id: 'welcome-screen' });
-        welcome.innerHTML =
-            '<div class="welcome-logo">AI</div>' +
-            '<div class="welcome-title">AlIna</div>' +
-            '<div class="welcome-subtitle" id="welcome-subtitle">Type a message to start, or press <kbd>/</kbd> for quick actions.</div>';
+
+        // Header: logo + greeting + subtitle
+        const header = h('div', { className: 'welcome-header' },
+            h('div', { className: 'welcome-logo' },
+                h('span', { className: 'welcome-logo-accent' }, 'A'),
+                h('span', {}, 'l'),
+                h('span', { className: 'welcome-logo-accent' }, 'I'),
+                h('span', {}, 'na')
+            ),
+            h('div', { className: 'welcome-greeting', id: 'welcome-greeting' }),
+            h('div', { className: 'welcome-subtitle', id: 'welcome-subtitle' },
+                'Type a message to start, or press ',
+                h('kbd', {}, '/'),
+                ' for quick actions.'
+            )
+        );
+        welcome.appendChild(header);
+
+        // Placeholder containers for async sections
+        welcome.appendChild(h('div', { className: 'welcome-sections', id: 'welcome-sections' }));
 
         chatContainer.appendChild(welcome);
+    }
+
+    function populateWelcomeData(greetingText, commandsJson, commandsLabel) {
+        // Greeting
+        const greetingEl = $('welcome-greeting');
+        if (greetingEl && greetingText) {
+            greetingEl.textContent = greetingText;
+        }
+
+        const sections = $('welcome-sections');
+        if (!sections) return;
+        sections.innerHTML = '';
+
+        let commands = [];
+        try { commands = JSON.parse(commandsJson); } catch { /* ignore */ }
+
+        // Commands as chips
+        if (commands.length > 0) {
+            const chips = h('div', { className: 'welcome-section welcome-commands' });
+            chips.appendChild(h('div', { className: 'welcome-section-label' }, commandsLabel || 'Commands'));
+            const chipRow = h('div', { className: 'welcome-chips' });
+            for (const cmd of commands) {
+                const chip = h('button', {
+                    type: 'button',
+                    className: 'welcome-chip',
+                    onclick: () => {
+                        if (window.alinaBrowserBridge?.handleSelectCommand) {
+                            window.alinaBrowserBridge.handleSelectCommand(cmd.id);
+                        }
+                    }
+                },
+                    h('span', { className: 'welcome-chip-name' }, cmd.name)
+                );
+                if (cmd.description) {
+                    chip.title = cmd.description;
+                }
+                chipRow.appendChild(chip);
+            }
+            chips.appendChild(chipRow);
+            sections.appendChild(chips);
+        }
+
+        // Fade in sections
+        requestAnimationFrame(() => sections.classList.add('loaded'));
     }
 
     function updateWelcomeSubtitle(text) {

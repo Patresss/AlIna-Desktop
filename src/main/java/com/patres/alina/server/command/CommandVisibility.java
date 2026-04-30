@@ -7,15 +7,20 @@ public record CommandVisibility(
         boolean showInChat,
         boolean showInContextMenuPaste,
         boolean showInContextMenuDisplay,
-        boolean showInContextMenuExecute
+        boolean showInContextMenuExecute,
+        boolean showInWelcomeScreen
 ) {
 
     public CommandVisibility() {
-        this(true, true, true, false);
+        this(true, true, true, false, true);
     }
 
     public CommandVisibility(boolean showInChat, boolean showInContextMenuPaste, boolean showInContextMenuDisplay) {
-        this(showInChat, showInContextMenuPaste, showInContextMenuDisplay, false);
+        this(showInChat, showInContextMenuPaste, showInContextMenuDisplay, false, true);
+    }
+
+    public CommandVisibility(boolean showInChat, boolean showInContextMenuPaste, boolean showInContextMenuDisplay, boolean showInContextMenuExecute) {
+        this(showInChat, showInContextMenuPaste, showInContextMenuDisplay, showInContextMenuExecute, true);
     }
 
     public static CommandVisibility defaults(CommandVisibility visibility) {

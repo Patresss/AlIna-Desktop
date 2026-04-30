@@ -214,6 +214,24 @@ public class ChatWindow extends BorderPane {
         statusPrompt = new ChatStatusPrompt(chatTextArea);
         browser = new Browser();
         browser.setSuggestionClickHandler(this::handleSuggestionClick);
+        browser.setWelcomeActionHandler(commandId -> {
+            try {
+                final Command command = BackendApi.getCommand(commandId);
+                if (command != null) {
+                    final var item = new CardListItem(
+                            command.id(),
+                            command.name(),
+                            command.description(),
+                            command.icon(),
+                            command.state()
+                    );
+                    setCurrentCommand(item);
+                    chatTextArea.requestFocus();
+                }
+            } catch (final Exception e) {
+                logger.warn("Cannot load command from welcome screen: {}", commandId, e);
+            }
+        });
         chatAnswersPane.getChildren().add(browser);
 
         actionNodes = List.of(sendButton);
@@ -221,6 +239,7 @@ public class ChatWindow extends BorderPane {
         browser.whenReady(() -> {
             messages.forEach(this::displayMessage);
             localizeWelcomeScreen();
+            populateWelcomeData();
         });
         boolean hasAnyUserMessages = messages.stream().anyMatch(m -> m.sender() == ChatMessageRole.USER);
 
@@ -736,6 +755,59 @@ public class ChatWindow extends BorderPane {
 
     private void localizeWelcomeScreen() {
         browser.updateWelcomeSubtitle(LanguageManager.getLanguageString("welcome.subtitle"));
+    }
+
+    private void populateWelcomeData() {
+        Thread.startVirtualThread(() -> {
+            try {
+                final String greeting = buildGreeting();
+                final String commandsLabel = LanguageManager.getLanguageString("welcome.commands");
+
+                final List<Command> commands = BackendApi.getEnabledCommands().stream()
+                        .filter(c -> c.visibility().showInWelcomeScreen())
+                        .toList();
+                final String commandsJson = buildCommandsJson(commands);
+
+                FxThreadRunner.run(() ->
+                        browser.populateWelcomeData(greeting, commandsJson, commandsLabel)
+                );
+            } catch (final Exception e) {
+                logger.warn("Failed to populate welcome screen data", e);
+            }
+        });
+    }
+
+    private static String buildGreeting() {
+        final int hour = LocalDateTime.now().getHour();
+        if (hour >= 5 && hour < 12) {
+            return LanguageManager.getLanguageString("welcome.greeting.morning");
+        } else if (hour >= 12 && hour < 18) {
+            return LanguageManager.getLanguageString("welcome.greeting.afternoon");
+        } else {
+            return LanguageManager.getLanguageString("welcome.greeting.evening");
+        }
+    }
+
+    private static String buildCommandsJson(final List<Command> commands) {
+        final var sb = new StringBuilder("[");
+        for (int i = 0; i < commands.size(); i++) {
+            final Command c = commands.get(i);
+            if (i > 0) sb.append(",");
+            sb.append("{\"id\":\"").append(escapeJson(c.id()))
+                    .append("\",\"name\":\"").append(escapeJson(c.name()))
+                    .append("\",\"description\":\"").append(escapeJson(c.description() != null ? c.description() : ""))
+                    .append("\"}");
+        }
+        return sb.append("]").toString();
+    }
+
+    private static String escapeJson(final String value) {
+        if (value == null) return "";
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 
     private record PreparedMessage(

@@ -1072,51 +1072,138 @@ blockquote {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 60vh;
+    min-height: 70vh;
     text-align: center;
-    padding: 40px 20px;
-    animation: welcomeFadeIn 0.5s ease;
+    padding: 40px 24px;
+    animation: welcomeFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    gap: 0;
 }
 
 @keyframes welcomeFadeIn {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Header ─────────────────────────────────── */
+
+.welcome-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 40px;
+}
+
 .welcome-logo {
-    font-size: 48px;
-    margin-bottom: 16px;
-    opacity: 0.15;
-    font-weight: 800;
-    letter-spacing: -2px;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
     color: var(--color-fg-default);
 }
 
-.welcome-title {
-    font-size: 22px;
-    font-weight: 700;
+.welcome-logo-accent {
+    color: var(--color-accent-fg);
+}
+
+.welcome-greeting {
+    font-size: 15px;
+    font-weight: 500;
     color: var(--color-fg-default);
-    margin-bottom: 8px;
+    margin-top: 4px;
+    min-height: 1.3em;
 }
 
 .welcome-subtitle {
-    font-size: 14px;
+    font-size: 13px;
     color: var(--color-fg-muted);
-    max-width: 400px;
+    max-width: 360px;
     line-height: 1.5;
+    margin-top: 2px;
 }
 
 .welcome-subtitle kbd {
     display: inline-block;
     background-color: var(--color-bg-subtle);
     border: 1px solid var(--color-border-default);
-    border-radius: 5px;
-    padding: 1px 7px;
+    border-radius: 4px;
+    padding: 0 5px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 600;
     color: var(--color-fg-default);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* ── Sections container ─────────────────────── */
+
+.welcome-sections {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 28px;
+    width: 100%;
+    max-width: 440px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.welcome-sections.loaded {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ── Section labels ─────────────────────────── */
+
+.welcome-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-fg-muted);
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+/* ── Command chips ──────────────────────────── */
+
+.welcome-commands {
+    display: flex;
+    flex-direction: column;
+}
+
+.welcome-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.welcome-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 16px;
+    border: 1px solid var(--color-border-default);
+    border-radius: 999px;
+    background: var(--color-bg-subtle);
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    font-family: inherit;
+}
+
+.welcome-chip:hover {
+    background-color: var(--color-bg-default);
+    border-color: var(--color-accent-muted);
+    box-shadow: 0 0 0 1px var(--color-accent-muted);
+}
+
+.welcome-chip:active {
+    background-color: var(--color-accent-subtle);
+}
+
+.welcome-chip-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-fg-default);
 }
 
 /* ══════════════════════════════════════════════════

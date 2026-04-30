@@ -73,6 +73,7 @@ public class MarkdownParser {
         sb.append("showInContextMenuPaste: ").append(command.visibility().showInContextMenuPaste()).append("\n");
         sb.append("showInContextMenuDisplay: ").append(command.visibility().showInContextMenuDisplay()).append("\n");
         sb.append("showInContextMenuExecute: ").append(command.visibility().showInContextMenuExecute()).append("\n");
+        sb.append("showInWelcomeScreen: ").append(command.visibility().showInWelcomeScreen()).append("\n");
 
         appendShortcut(sb, "pasteShortcut", command.pasteShortcut());
         appendShortcut(sb, "displayShortcut", command.displayShortcut());
@@ -198,7 +199,8 @@ public class MarkdownParser {
             boolean showInContextMenuPaste = getBooleanValue(yamlMap, "showInContextMenuPaste", true);
             boolean showInContextMenuDisplay = getBooleanValue(yamlMap, "showInContextMenuDisplay", true);
             boolean showInContextMenuExecute = getBooleanValue(yamlMap, "showInContextMenuExecute", false);
-            return new CommandVisibility(showInChat, showInContextMenuPaste, showInContextMenuDisplay, showInContextMenuExecute);
+            boolean showInWelcomeScreen = getBooleanValue(yamlMap, "showInWelcomeScreen", true);
+            return new CommandVisibility(showInChat, showInContextMenuPaste, showInContextMenuDisplay, showInContextMenuExecute, showInWelcomeScreen);
         } catch (Exception e) {
             logger.warn("Failed to parse visibility flags: {}", e.getMessage());
             return new CommandVisibility();

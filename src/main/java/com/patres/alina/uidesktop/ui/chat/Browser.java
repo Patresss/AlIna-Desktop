@@ -52,6 +52,7 @@ public class Browser extends StackPane {
     );
     private PermissionActionHandler permissionActionHandler;
     private SuggestionClickHandler suggestionClickHandler;
+    private WelcomeActionHandler welcomeActionHandler;
     private BrowserBridge browserBridge;
     private volatile boolean webViewReady = false;
     private final java.util.List<Runnable> pendingActions = new java.util.ArrayList<>();
@@ -93,6 +94,10 @@ public class Browser extends StackPane {
 
     public void setSuggestionClickHandler(final SuggestionClickHandler suggestionClickHandler) {
         this.suggestionClickHandler = suggestionClickHandler;
+    }
+
+    public void setWelcomeActionHandler(final WelcomeActionHandler welcomeActionHandler) {
+        this.welcomeActionHandler = welcomeActionHandler;
     }
 
     /**
@@ -444,6 +449,19 @@ public class Browser extends StackPane {
         safeJavaScriptCall("updateWelcomeSubtitle", text);
     }
 
+    /**
+     * Populates the welcome screen with greeting and commands data.
+     *
+     * @param greeting      Greeting text (e.g. "Good morning")
+     * @param commandsJson  JSON array of commands: [{id, name, description}]
+     * @param commandsLabel Localized label for the "Commands" section
+     */
+    public void populateWelcomeData(final String greeting,
+                                     final String commandsJson,
+                                     final String commandsLabel) {
+        safeJavaScriptCall("populateWelcomeData", greeting, commandsJson, commandsLabel);
+    }
+
     private String initHtml() {
         final String iconFontCss = buildIconFontFaceCss();
         return CHAT_HTML_TEMPLATE.formatted(iconFontCss, getCssStyles(), getJavaScript());
@@ -601,10 +619,20 @@ public class Browser extends StackPane {
                 Platform.runLater(() -> suggestionClickHandler.onSuggestionClick(text));
             }
         }
+
+        public void handleSelectCommand(final String commandId) {
+            if (welcomeActionHandler != null) {
+                Platform.runLater(() -> welcomeActionHandler.onSelectCommand(commandId));
+            }
+        }
     }
 
     public interface SuggestionClickHandler {
         void onSuggestionClick(String text);
+    }
+
+    public interface WelcomeActionHandler {
+        void onSelectCommand(String commandId);
     }
 
 }
