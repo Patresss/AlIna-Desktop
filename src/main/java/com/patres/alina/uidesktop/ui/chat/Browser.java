@@ -65,7 +65,8 @@ public class Browser extends StackPane {
         this.webEngine = webView.getEngine();
         this.webEngine.setOnAlert(event -> handleBrowserAlert(event.getData()));
         this.webEngine.locationProperty().addListener((_, _, newLocation) -> {
-            if (newLocation != null && (newLocation.startsWith("http://") || newLocation.startsWith("https://"))) {
+            if (newLocation != null && newLocation.matches("^[a-zA-Z][a-zA-Z0-9+\\-.]*://.*")
+                    && !newLocation.startsWith("about:") && !newLocation.startsWith("data:")) {
                 Platform.runLater(() -> {
                     webEngine.loadContent(initHtml(), "text/html");
                     openWebpage(newLocation);

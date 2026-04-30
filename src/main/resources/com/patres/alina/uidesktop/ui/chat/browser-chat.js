@@ -894,12 +894,22 @@
     }
 
     // ── Link interception ───────────────────────────
+    function isExternalUrl(href) {
+        if (!href) return false;
+        if (href.startsWith('http://') || href.startsWith('https://')) return true;
+        // Support custom URI schemes (e.g. obsidian://, vscode://, slack://)
+        // but exclude internal browser schemes
+        const internalSchemes = ['about:', 'data:', 'javascript:', 'blob:'];
+        if (internalSchemes.some(s => href.startsWith(s))) return false;
+        return /^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//.test(href);
+    }
+
     document.addEventListener('click', (event) => {
         let target = event.target;
         while (target && target !== document) {
             if (target.tagName?.toLowerCase() === 'a') {
                 const href = target.getAttribute('href') || target.href;
-                if (href?.startsWith('http://') || href?.startsWith('https://')) {
+                if (isExternalUrl(href)) {
                     event.preventDefault();
                     event.stopPropagation();
                     if (window.alinaBrowserBridge?.handleOpenUrl) {
