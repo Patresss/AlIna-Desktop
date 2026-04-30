@@ -17,6 +17,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.kordamp.ikonli.devicons.Devicons;
@@ -171,15 +172,38 @@ public class JiraWidget extends VBox {
         final Label summaryLabel = new Label();
         EmojiLabelHelper.applyEmojiText(summaryLabel, issue.summary());
         summaryLabel.getStyleClass().add("workspace-jira-summary");
-        summaryLabel.setMaxWidth(Double.MAX_VALUE);
         summaryLabel.setWrapText(false);
-        HBox.setHgrow(summaryLabel, Priority.ALWAYS);
 
-        final HBox row = new HBox(6, keyLabel, statusLabel, summaryLabel);
+        final Region rowSpacer = new Region();
+        HBox.setHgrow(rowSpacer, Priority.ALWAYS);
+
+        final String aiPrompt = BackendApi.getWorkspaceSettings().jiraAiPrompt();
+        final String arguments = buildIssueArguments(issue);
+        final Region aiSlot = DashboardAiButton.createSlot(aiPrompt, arguments);
+
+        final HBox row = new HBox(6, keyLabel, statusLabel, summaryLabel, rowSpacer, aiSlot);
         row.getStyleClass().add("workspace-jira-item");
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
         return row;
+    }
+
+    private String buildIssueArguments(final JiraIssue issue) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Issue: ").append(issue.key()).append(" - ").append(issue.summary());
+        if (issue.status() != null && !issue.status().isBlank()) {
+            sb.append("\nStatus: ").append(issue.status());
+        }
+        if (issue.priority() != null && !issue.priority().isBlank()) {
+            sb.append("\nPriority: ").append(issue.priority());
+        }
+        if (issue.type() != null && !issue.type().isBlank()) {
+            sb.append("\nType: ").append(issue.type());
+        }
+        if (issue.url() != null && !issue.url().isBlank()) {
+            sb.append("\nURL: ").append(issue.url());
+        }
+        return sb.toString();
     }
 
     // ── Change tracking ──────────────────────────────────────────

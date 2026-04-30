@@ -1,6 +1,7 @@
 package com.patres.alina.uidesktop.ui.chat;
 
 import com.patres.alina.common.card.CardListItem;
+import com.patres.alina.common.event.CalendarAiPromptEvent;
 import com.patres.alina.common.event.ChatNotificationEvent;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
@@ -70,6 +71,7 @@ public class ChatWindow extends BorderPane {
     private final Consumer<FocusShortcutTriggeredEvent> focusShortcutTriggeredEventConsumer = event -> triggerFocusAction();
     private Consumer<ChatMessageStreamEvent> chatMessageStreamEventConsumer;
     private final Consumer<ChatNotificationEvent> chatNotificationEventConsumer = this::handleChatNotification;
+    private final Consumer<CalendarAiPromptEvent> calendarAiPromptEventConsumer = this::handleCalendarAiPrompt;
 
     private SearchCommandPopup popup;
     private CardListItem currentCommand;
@@ -180,6 +182,11 @@ public class ChatWindow extends BorderPane {
                 ChatNotificationEvent.class,
                 chatNotificationEventConsumer
         );
+
+        DefaultEventBus.getInstance().subscribe(
+                CalendarAiPromptEvent.class,
+                calendarAiPromptEventConsumer
+        );
     }
 
     public void focusTextArea() {
@@ -202,6 +209,11 @@ public class ChatWindow extends BorderPane {
         DefaultEventBus.getInstance().unsubscribe(
                 ChatNotificationEvent.class,
                 chatNotificationEventConsumer
+        );
+
+        DefaultEventBus.getInstance().unsubscribe(
+                CalendarAiPromptEvent.class,
+                calendarAiPromptEventConsumer
         );
 
         if (browser != null) {
@@ -490,6 +502,13 @@ public class ChatWindow extends BorderPane {
         }
         NotificationSoundPlayer.playIfEnabled();
         displayMessage(event.getMessage(), ASSISTANT, event.getStyleType());
+    }
+
+    private void handleCalendarAiPrompt(final CalendarAiPromptEvent event) {
+        if (!applicationWindow.isActiveTab(chatThread.id())) {
+            return;
+        }
+        FxThreadRunner.run(() -> sendMessage(event.getMessage(), null, null));
     }
 
     private void sendMessageToService(final String message, final String commandId) {

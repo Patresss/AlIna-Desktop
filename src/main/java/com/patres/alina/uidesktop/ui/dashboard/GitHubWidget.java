@@ -17,6 +17,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.kordamp.ikonli.feather.Feather;
@@ -155,24 +156,48 @@ public class GitHubWidget extends VBox {
         final Label prTitleLabel = new Label();
         EmojiLabelHelper.applyEmojiText(prTitleLabel, pr.title());
         prTitleLabel.getStyleClass().add("workspace-pr-title");
-        prTitleLabel.setMaxWidth(Double.MAX_VALUE);
         prTitleLabel.setWrapText(false);
         prTitleLabel.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
-        HBox.setHgrow(prTitleLabel, Priority.ALWAYS);
         prTitleLabel.setOnMouseClicked(event -> EmojiLabelHelper.toggleWrap(prTitleLabel));
 
-        final HBox row = new HBox(6, numberLabel, repoLabel, prTitleLabel);
+        final Region rowSpacer = new Region();
+        HBox.setHgrow(rowSpacer, Priority.ALWAYS);
+
+        final String aiPrompt = BackendApi.getWorkspaceSettings().githubAiPrompt();
+        final String arguments = buildPrArguments(pr);
+        final Region aiSlot = DashboardAiButton.createSlot(aiPrompt, arguments);
+
+        final HBox row = new HBox(6, numberLabel, repoLabel, prTitleLabel, rowSpacer, aiSlot);
 
         if (pr.draft()) {
             final Label draftLabel = new Label("draft");
             draftLabel.getStyleClass().add("workspace-pr-draft");
-            row.getChildren().add(draftLabel);
+            // Insert draft label before spacer
+            row.getChildren().add(3, draftLabel);
         }
 
         row.getStyleClass().add("workspace-pr-item");
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
         return row;
+    }
+
+    private String buildPrArguments(final GitHubPullRequest pr) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("PR: #").append(pr.number()).append(" - ").append(pr.title());
+        if (pr.repository() != null && !pr.repository().isBlank()) {
+            sb.append("\nRepository: ").append(pr.repository());
+        }
+        if (pr.author() != null && !pr.author().isBlank()) {
+            sb.append("\nAuthor: ").append(pr.author());
+        }
+        if (pr.draft()) {
+            sb.append("\nDraft: true");
+        }
+        if (pr.url() != null && !pr.url().isBlank()) {
+            sb.append("\nURL: ").append(pr.url());
+        }
+        return sb.toString();
     }
 
     // ── Change tracking ──────────────────────────────────────────

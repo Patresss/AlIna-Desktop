@@ -131,7 +131,11 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 settings.calendarChangeNotificationsEnabled(),
                 settings.githubChangeNotificationsEnabled(),
                 settings.jiraChangeNotificationsEnabled(),
-                settings.splitMode()
+                settings.splitMode(),
+                settings.calendarAiPrompt(),
+                settings.tasksAiPrompt(),
+                settings.jiraAiPrompt(),
+                settings.githubAiPrompt()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;

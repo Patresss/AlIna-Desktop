@@ -227,9 +227,13 @@ public class GoogleCalendarWidget extends VBox {
         final String meetUrl = resolveClickUrl(event);
         final VBox timeColumn = createTimeColumn(event, isCurrent, isUpcomingSoon, remainingMinutes, minutesUntilStart, meetUrl);
         final Region videoSlot = createVideoSlot(event);
+        final Region aiSlot = createAiSlot(event);
         final Label summaryLabel = createSummaryLabel(event);
 
-        final HBox row = new HBox(8, timeColumn, videoSlot, summaryLabel);
+        final Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        final HBox row = new HBox(8, timeColumn, videoSlot, summaryLabel, spacer, aiSlot);
         row.setAlignment(Pos.CENTER_LEFT);
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
@@ -305,13 +309,34 @@ public class GoogleCalendarWidget extends VBox {
         return placeholder;
     }
 
+    private Region createAiSlot(final GoogleCalendarEvent event) {
+        final String aiPrompt = BackendApi.getWorkspaceSettings().calendarAiPrompt();
+        return DashboardAiButton.createSlot(aiPrompt, buildEventArguments(event));
+    }
+
+    private String buildEventArguments(final GoogleCalendarEvent event) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Event: ").append(event.summary());
+        if (!event.allDay()) {
+            sb.append("\nTime: ").append(event.startTime()).append(" - ").append(event.endTime());
+        } else {
+            sb.append("\nTime: All day");
+        }
+        if (event.location() != null && !event.location().isBlank()) {
+            sb.append("\nLocation: ").append(event.location());
+        }
+        final String meetUrl = resolveClickUrl(event);
+        if (!meetUrl.isEmpty()) {
+            sb.append("\nMeeting link: ").append(meetUrl);
+        }
+        return sb.toString();
+    }
+
     private Label createSummaryLabel(final GoogleCalendarEvent event) {
         final Label summaryLabel = new Label();
         EmojiLabelHelper.applyEmojiText(summaryLabel, event.summary());
         summaryLabel.getStyleClass().add(STYLE_CALENDAR_SUMMARY);
-        summaryLabel.setMaxWidth(Double.MAX_VALUE);
         summaryLabel.setWrapText(false);
-        HBox.setHgrow(summaryLabel, Priority.ALWAYS);
         return summaryLabel;
     }
 

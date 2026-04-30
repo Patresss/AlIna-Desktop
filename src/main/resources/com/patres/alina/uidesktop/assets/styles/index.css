@@ -659,6 +659,33 @@ ChatThreadHistoryCard {
     -fx-opacity: 1.0;
 }
 
+.workspace-calendar-ai-icon {
+    -fx-icon-color: -color-accent-fg;
+    -fx-icon-size: 13px;
+}
+
+.workspace-calendar-ai-button {
+    -fx-cursor: hand;
+    -fx-padding: 0;
+    -fx-opacity: 0;
+}
+
+.workspace-calendar-item:hover .workspace-calendar-ai-button,
+.workspace-calendar-item-current:hover .workspace-calendar-ai-button,
+.workspace-task-item:hover .workspace-calendar-ai-button,
+.workspace-pr-item:hover .workspace-calendar-ai-button,
+.workspace-jira-item:hover .workspace-calendar-ai-button {
+    -fx-opacity: 0.6;
+}
+
+.workspace-calendar-item:hover .workspace-calendar-ai-button:hover,
+.workspace-calendar-item-current:hover .workspace-calendar-ai-button:hover,
+.workspace-task-item:hover .workspace-calendar-ai-button:hover,
+.workspace-pr-item:hover .workspace-calendar-ai-button:hover,
+.workspace-jira-item:hover .workspace-calendar-ai-button:hover {
+    -fx-opacity: 1.0;
+}
+
 .workspace-calendar-summary {
     -fx-text-fill: -color-fg-default;
     -fx-font-size: 12px;

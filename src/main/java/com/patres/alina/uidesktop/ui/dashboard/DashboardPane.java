@@ -19,6 +19,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.kordamp.ikonli.feather.Feather;
@@ -178,17 +179,34 @@ public class DashboardPane extends VBox {
         final Label taskLabel = new Label();
         EmojiLabelHelper.applyEmojiText(taskLabel, task.title());
         taskLabel.getStyleClass().add("workspace-task-label");
-        taskLabel.setMaxWidth(Double.MAX_VALUE);
         taskLabel.setWrapText(false);
-        HBox.setHgrow(taskLabel, Priority.ALWAYS);
 
         taskLabel.setOnMouseClicked(event -> EmojiLabelHelper.toggleWrap(taskLabel));
 
-        final HBox row = new HBox(8, checkBox, taskLabel);
+        final Region rowSpacer = new Region();
+        HBox.setHgrow(rowSpacer, Priority.ALWAYS);
+
+        final String aiPrompt = BackendApi.getWorkspaceSettings().tasksAiPrompt();
+        final String arguments = buildTaskArguments(task);
+        final Region aiSlot = DashboardAiButton.createSlot(aiPrompt, arguments);
+
+        final HBox row = new HBox(8, checkBox, taskLabel, rowSpacer, aiSlot);
         row.getStyleClass().add("workspace-task-item");
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
         return row;
+    }
+
+    private String buildTaskArguments(final DashboardTask task) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Task: ").append(task.title());
+        if (task.group() != null && !task.group().isBlank()) {
+            sb.append("\nGroup: ").append(task.group());
+        }
+        if (task.sourceFile() != null && !task.sourceFile().isBlank()) {
+            sb.append("\nSource: ").append(task.sourceFile());
+        }
+        return sb.toString();
     }
 
     private void toggleCollapsed(final boolean collapsed) {

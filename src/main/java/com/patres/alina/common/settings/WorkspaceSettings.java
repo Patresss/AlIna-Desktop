@@ -32,7 +32,11 @@ public record WorkspaceSettings(
         boolean calendarChangeNotificationsEnabled,
         boolean githubChangeNotificationsEnabled,
         boolean jiraChangeNotificationsEnabled,
-        boolean splitMode
+        boolean splitMode,
+        String calendarAiPrompt,
+        String tasksAiPrompt,
+        String jiraAiPrompt,
+        String githubAiPrompt
 ) {
 
     public static final String DEFAULT_TASKS_FILE = "profile/default/focus.md";
@@ -82,7 +86,11 @@ public record WorkspaceSettings(
                 true,
                 true,
                 true,
-                false
+                false,
+                "",
+                "",
+                "",
+                ""
         );
     }
 
@@ -104,116 +112,54 @@ public record WorkspaceSettings(
         jiraApiToken = jiraApiToken == null ? "" : jiraApiToken.trim();
         dashboardCalendarRefreshSeconds = dashboardCalendarRefreshSeconds > 0 ? dashboardCalendarRefreshSeconds : DEFAULT_DASHBOARD_CALENDAR_REFRESH_SECONDS;
         calendarNotificationMinutesBefore = calendarNotificationMinutesBefore > 0 ? calendarNotificationMinutesBefore : DEFAULT_CALENDAR_NOTIFICATION_MINUTES_BEFORE;
+        calendarAiPrompt = calendarAiPrompt == null ? "" : calendarAiPrompt.trim();
+        tasksAiPrompt = tasksAiPrompt == null ? "" : tasksAiPrompt.trim();
+        jiraAiPrompt = jiraAiPrompt == null ? "" : jiraAiPrompt.trim();
+        githubAiPrompt = githubAiPrompt == null ? "" : githubAiPrompt.trim();
     }
 
     public WorkspaceSettings withKeepWindowAlwaysOnTop(final boolean value) {
         return new WorkspaceSettings(
-                showDashboard,
-                dashboardCollapsed,
-                value,
-                tasksFile,
-                dashboardTaskLimit,
-                taskGroups,
-                openCodeHostname,
-                openCodePort,
-                openCodeWorkingDirectory,
-                githubToken,
-                dashboardTasksRefreshSeconds,
-                dashboardGithubRefreshSeconds,
-                dashboardMediaRefreshSeconds,
-                dashboardGithubPrLimit,
-                dashboardJiraRefreshSeconds,
-                dashboardJiraIssueLimit,
-                jiraEmail,
-                jiraApiToken,
-                showDashboardMusic,
-                showDashboardTasks,
-                showDashboardGithub,
-                showDashboardJira,
-                showDashboardCalendar,
-                dashboardCalendarRefreshSeconds,
-                calendarHideAllDayEvents,
-                calendarShowOnlyCurrentAndFuture,
-                calendarNotificationsEnabled,
-                calendarNotificationMinutesBefore,
-                calendarChangeNotificationsEnabled,
-                githubChangeNotificationsEnabled,
-                jiraChangeNotificationsEnabled,
-                splitMode
+                showDashboard, dashboardCollapsed, value, tasksFile, dashboardTaskLimit, taskGroups,
+                openCodeHostname, openCodePort, openCodeWorkingDirectory, githubToken,
+                dashboardTasksRefreshSeconds, dashboardGithubRefreshSeconds, dashboardMediaRefreshSeconds,
+                dashboardGithubPrLimit, dashboardJiraRefreshSeconds, dashboardJiraIssueLimit,
+                jiraEmail, jiraApiToken, showDashboardMusic, showDashboardTasks, showDashboardGithub,
+                showDashboardJira, showDashboardCalendar, dashboardCalendarRefreshSeconds,
+                calendarHideAllDayEvents, calendarShowOnlyCurrentAndFuture, calendarNotificationsEnabled,
+                calendarNotificationMinutesBefore, calendarChangeNotificationsEnabled,
+                githubChangeNotificationsEnabled, jiraChangeNotificationsEnabled, splitMode,
+                calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt
         );
     }
 
     public WorkspaceSettings withDashboardCollapsed(final boolean value) {
         return new WorkspaceSettings(
-                showDashboard,
-                value,
-                keepWindowAlwaysOnTop,
-                tasksFile,
-                dashboardTaskLimit,
-                taskGroups,
-                openCodeHostname,
-                openCodePort,
-                openCodeWorkingDirectory,
-                githubToken,
-                dashboardTasksRefreshSeconds,
-                dashboardGithubRefreshSeconds,
-                dashboardMediaRefreshSeconds,
-                dashboardGithubPrLimit,
-                dashboardJiraRefreshSeconds,
-                dashboardJiraIssueLimit,
-                jiraEmail,
-                jiraApiToken,
-                showDashboardMusic,
-                showDashboardTasks,
-                showDashboardGithub,
-                showDashboardJira,
-                showDashboardCalendar,
-                dashboardCalendarRefreshSeconds,
-                calendarHideAllDayEvents,
-                calendarShowOnlyCurrentAndFuture,
-                calendarNotificationsEnabled,
-                calendarNotificationMinutesBefore,
-                calendarChangeNotificationsEnabled,
-                githubChangeNotificationsEnabled,
-                jiraChangeNotificationsEnabled,
-                splitMode
+                showDashboard, value, keepWindowAlwaysOnTop, tasksFile, dashboardTaskLimit, taskGroups,
+                openCodeHostname, openCodePort, openCodeWorkingDirectory, githubToken,
+                dashboardTasksRefreshSeconds, dashboardGithubRefreshSeconds, dashboardMediaRefreshSeconds,
+                dashboardGithubPrLimit, dashboardJiraRefreshSeconds, dashboardJiraIssueLimit,
+                jiraEmail, jiraApiToken, showDashboardMusic, showDashboardTasks, showDashboardGithub,
+                showDashboardJira, showDashboardCalendar, dashboardCalendarRefreshSeconds,
+                calendarHideAllDayEvents, calendarShowOnlyCurrentAndFuture, calendarNotificationsEnabled,
+                calendarNotificationMinutesBefore, calendarChangeNotificationsEnabled,
+                githubChangeNotificationsEnabled, jiraChangeNotificationsEnabled, splitMode,
+                calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt
         );
     }
 
     public WorkspaceSettings withSplitMode(final boolean value) {
         return new WorkspaceSettings(
-                showDashboard,
-                dashboardCollapsed,
-                keepWindowAlwaysOnTop,
-                tasksFile,
-                dashboardTaskLimit,
-                taskGroups,
-                openCodeHostname,
-                openCodePort,
-                openCodeWorkingDirectory,
-                githubToken,
-                dashboardTasksRefreshSeconds,
-                dashboardGithubRefreshSeconds,
-                dashboardMediaRefreshSeconds,
-                dashboardGithubPrLimit,
-                dashboardJiraRefreshSeconds,
-                dashboardJiraIssueLimit,
-                jiraEmail,
-                jiraApiToken,
-                showDashboardMusic,
-                showDashboardTasks,
-                showDashboardGithub,
-                showDashboardJira,
-                showDashboardCalendar,
-                dashboardCalendarRefreshSeconds,
-                calendarHideAllDayEvents,
-                calendarShowOnlyCurrentAndFuture,
-                calendarNotificationsEnabled,
-                calendarNotificationMinutesBefore,
-                calendarChangeNotificationsEnabled,
-                githubChangeNotificationsEnabled,
-                jiraChangeNotificationsEnabled,
-                value
+                showDashboard, dashboardCollapsed, keepWindowAlwaysOnTop, tasksFile, dashboardTaskLimit, taskGroups,
+                openCodeHostname, openCodePort, openCodeWorkingDirectory, githubToken,
+                dashboardTasksRefreshSeconds, dashboardGithubRefreshSeconds, dashboardMediaRefreshSeconds,
+                dashboardGithubPrLimit, dashboardJiraRefreshSeconds, dashboardJiraIssueLimit,
+                jiraEmail, jiraApiToken, showDashboardMusic, showDashboardTasks, showDashboardGithub,
+                showDashboardJira, showDashboardCalendar, dashboardCalendarRefreshSeconds,
+                calendarHideAllDayEvents, calendarShowOnlyCurrentAndFuture, calendarNotificationsEnabled,
+                calendarNotificationMinutesBefore, calendarChangeNotificationsEnabled,
+                githubChangeNotificationsEnabled, jiraChangeNotificationsEnabled, value,
+                calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt
         );
     }
 

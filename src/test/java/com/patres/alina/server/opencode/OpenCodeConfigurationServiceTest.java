@@ -150,7 +150,11 @@ class OpenCodeConfigurationServiceTest {
                 true,
                 true,
                 true,
-                false
+                false,
+                "",
+                "",
+                "",
+                ""
         ));
 
         return new OpenCodeConfigurationService(
