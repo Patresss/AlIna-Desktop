@@ -35,20 +35,166 @@
     const $ = (id) => document.getElementById(id);
 
     // ── Welcome screen ──────────────────────────────
+    // ── Particle Logo ────────────────────────────────
+    let _particleRAF = null;
+
+    function _getThemeColors() {
+        const style = getComputedStyle(document.documentElement);
+        const accent = style.getPropertyValue('--color-accent-fg').trim() || '#58a6ff';
+        const muted  = style.getPropertyValue('--color-fg-muted').trim()  || '#8b949e';
+        return { accent, muted };
+    }
+
+    function _sampleTextPixels(text, canvasWidth, canvasHeight, fontSize) {
+        const offscreen = document.createElement('canvas');
+        offscreen.width  = canvasWidth;
+        offscreen.height = canvasHeight;
+        const ctx = offscreen.getContext('2d');
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        // Draw "AlIna" — manual per-character to apply two colours
+        // We just draw white-on-black and sample alpha; colour applied per-particle later
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `700 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
+
+        const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight).data;
+        const pixels = [];
+        const step = 2; // sample every 2px for high density
+        for (let y = 0; y < canvasHeight; y += step) {
+            for (let x = 0; x < canvasWidth; x += step) {
+                const alpha = imageData[(y * canvasWidth + x) * 4 + 3];
+                if (alpha > 128) {
+                    pixels.push({ x, y });
+                }
+            }
+        }
+        return pixels;
+    }
+
+    function _charRanges(text, canvasWidth, canvasHeight, fontSize) {
+        // Returns x-range for each character so we can colour accent vs muted
+        const offscreen = document.createElement('canvas');
+        offscreen.width  = canvasWidth;
+        offscreen.height = canvasHeight;
+        const ctx = offscreen.getContext('2d');
+        ctx.font = `700 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        const totalWidth = ctx.measureText(text).width;
+        let cursorX = canvasWidth / 2 - totalWidth / 2;
+        const ranges = [];
+        for (const ch of text) {
+            const w = ctx.measureText(ch).width;
+            ranges.push({ ch, x0: cursorX, x1: cursorX + w });
+            cursorX += w;
+        }
+        return ranges;
+    }
+
+    function _startParticleLogo(canvas) {
+        const W = canvas.width;
+        const H = canvas.height;
+        const ctx = canvas.getContext('2d');
+        const { accent, muted } = _getThemeColors();
+        const fontSize = H * 0.65;
+        const TEXT = 'AlIna';
+        const ACCENT_CHARS = new Set(['A', 'I']);
+
+        const pixels = _sampleTextPixels(TEXT, W, H, fontSize);
+        const ranges = _charRanges(TEXT, W, H, fontSize);
+
+        function charColorFor(x) {
+            for (const r of ranges) {
+                if (x >= r.x0 - 2 && x <= r.x1 + 2) {
+                    return ACCENT_CHARS.has(r.ch) ? accent : muted;
+                }
+            }
+            return muted;
+        }
+
+        if (pixels.length === 0) return;
+
+        // Build particles
+        const particles = pixels.map(p => {
+            const angle = Math.random() * Math.PI * 2;
+            const dist  = 200 + Math.random() * 300;
+            return {
+                tx: p.x,   // target x
+                ty: p.y,   // target y
+                x:  p.x + Math.cos(angle) * dist,  // start scattered
+                y:  p.y + Math.sin(angle) * dist,
+                color: charColorFor(p.x),
+                r: 1.0 + Math.random() * 0.8,      // radius
+                // drift orbit params
+                orbitAngle: Math.random() * Math.PI * 2,
+                orbitSpeed: (Math.random() - 0.5) * 0.022,
+                orbitRadius: 0.6 + Math.random() * 1.2,
+                // ease-in progress [0..1]
+                progress: 0,
+                delay: Math.random() * 0.4,        // staggered arrival
+            };
+        });
+
+        let startTime = null;
+        const GATHER_DURATION = 900; // ms for particles to arrive
+
+        function draw(ts) {
+            if (!startTime) startTime = ts;
+            const elapsed = ts - startTime;
+
+            ctx.clearRect(0, 0, W, H);
+
+            for (const p of particles) {
+                // Normalised progress for this particle (0→1)
+                const t = Math.max(0, Math.min(1, (elapsed - p.delay * GATHER_DURATION) / GATHER_DURATION));
+                // Ease out cubic
+                const ease = 1 - Math.pow(1 - t, 3);
+                p.progress = ease;
+
+                // Current position: lerp from start → target
+                const cx = p.x + (p.tx - p.x) * ease;
+                const cy = p.y + (p.ty - p.y) * ease;
+
+                // Add gentle orbit once mostly arrived
+                p.orbitAngle += p.orbitSpeed;
+                const orbitFactor = Math.min(1, (elapsed - GATHER_DURATION * 0.5) / 800);
+                const ox = Math.cos(p.orbitAngle) * p.orbitRadius * orbitFactor;
+                const oy = Math.sin(p.orbitAngle) * p.orbitRadius * orbitFactor;
+
+                ctx.beginPath();
+                ctx.arc(cx + ox, cy + oy, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = 0.15 + ease * 0.85;
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+
+            _particleRAF = requestAnimationFrame(draw);
+        }
+
+        _particleRAF = requestAnimationFrame(draw);
+    }
+
     function showWelcomeScreen() {
         const chatContainer = $('chat-container');
         if (!chatContainer || chatContainer.children.length > 0) return;
 
         const welcome = h('div', { className: 'welcome-screen', id: 'welcome-screen' });
 
-        // Header: logo + greeting + subtitle
+        // Header: canvas particle logo + subtitle
+        const canvasW = 260;
+        const canvasH = 80;
+        const logoCanvas = document.createElement('canvas');
+        logoCanvas.id = 'welcome-logo-canvas';
+        logoCanvas.width  = canvasW;
+        logoCanvas.height = canvasH;
+        logoCanvas.className = 'welcome-logo-canvas';
+
         const header = h('div', { className: 'welcome-header' },
-            h('div', { className: 'welcome-logo' },
-                h('span', { className: 'welcome-logo-accent' }, 'A'),
-                h('span', { className: 'welcome-logo-subtle' }, 'l'),
-                h('span', { className: 'welcome-logo-accent' }, 'I'),
-                h('span', { className: 'welcome-logo-subtle' }, 'na')
-            ),
+            logoCanvas,
             h('div', { className: 'welcome-subtitle', id: 'welcome-subtitle' },
                 'Type a message to start, or press ',
                 h('kbd', {}, '/'),
@@ -61,6 +207,9 @@
         welcome.appendChild(h('div', { className: 'welcome-sections', id: 'welcome-sections' }));
 
         chatContainer.appendChild(welcome);
+
+        // Start particle animation after paint
+        requestAnimationFrame(() => _startParticleLogo(logoCanvas));
     }
 
     function populateWelcomeData(greetingText, commandsJson, commandsLabel, recentJson, tipPrefix, tipText, recentLabel) {
@@ -149,6 +298,10 @@
     }
 
     function removeWelcomeScreen() {
+        if (_particleRAF !== null) {
+            cancelAnimationFrame(_particleRAF);
+            _particleRAF = null;
+        }
         const welcome = $('welcome-screen');
         if (welcome) {
             Object.assign(welcome.style, {
