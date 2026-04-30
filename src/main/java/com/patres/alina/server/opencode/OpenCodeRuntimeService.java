@@ -249,7 +249,10 @@ public class OpenCodeRuntimeService {
         }
 
         final ObjectNode body = objectMapper.createObjectNode();
-        body.put("title", title == null || title.isBlank() ? chatThreadId : title);
+        // Leave title empty so OpenCode's built-in title agent can generate it automatically
+        if (title != null && !title.isBlank()) {
+            body.put("title", title);
+        }
         final JsonNode response = httpClient.post("/session", body);
         final String sessionId = response.path("id").asText();
         if (sessionId == null || sessionId.isBlank()) {

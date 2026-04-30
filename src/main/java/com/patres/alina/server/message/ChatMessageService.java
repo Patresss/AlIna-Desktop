@@ -256,7 +256,7 @@ public class ChatMessageService {
                     : contextMessages.getLast().text();
             final Flux<String> stream = openCodeRuntimeService.sendMessageStream(
                     chatThreadId,
-                    chatThreadId,
+                    null,
                     currentUserMessage,
                     systemPrompt,
                     historySummary,
