@@ -12,6 +12,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -753,10 +754,20 @@ public class ChatStreamingController {
         if (mode == StreamControlMode.STOP) {
             streamControlButton.setDisable(false);
             streamControlButton.setGraphic(new FontIcon(ICON_STOP));
+            Tooltip.install(streamControlButton, new Tooltip(LanguageManager.getLanguageString("chat.button.stop")));
             return;
         }
 
         streamControlButton.setGraphic(new FontIcon(ICON_REGENERATE));
         streamControlButton.setDisable(!hasAnyUserMessages);
+        Tooltip.install(streamControlButton, new Tooltip(LanguageManager.getLanguageString("chat.button.regenerate")));
+    }
+
+    public void refreshStreamControlTooltip() {
+        if (streamControlButton == null) {
+            return;
+        }
+        final String key = streamControlMode == StreamControlMode.STOP ? "chat.button.stop" : "chat.button.regenerate";
+        Tooltip.install(streamControlButton, new Tooltip(LanguageManager.getLanguageString(key)));
     }
 }

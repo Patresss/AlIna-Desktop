@@ -39,6 +39,7 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -282,6 +283,7 @@ public class ChatWindow extends BorderPane {
         setCurrentCommand(null);
         bindInputHeightToButtonsBox();
         initLanguageListener();
+        installButtonTooltips();
 
         chatMessageStreamEventConsumer = streamingController::handleStreamEvent;
         initEventsSubscriptions();
@@ -341,8 +343,17 @@ public class ChatWindow extends BorderPane {
 
     private void initLanguageListener() {
         LanguageManager.localeProperty().addListener((_, _, _) ->
-                FxThreadRunner.run(() -> setCurrentCommand(currentCommand))
+                FxThreadRunner.run(() -> {
+                    setCurrentCommand(currentCommand);
+                    installButtonTooltips();
+                })
         );
+    }
+
+    private void installButtonTooltips() {
+        Tooltip.install(sendButton, new Tooltip(LanguageManager.getLanguageString("chat.button.send")));
+        Tooltip.install(clearChatButton, new Tooltip(LanguageManager.getLanguageString("chat.button.clearChat")));
+        streamingController.refreshStreamControlTooltip();
     }
 
     private void triggerFocusAction() {
