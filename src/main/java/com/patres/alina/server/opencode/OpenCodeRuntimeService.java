@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.ChatThreadTitleUpdatedEvent;
 import com.patres.alina.common.event.Event;
+import com.patres.alina.common.message.ImageAttachment;
 import com.patres.alina.common.message.TodoItem;
 import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
 import com.patres.alina.common.permission.PermissionApprovalAction;
@@ -81,7 +82,8 @@ public class OpenCodeRuntimeService {
                                           final String systemPrompt,
                                           final String historySummary,
                                           final String modelOverride,
-                                          final boolean forceNewSession) {
+                                          final boolean forceNewSession,
+                                          final List<ImageAttachment> imageAttachments) {
         return Flux.create(sink -> {
             final ActiveStream stream = new ActiveStream(chatThreadId, sink);
             activeStreams.put(chatThreadId, stream);
@@ -97,7 +99,7 @@ public class OpenCodeRuntimeService {
                     stream.eventStream = eventStream;
 
                     final String composedSystemPrompt = composeSystemPrompt(systemPrompt, historySummary, session.newlyCreated());
-                    sendPromptAsync(session.sessionId(), userMessage, composedSystemPrompt, modelOverride);
+                    sendPromptAsync(session.sessionId(), userMessage, composedSystemPrompt, modelOverride, imageAttachments);
                     consumeEvents(stream, eventStream, sink);
                 } catch (Exception e) {
                     if (!stream.cancelled.get()) {
@@ -273,7 +275,8 @@ public class OpenCodeRuntimeService {
     private void sendPromptAsync(final String sessionId,
                                  final String userMessage,
                                  final String systemPrompt,
-                                 final String modelOverride) throws Exception {
+                                 final String modelOverride,
+                                 final List<ImageAttachment> imageAttachments) throws Exception {
         final ObjectNode body = objectMapper.createObjectNode();
         if (systemPrompt != null && !systemPrompt.isBlank()) {
             body.put("system", systemPrompt);
@@ -291,6 +294,16 @@ public class OpenCodeRuntimeService {
         final ObjectNode text = parts.addObject();
         text.put("type", "text");
         text.put("text", userMessage);
+
+        // Add image parts for pasted images
+        if (imageAttachments != null) {
+            for (final ImageAttachment image : imageAttachments) {
+                final ObjectNode imagePart = parts.addObject();
+                imagePart.put("type", "file");
+                imagePart.put("mime", image.mimeType());
+                imagePart.put("url", image.toDataUri());
+            }
+        }
 
         httpClient.postNoContent("/session/%s/prompt_async".formatted(sessionId), body);
     }

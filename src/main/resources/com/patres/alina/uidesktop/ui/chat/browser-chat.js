@@ -447,6 +447,45 @@
         void div.offsetHeight;
     }
 
+    function addHtmlContentWithImages(htmlContent, messageType, notificationStyle, imageDataUrisJson) {
+        removeWelcomeScreen();
+
+        const div = h('div', { className: `chat-message ${messageType} ${notificationStyle}` });
+
+        // Render image gallery if present
+        let imageDataUris = [];
+        try { imageDataUris = JSON.parse(imageDataUrisJson || '[]'); } catch { /* ignore */ }
+        if (imageDataUris.length > 0) {
+            const gallery = h('div', { className: 'message-image-gallery' });
+            for (const dataUri of imageDataUris) {
+                const img = document.createElement('img');
+                img.src = dataUri;
+                img.className = 'message-image-thumbnail';
+                img.alt = 'Pasted image';
+                img.onclick = () => {
+                    // Toggle full-size view
+                    img.classList.toggle('message-image-expanded');
+                };
+                gallery.appendChild(img);
+            }
+            div.appendChild(gallery);
+        }
+
+        // Render text content
+        if (htmlContent && htmlContent.trim()) {
+            const textDiv = document.createElement('div');
+            textDiv.innerHTML = htmlContent;
+            div.appendChild(textDiv);
+        }
+
+        $('chat-container').appendChild(div);
+
+        enhanceCodeBlocks(div);
+        addMessageActions(div);
+
+        void div.offsetHeight;
+    }
+
     function showLoader() {
         removeWelcomeScreen();
         const loader = $('loader');

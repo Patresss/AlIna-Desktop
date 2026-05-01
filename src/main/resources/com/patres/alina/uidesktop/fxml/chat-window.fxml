@@ -6,6 +6,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
@@ -15,6 +16,11 @@
    <bottom>
       <VBox fx:id="footerPane" maxWidth="1.7976931348623157E308">
          <children>
+            <FlowPane fx:id="imageAttachmentPane" hgap="8.0" vgap="8.0" managed="false" visible="false" styleClass="image-attachment-pane">
+               <padding>
+                  <Insets left="8.0" right="8.0" top="8.0" />
+               </padding>
+            </FlowPane>
             <StackPane fx:id="composerPane" maxWidth="1.7976931348623157E308">
                <children>
                   <HBox fx:id="messageInputRow" alignment="CENTER" maxWidth="1.7976931348623157E308">

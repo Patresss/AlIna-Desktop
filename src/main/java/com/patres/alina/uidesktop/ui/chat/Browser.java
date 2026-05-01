@@ -3,6 +3,7 @@ package com.patres.alina.uidesktop.ui.chat;
 import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageStyleType;
+import com.patres.alina.common.message.ImageAttachment;
 import com.patres.alina.common.message.TodoItem;
 import com.patres.alina.uidesktop.common.event.ThemeEvent;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
@@ -177,6 +178,42 @@ public class Browser extends StackPane {
         );
         
         executeJavaScript("scrollToBottom()");
+    }
+
+    /**
+     * Adds content to the chat interface with optional image attachments.
+     * Images are rendered as thumbnails above the text content.
+     */
+    public void addContentWithImages(final String markdownContent,
+                                      final ChatMessageRole chatMessageRole,
+                                      final ChatMessageStyleType chatMessageStyleType,
+                                      final java.util.List<ImageAttachment> images) {
+        if (images == null || images.isEmpty()) {
+            addContent(markdownContent, chatMessageRole, chatMessageStyleType);
+            return;
+        }
+
+        final String htmlContent = convertMarkdownToHtml(markdownContent);
+        final String imageDataUrisJson = buildImageDataUrisJson(images);
+
+        safeJavaScriptCall(
+                "addHtmlContentWithImages",
+                htmlContent,
+                chatMessageRole.getChatMessageRole(),
+                chatMessageStyleType.getStyleType(),
+                imageDataUrisJson
+        );
+
+        executeJavaScript("scrollToBottom()");
+    }
+
+    private String buildImageDataUrisJson(final java.util.List<ImageAttachment> images) {
+        final StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < images.size(); i++) {
+            if (i > 0) json.append(",");
+            json.append("\"").append(escapeJsonString(images.get(i).toDataUri())).append("\"");
+        }
+        return json.append("]").toString();
     }
 
     /**

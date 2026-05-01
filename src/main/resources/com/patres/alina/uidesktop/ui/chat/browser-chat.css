@@ -1415,4 +1415,34 @@ img {
     color: #fff;
 }
 
+/* ══════════════════════════════════════════════════
+   Pasted Image Thumbnails in Messages
+   ══════════════════════════════════════════════════ */
+
+.message-image-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.message-image-thumbnail {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-default);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    object-fit: contain;
+}
+
+.message-image-thumbnail:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.message-image-expanded {
+    max-width: 100% !important;
+    max-height: none !important;
+}
 

@@ -147,6 +147,41 @@
 }
 
 /* ══════════════════════════════════════════════════
+   Image attachment preview pane
+   ══════════════════════════════════════════════════ */
+
+.image-attachment-pane {
+  -fx-background-color: transparent;
+}
+
+.image-attachment-container {
+  -fx-background-color: -color-bg-subtle;
+  -fx-background-radius: 8px;
+  -fx-border-color: -color-border-default;
+  -fx-border-radius: 8px;
+  -fx-padding: 4px;
+  -fx-cursor: hand;
+}
+
+.image-attachment-thumbnail {
+  -fx-effect: null;
+}
+
+.image-attachment-remove-button {
+  -fx-background-color: -color-danger-fg;
+  -fx-background-radius: 10px;
+  -fx-text-fill: white;
+  -fx-padding: 0;
+  -fx-font-size: 10px;
+  -fx-cursor: hand;
+  -fx-opacity: 0.8;
+}
+
+.image-attachment-remove-button:hover {
+  -fx-opacity: 1.0;
+}
+
+/* ══════════════════════════════════════════════════
    Misc controls — Enhanced with transitions
    ══════════════════════════════════════════════════ */
 

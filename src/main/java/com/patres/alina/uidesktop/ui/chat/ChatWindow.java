@@ -10,6 +10,7 @@ import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.common.message.CommandUsageInfo;
+import com.patres.alina.common.message.ImageAttachment;
 import com.patres.alina.common.message.OnMessageCompleteCallback;
 import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.server.command.Command;
@@ -30,20 +31,26 @@ import com.patres.alina.uidesktop.ui.theme.SamplerTheme;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
 import com.patres.alina.uidesktop.ui.util.FxThreadRunner;
 import com.patres.alina.uidesktop.ui.util.NotificationSoundPlayer;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.Tooltip;
-import javafx.scene.layout.HBox;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -52,11 +59,16 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+
+import javax.imageio.ImageIO;
 
 import static com.patres.alina.common.message.ChatMessageRole.ASSISTANT;
 import static com.patres.alina.uidesktop.settings.SettingsMangers.UI_SETTINGS;
@@ -81,9 +93,13 @@ public class ChatWindow extends BorderPane {
     private volatile String selectedModel;
     private boolean settingFromHistory = false;
     private final java.util.Map<String, ChatThread> recentThreadCache = new java.util.HashMap<>();
+    private final List<ImageAttachment> pendingImages = new ArrayList<>();
 
     @FXML
     private StackPane chatAnswersPane;
+
+    @FXML
+    private FlowPane imageAttachmentPane;
 
     @FXML
     private VBox footerPane;
@@ -435,6 +451,17 @@ public class ChatWindow extends BorderPane {
 
     @FXML
     public void chatTextAreaOnKeyPressed(KeyEvent event) {
+        // Handle Ctrl+V / Cmd+V for image paste
+        if (event.getCode() == KeyCode.V && (event.isShortcutDown())) {
+            final Clipboard clipboard = Clipboard.getSystemClipboard();
+            if (clipboard.hasImage()) {
+                handleClipboardImagePaste(clipboard.getImage());
+                event.consume();
+                return;
+            }
+            // If no image, let the default text paste happen
+        }
+
         if (event.getCode() == KeyCode.ESCAPE) {
             if (inputMode != ChatInputMode.CHAT) {
                 exitInputMode();
@@ -489,18 +516,19 @@ public class ChatWindow extends BorderPane {
     @FXML
     public void sendMessageFromUi() {
         final String message = chatTextArea.getText().trim();
-        if (message.isBlank() && currentCommand == null) {
+        if (message.isBlank() && currentCommand == null && pendingImages.isEmpty()) {
             return;
         }
         PromptHistoryManager.getInstance().addPrompt(message);
         final String commandId = getCurrentCommandId();
+        final List<ImageAttachment> images = takeAndClearPendingImages();
         chatTextArea.clear();
         setCurrentCommand(null);
         PreparedMessage prepared = prepareMessageToSend(message, commandId);
         final String displayText = resolveDisplayText(message, prepared.commandUsageInfo());
-        displayMessage(displayText, ChatMessageRole.USER, ChatMessageStyleType.NONE);
+        displayMessageWithImages(displayText, ChatMessageRole.USER, ChatMessageStyleType.NONE, images);
         streamingController.markUserMessageSent();
-        sendMessageToService(prepared.messageToSend(), commandId);
+        sendMessageToService(prepared.messageToSend(), commandId, images);
     }
 
     public void sendMessage(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
@@ -508,7 +536,7 @@ public class ChatWindow extends BorderPane {
         final String displayText = resolveDisplayText(message, prepared.commandUsageInfo());
         displayMessage(displayText, ChatMessageRole.USER, ChatMessageStyleType.NONE);
         streamingController.markUserMessageSent();
-        sendMessageToService(prepared.messageToSend(), commandId, onComplete);
+        sendMessageToService(prepared.messageToSend(), commandId, onComplete, List.of());
     }
 
     /**
@@ -550,6 +578,13 @@ public class ChatWindow extends BorderPane {
         FxThreadRunner.run(() -> browser.addContent(text, chatMessageRole, chatMessageStyleType));
     }
 
+    private void displayMessageWithImages(final String text,
+                                           final ChatMessageRole chatMessageRole,
+                                           final ChatMessageStyleType chatMessageStyleType,
+                                           final List<ImageAttachment> images) {
+        FxThreadRunner.run(() -> browser.addContentWithImages(text, chatMessageRole, chatMessageStyleType, images));
+    }
+
     private void handleChatNotification(final ChatNotificationEvent event) {
         if (!applicationWindow.isActiveTab(chatThread.id())) {
             return;
@@ -566,16 +601,21 @@ public class ChatWindow extends BorderPane {
     }
 
     private void sendMessageToService(final String message, final String commandId) {
-        sendMessageToService(message, commandId, null);
+        sendMessageToService(message, commandId, null, List.of());
     }
 
-    private void sendMessageToService(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
+    private void sendMessageToService(final String message, final String commandId, final List<ImageAttachment> images) {
+        sendMessageToService(message, commandId, null, images);
+    }
+
+    private void sendMessageToService(final String message, final String commandId, final OnMessageCompleteCallback onComplete, final List<ImageAttachment> images) {
         Thread.startVirtualThread(() -> {
             try {
                 final boolean backgroundMode = onComplete != null;
                 streamingController.beginStreaming(false, backgroundMode);
                 final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(
-                        message, chatThread.id(), commandId, ChatMessageStyleType.NONE, onComplete, selectedModel
+                        message, chatThread.id(), commandId, ChatMessageStyleType.NONE, onComplete, selectedModel,
+                        images != null ? images : List.of()
                 );
 
                 BackendApi.sendChatMessagesStream(chatMessageSendModel);
@@ -721,6 +761,97 @@ public class ChatWindow extends BorderPane {
                 logger.error("Cannot add dashboard task", e);
             }
         });
+    }
+
+    // ═══════════════════════════════════════════
+    // Image paste support
+    // ═══════════════════════════════════════════
+
+    private void handleClipboardImagePaste(final Image fxImage) {
+        if (fxImage == null) {
+            return;
+        }
+        Thread.startVirtualThread(() -> {
+            try {
+                final String base64 = convertFxImageToBase64(fxImage);
+                if (base64 == null || base64.isBlank()) {
+                    return;
+                }
+                final ImageAttachment attachment = new ImageAttachment(base64);
+                FxThreadRunner.run(() -> addImageAttachment(attachment, fxImage));
+            } catch (Exception e) {
+                logger.error("Cannot process pasted image", e);
+            }
+        });
+    }
+
+    private String convertFxImageToBase64(final Image fxImage) {
+        try {
+            final java.awt.image.BufferedImage bufferedImage = SwingFXUtils.fromFXImage(fxImage, null);
+            if (bufferedImage == null) {
+                return null;
+            }
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(bufferedImage, "png", baos);
+            return Base64.getEncoder().encodeToString(baos.toByteArray());
+        } catch (IOException e) {
+            logger.error("Cannot convert image to Base64", e);
+            return null;
+        }
+    }
+
+    private void addImageAttachment(final ImageAttachment attachment, final Image fxImage) {
+        pendingImages.add(attachment);
+        updateImageAttachmentPane();
+
+        final StackPane thumbnailContainer = createImageThumbnail(attachment, fxImage);
+        imageAttachmentPane.getChildren().add(thumbnailContainer);
+    }
+
+    private StackPane createImageThumbnail(final ImageAttachment attachment, final Image fxImage) {
+        final ImageView imageView = new ImageView(fxImage);
+        imageView.setFitWidth(64);
+        imageView.setFitHeight(64);
+        imageView.setPreserveRatio(true);
+        imageView.setSmooth(true);
+        imageView.getStyleClass().add("image-attachment-thumbnail");
+
+        final Button removeButton = new Button();
+        removeButton.setGraphic(new FontIcon("mdal-close"));
+        removeButton.getStyleClass().addAll("image-attachment-remove-button", "flat");
+        removeButton.setMaxSize(18, 18);
+        removeButton.setMinSize(18, 18);
+
+        final StackPane container = new StackPane(imageView, removeButton);
+        container.getStyleClass().add("image-attachment-container");
+        container.setMaxSize(72, 72);
+        container.setMinSize(72, 72);
+        StackPane.setAlignment(removeButton, Pos.TOP_RIGHT);
+
+        removeButton.setOnAction(_ -> {
+            pendingImages.remove(attachment);
+            imageAttachmentPane.getChildren().remove(container);
+            updateImageAttachmentPane();
+        });
+
+        return container;
+    }
+
+    private void updateImageAttachmentPane() {
+        final boolean hasImages = !pendingImages.isEmpty();
+        imageAttachmentPane.setVisible(hasImages);
+        imageAttachmentPane.setManaged(hasImages);
+    }
+
+    private List<ImageAttachment> takeAndClearPendingImages() {
+        if (pendingImages.isEmpty()) {
+            return List.of();
+        }
+        final List<ImageAttachment> images = List.copyOf(pendingImages);
+        pendingImages.clear();
+        imageAttachmentPane.getChildren().clear();
+        updateImageAttachmentPane();
+        return images;
     }
 
     private void showThemeMenu() {

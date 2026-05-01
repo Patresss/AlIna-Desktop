@@ -5,6 +5,7 @@ import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
+import com.patres.alina.common.message.ImageAttachment;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
 import com.patres.alina.common.thread.ChatThread;
@@ -124,14 +125,16 @@ public class ChatMessageService {
             modelOverride = null;
         }
 
-        sendStreamingAssistantResponse(chatContent, systemPrompt, modelOverride, chatMessageSendModel, StreamPurpose.NORMAL);
+        sendStreamingAssistantResponse(chatContent, systemPrompt, modelOverride, chatMessageSendModel, StreamPurpose.NORMAL,
+                chatMessageSendModel.imageAttachments());
     }
 
     private void sendStreamingAssistantResponse(final String userMessage,
                                                 final String systemPrompt,
                                                 final String modelOverride,
                                                 final ChatMessageSendModel chatMessageSendModel,
-                                                final StreamPurpose purpose) {
+                                                final StreamPurpose purpose,
+                                                final List<ImageAttachment> imageAttachments) {
         final String chatThreadId = chatMessageSendModel.chatThreadId();
         final StreamSession session = new StreamSession(chatMessageSendModel, purpose);
         activeStreams.put(chatThreadId, session);
@@ -148,7 +151,8 @@ public class ChatMessageService {
                     systemPrompt,
                     "",
                     modelOverride,
-                    purpose == StreamPurpose.REGENERATE
+                    purpose == StreamPurpose.REGENERATE,
+                    imageAttachments != null ? imageAttachments : List.of()
             );
 
             final Disposable disposable = stream.subscribe(
@@ -207,7 +211,7 @@ public class ChatMessageService {
         cancelStreamingSilently(chatThreadId);
         final String systemPrompt = assistantPromptService.buildSystemPrompt(assistantSettingsManager.getSettings());
         final ChatMessageSendModel model = new ChatMessageSendModel(lastUserMessage, chatThreadId, null, null, null, null);
-        sendStreamingAssistantResponse(lastUserMessage, systemPrompt, null, model, StreamPurpose.REGENERATE);
+        sendStreamingAssistantResponse(lastUserMessage, systemPrompt, null, model, StreamPurpose.REGENERATE, List.of());
     }
 
     public synchronized void retryLastUserMessage(final String chatThreadId) {
@@ -221,7 +225,7 @@ public class ChatMessageService {
         cancelStreamingSilently(chatThreadId);
         final String systemPrompt = assistantPromptService.buildSystemPrompt(assistantSettingsManager.getSettings());
         final ChatMessageSendModel model = new ChatMessageSendModel(lastUserMessage, chatThreadId, null, null, null, null);
-        sendStreamingAssistantResponse(lastUserMessage, systemPrompt, null, model, StreamPurpose.NORMAL);
+        sendStreamingAssistantResponse(lastUserMessage, systemPrompt, null, model, StreamPurpose.NORMAL, List.of());
     }
 
     private String findLastUserMessage(final String chatThreadId) {
