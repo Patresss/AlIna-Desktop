@@ -1,108 +1,91 @@
 .root {
-  /* ── Base palette ─────────────────────────────── */
-  -color-dark: #080c0e;
+  -color-dark: #0c1012;
   -color-light: #ffffff;
   -color-base-0: #d8dcde;
   -color-base-1: #b0b8bc;
-  -color-base-2: #8a9499;
+  -color-base-2: #89959b;
   -color-base-3: #617179;
-  -color-base-4: #374850;
-  -color-base-5: #29383f;
-  -color-base-6: #1e2b30;
-  -color-base-7: #141d21;
-  -color-base-8: #0c1317;
-  -color-base-9: #080c0e;
-
-  /* ── Accent (Allegro orange, refined) ─────────── */
+  -color-base-4: #3a4e58;
+  -color-base-5: #2e3e46;
+  -color-base-6: #232f35;
+  -color-base-7: #171f23;
+  -color-base-8: #0c1012;
+  -color-base-9: #0c1012;
   -color-accent-0: #54cab6;
-  -color-accent-1: #ffdcc7;
-  -color-accent-2: #ffb891;
-  -color-accent-3: #ff9460;
-  -color-accent-4: #ff7035;
-  -color-accent-5: #ff5500;
-  -color-accent-6: #d94700;
-  -color-accent-7: #b33a00;
-  -color-accent-8: #8c2d00;
+  -color-accent-1: #ffdecc;
+  -color-accent-2: #ffbd99;
+  -color-accent-3: #ff9c66;
+  -color-accent-4: #ff7b33;
+  -color-accent-5: #ff5a00;
+  -color-accent-6: #d94b00;
+  -color-accent-7: #b33c00;
+  -color-accent-8: #8c2e00;
   -color-accent-9: #661f00;
-
-  /* ── Semantic colors ──────────────────────────── */
-  -color-success-0: #d6f8d4;
-  -color-success-1: #aff0ab;
-  -color-success-2: #85e080;
-  -color-success-3: #5bcf57;
-  -color-success-4: #35be30;
-  -color-success-5: #18aa20;
-  -color-success-6: #138f1b;
-  -color-success-7: #0d7416;
-  -color-success-8: #085a12;
-  -color-success-9: #043e0d;
-  -color-warning-0: #fff8e0;
-  -color-warning-1: #fef0bf;
-  -color-warning-2: #fde38e;
-  -color-warning-3: #fcd55d;
-  -color-warning-4: #fbc730;
-  -color-warning-5: #f9b800;
-  -color-warning-6: #d59800;
-  -color-warning-7: #b07900;
-  -color-warning-8: #8b5c00;
-  -color-warning-9: #663f00;
-  -color-danger-0: #fde8e6;
-  -color-danger-1: #f9c2be;
-  -color-danger-2: #f39791;
-  -color-danger-3: #ec6c64;
-  -color-danger-4: #e54038;
-  -color-danger-5: #dd1b14;
-  -color-danger-6: #bc1510;
-  -color-danger-7: #9c100b;
-  -color-danger-8: #7c0b07;
-  -color-danger-9: #5c0604;
-
-  /* ── Foreground / Background ──────────────────── */
-  -color-fg-default: #f0f3f5;
-  -color-fg-muted: #7f8f98;
-  -color-fg-subtle: #556068;
+  -color-success-0: #dcf8d9;
+  -color-success-1: #b9f1b4;
+  -color-success-2: #92e390;
+  -color-success-3: #6ad46d;
+  -color-success-4: #43c649;
+  -color-success-5: #1bb826;
+  -color-success-6: #169a23;
+  -color-success-7: #107b1e;
+  -color-success-8: #0b5d1a;
+  -color-success-9: #053e15;
+  -color-warning-0: #fff9e3;
+  -color-warning-1: #fef3c4;
+  -color-warning-2: #fde798;
+  -color-warning-3: #fcdb6c;
+  -color-warning-4: #fbcf40;
+  -color-warning-5: #fac314;
+  -color-warning-6: #d89c10;
+  -color-warning-7: #b6750c;
+  -color-warning-8: #944e08;
+  -color-warning-9: #722704;
+  -color-danger-0: #fdeae8;
+  -color-danger-1: #f9c6c0;
+  -color-danger-2: #f39d97;
+  -color-danger-3: #ec736d;
+  -color-danger-4: #e64a44;
+  -color-danger-5: #e0211b;
+  -color-danger-6: #c01a16;
+  -color-danger-7: #a01410;
+  -color-danger-8: #800d0b;
+  -color-danger-9: #600705;
+  -color-fg-default: #ffffff;
+  -color-fg-muted: #89959b;
+  -color-fg-subtle: #617179;
   -color-fg-emphasis: #ffffff;
-
-  /* Deep near-black background — more depth */
-  -color-bg-default: #0d1217;
-  -color-bg-overlay: #0d1217;
-  -color-bg-subtle: #1a2229;
-  -color-bg-inset: #131a20;
-
-  /* ── Borders — more subtle, less orange ────────── */
-  -color-border-default: rgba(255, 255, 255, 0.085);
-  -color-border-muted: rgba(255, 255, 255, 0.05);
-  -color-border-subtle: #141d22;
-
-  /* ── Semantic fills ────────────────────────────── */
+  -color-bg-default: #0c1012;
+  -color-bg-overlay: #0c1012;
+  -color-bg-subtle: #222222;
+  -color-bg-inset: #171f23;
+  -color-border-default: rgba(255, 123, 51, 0.35);
+  -color-border-muted: rgba(255, 123, 51, 0.18);
+  -color-border-subtle: #171f23;
   -color-neutral-emphasis-plus: #d8dcde;
-  -color-neutral-emphasis: #7f8f98;
-  -color-neutral-muted: #374850;
-  -color-neutral-subtle: #141d21;
-
-  /* ── Accent semantic fills ─────────────────────── */
-  -color-accent-fg: #ff6820;
-  -color-accent-emphasis: #d94700;
-  -color-accent-muted: rgba(255, 104, 32, 0.18);
-  -color-accent-subtle: rgba(255, 104, 32, 0.09);
-
-  /* ── Semantic status fills ─────────────────────── */
-  -color-warning-fg: #e0a800;
-  -color-warning-emphasis: #e0a800;
-  -color-warning-muted: rgba(240, 184, 0, 0.22);
-  -color-warning-subtle: rgba(240, 184, 0, 0.1);
-  -color-success-fg: #28b832;
-  -color-success-emphasis: #28b832;
-  -color-success-muted: rgba(40, 184, 50, 0.22);
-  -color-success-subtle: rgba(40, 184, 50, 0.1);
-  -color-danger-fg: #e03030;
-  -color-danger-emphasis: #e03030;
-  -color-danger-muted: rgba(224, 48, 48, 0.22);
-  -color-danger-subtle: rgba(224, 48, 48, 0.1);
+  -color-neutral-emphasis: #89959b;
+  -color-neutral-muted: #3a4e58;
+  -color-neutral-subtle: #171f23;
+  -color-accent-fg: #ff5a00;
+  -color-accent-emphasis: #d94b00;
+  -color-accent-muted: rgba(255, 123, 51, 0.35);
+  -color-accent-subtle: #222222;
+  -color-warning-fg: #d89c10;
+  -color-warning-emphasis: #d89c10;
+  -color-warning-muted: rgba(250, 195, 20, 0.3);
+  -color-warning-subtle: rgba(250, 195, 20, 0.12);
+  -color-success-fg: #169a23;
+  -color-success-emphasis: #169a23;
+  -color-success-muted: rgba(67, 198, 73, 0.3);
+  -color-success-subtle: rgba(67, 198, 73, 0.12);
+  -color-danger-fg: #c01a16;
+  -color-danger-emphasis: #c01a16;
+  -color-danger-muted: rgba(230, 74, 68, 0.3);
+  -color-danger-subtle: rgba(230, 74, 68, 0.12);
   -color-info-fg: #58a6ff;
   -color-info-emphasis: #58a6ff;
-  -color-info-muted: rgba(88, 166, 255, 0.22);
-  -color-info-subtle: rgba(88, 166, 255, 0.1);
+  -color-info-muted: rgba(88, 166, 255, 0.3);
+  -color-info-subtle: rgba(88, 166, 255, 0.12);
   -color-chart-1: #f3622d;
   -color-chart-2: #fba71b;
   -color-chart-3: #57b757;
