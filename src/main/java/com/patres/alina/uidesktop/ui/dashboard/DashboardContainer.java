@@ -34,6 +34,7 @@ public class DashboardContainer extends VBox {
     private final ObsidianWidget obsidianWidget;
 
     private boolean collapsed = false;
+    private Runnable onCollapsedStateChanged;
 
     public DashboardContainer(MediaControlWidget mediaControlWidget, DashboardPane dashboardPane, GitHubWidget gitHubWidget, JiraWidget jiraWidget, GoogleCalendarWidget googleCalendarWidget, ObsidianWidget obsidianWidget) {
         this.mediaControlWidget = mediaControlWidget;
@@ -103,6 +104,17 @@ public class DashboardContainer extends VBox {
         widgetsBox.setVisible(!collapsed);
         titleLabel.setManaged(!collapsed);
         titleLabel.setVisible(!collapsed);
+        if (onCollapsedStateChanged != null) {
+            onCollapsedStateChanged.run();
+        }
+    }
+
+    public boolean isCollapsed() {
+        return collapsed;
+    }
+
+    public void setOnCollapsedStateChanged(Runnable callback) {
+        this.onCollapsedStateChanged = callback;
     }
 
     private void updateCollapseBar() {

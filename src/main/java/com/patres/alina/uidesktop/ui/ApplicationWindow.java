@@ -154,6 +154,9 @@ public class ApplicationWindow extends BorderPane {
         rootCenterContainer.getChildren()
                 .add(appModalPane);
 
+        // Listen for dashboard collapse/expand to adjust split layout
+        dashboardContainer.setOnCollapsedStateChanged(this::updateSplitLayoutForDashboardState);
+
         // Apply persisted split mode
         final boolean persistedSplitMode = BackendApi.getWorkspaceSettings().splitMode();
         if (persistedSplitMode) {
@@ -333,15 +336,11 @@ public class ApplicationWindow extends BorderPane {
             dashboardScrollPane.setContent(dashboardContainer);
             VBox.setMargin(dashboardContainer, Insets.EMPTY);
 
-            // 50/50 split: bind both halves to exactly half the container width
-            var halfWidth = splitContainer.widthProperty().subtract(8).divide(2);
-            dashboardScrollPane.prefWidthProperty().bind(halfWidth);
-            dashboardScrollPane.minWidthProperty().bind(halfWidth);
-            chatContentPane.prefWidthProperty().bind(halfWidth);
-            chatContentPane.minWidthProperty().bind(halfWidth);
-
             splitContainer.getChildren().setAll(chatContentPane, dashboardScrollPane);
             centerPane.getChildren().add(splitContainer);
+
+            // Apply correct widths based on dashboard collapsed state
+            updateSplitLayoutForDashboardState();
         } else {
             // Unbind size constraints before moving back
             dashboardScrollPane.prefWidthProperty().unbind();
@@ -351,6 +350,10 @@ public class ApplicationWindow extends BorderPane {
             chatContentPane.setPrefWidth(-1);
             chatContentPane.setMinWidth(0);
 
+            // Restore dashboard scroll pane visibility in case it was hidden
+            dashboardScrollPane.setManaged(true);
+            dashboardScrollPane.setVisible(true);
+
             // Split -> Normal: move dashboard and chatContentPane back into centerPane vertically
             centerPane.getChildren().remove(splitContainer);
             splitContainer.getChildren().clear();
@@ -359,6 +362,39 @@ public class ApplicationWindow extends BorderPane {
             centerPane.getChildren().add(dashboardContainer);
             centerPane.getChildren().add(dashboardChatSeparator);
             centerPane.getChildren().add(chatContentPane);
+        }
+    }
+
+    /**
+     * Adjusts the split layout widths based on whether the dashboard is collapsed.
+     * When collapsed, chat takes full width; when expanded, 50/50 split is used.
+     */
+    private void updateSplitLayoutForDashboardState() {
+        if (!splitModeActive) {
+            return;
+        }
+
+        // Unbind existing constraints
+        dashboardScrollPane.prefWidthProperty().unbind();
+        dashboardScrollPane.minWidthProperty().unbind();
+        chatContentPane.prefWidthProperty().unbind();
+        chatContentPane.minWidthProperty().unbind();
+
+        if (dashboardContainer.isCollapsed()) {
+            // Dashboard collapsed: chat takes full width, hide dashboard pane
+            dashboardScrollPane.setManaged(false);
+            dashboardScrollPane.setVisible(false);
+            chatContentPane.prefWidthProperty().bind(splitContainer.widthProperty());
+            chatContentPane.minWidthProperty().bind(splitContainer.widthProperty());
+        } else {
+            // Dashboard expanded: 50/50 split
+            dashboardScrollPane.setManaged(true);
+            dashboardScrollPane.setVisible(true);
+            var halfWidth = splitContainer.widthProperty().subtract(8).divide(2);
+            dashboardScrollPane.prefWidthProperty().bind(halfWidth);
+            dashboardScrollPane.minWidthProperty().bind(halfWidth);
+            chatContentPane.prefWidthProperty().bind(halfWidth);
+            chatContentPane.minWidthProperty().bind(halfWidth);
         }
     }
 

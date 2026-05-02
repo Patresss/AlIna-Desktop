@@ -1,8 +1,11 @@
 package com.patres.alina.uidesktop.settings.ui;
 
+import com.patres.alina.uidesktop.ui.toast.ToastNotification;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import org.kordamp.ikonli.feather.Feather;
+
+import static com.patres.alina.uidesktop.ui.language.LanguageManager.getLanguageString;
 
 public abstract class SettingsModalPaneContent extends ApplicationModalPaneContent {
 
@@ -14,7 +17,10 @@ public abstract class SettingsModalPaneContent extends ApplicationModalPaneConte
     public void initialize() {
         super.initialize();
         final Button resetButton = createButton(Feather.REFRESH_CCW, e -> reset());
-        final Button saveButton = createButton(Feather.SAVE, e -> save());
+        final Button saveButton = createButton(Feather.SAVE, e -> {
+            save();
+            ToastNotification.showSuccess(getContentPane(), getLanguageString("toast.saved"));
+        });
         buttonBar.getButtons().addAll(resetButton, saveButton);
     }
 

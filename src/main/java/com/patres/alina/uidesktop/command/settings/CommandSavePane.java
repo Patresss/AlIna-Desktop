@@ -6,6 +6,7 @@ import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.shortcuts.key.ShortcutKeyPane;
 import com.patres.alina.uidesktop.shortcuts.key.ShortcutKeys;
 import com.patres.alina.uidesktop.ui.atlantafx.CustomTile;
+import com.patres.alina.uidesktop.ui.toast.ToastNotification;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -40,7 +41,10 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
     @FXML
     public void initialize() {
         super.initialize();
-        final Button saveButton = createButton(Feather.SAVE, e -> saveCommand());
+        final Button saveButton = createButton(Feather.SAVE, e -> {
+            saveCommand();
+            ToastNotification.showSuccess(getContentPane(), getLanguageString("toast.saved"));
+        });
         buttonBar.getButtons().add(saveButton);
     }
 

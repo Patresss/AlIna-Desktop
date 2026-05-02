@@ -942,4 +942,36 @@ ChatThreadHistoryCard {
     -fx-icon-color: -color-fg-default;
 }
 
+/* ══════════════════════════════════════════════════
+   Toast notification — bottom overlay
+   ══════════════════════════════════════════════════ */
+
+.toast-notification {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 10px;
+    -fx-border-color: -color-glass-border;
+    -fx-border-radius: 10px;
+    -fx-padding: 10px 20px;
+    -fx-max-width: 300px;
+    -fx-max-height: 40px;
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 10, 0, 0, 3);
+    -fx-alignment: center;
+}
+
+.toast-success .toast-icon {
+    -fx-icon-color: -color-success-fg;
+    -fx-icon-size: 16px;
+}
+
+.toast-info .toast-icon {
+    -fx-icon-color: -color-info-fg;
+    -fx-icon-size: 16px;
+}
+
+.toast-label {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
 

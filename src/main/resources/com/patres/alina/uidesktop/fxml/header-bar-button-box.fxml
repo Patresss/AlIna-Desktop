@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.HBox?>
 
 <?import java.lang.String?>
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
@@ -25,6 +25,9 @@
          <graphic>
             <FontIcon iconLiteral="mdoal-create_new_folder" />
          </graphic>
+         <tooltip>
+            <Tooltip text="%header.tooltip.newSession" />
+         </tooltip>
          <styleClass>
             <String fx:value="button-circle" />
             <String fx:value="flat" />
@@ -34,6 +37,9 @@
          <graphic>
             <FontIcon iconLiteral="mdal-history" />
          </graphic>
+         <tooltip>
+            <Tooltip text="%header.tooltip.history" />
+         </tooltip>
          <styleClass>
             <String fx:value="button-circle" />
             <String fx:value="flat" />
@@ -43,6 +49,9 @@
          <graphic>
             <FontIcon iconLiteral="mdoal-info" />
          </graphic>
+         <tooltip>
+            <Tooltip text="%header.tooltip.about" />
+         </tooltip>
          <styleClass>
             <String fx:value="button-circle" />
             <String fx:value="flat" />
@@ -52,6 +61,9 @@
          <graphic>
             <FontIcon iconLiteral="mdoal-launch" />
          </graphic>
+         <tooltip>
+            <Tooltip text="%header.tooltip.openCodeSession" />
+         </tooltip>
          <styleClass>
             <String fx:value="button-circle" />
             <String fx:value="flat" />
@@ -69,6 +81,9 @@
          <graphic>
             <FontIcon iconLiteral="mdmz-settings" />
          </graphic>
+         <tooltip>
+            <Tooltip text="%header.tooltip.settings" />
+         </tooltip>
          <styleClass>
             <String fx:value="no-arrow" />
             <String fx:value="flat" />
@@ -79,11 +94,17 @@
          <graphic>
             <FontIcon iconLiteral="mdmz-vertical_split" styleClass="button-circle" />
          </graphic>
+         <tooltip>
+            <Tooltip text="%header.tooltip.splitMode" />
+         </tooltip>
       </ToggleButton>
       <ToggleButton fx:id="pinToggleButton" mnemonicParsing="false" styleClass="button-circle">
          <graphic>
             <FontIcon iconLiteral="mdrmz-pin" styleClass="button-circle" />
          </graphic>
+         <tooltip>
+            <Tooltip text="%header.tooltip.pin" />
+         </tooltip>
       </ToggleButton>
    </children>
 </fx:root>

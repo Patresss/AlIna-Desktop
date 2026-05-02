@@ -10,6 +10,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -53,6 +55,12 @@ public abstract class ApplicationModalPaneContent extends BorderPane {
     @FXML
     public void initialize() {
         settingsBox.getChildren().addAll(generateContent());
+        addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                event.consume();
+                back();
+            }
+        });
     }
 
     @FXML
@@ -72,5 +80,8 @@ public abstract class ApplicationModalPaneContent extends BorderPane {
         return resetButton;
     }
 
+    public StackPane getContentPane() {
+        return contentPane;
+    }
 
 }
