@@ -6,50 +6,84 @@ AlIna is a desktop AI assistant with integrated productivity tools.
 
 ## OpenCode
 
-AlIna runs on **OpenCode** — a local AI runtime that powers the chat, commands, and all AI interactions. OpenCode handles model communication, tool use, and context management under the hood.
+> [!info] Core Engine
+> AlIna runs on **OpenCode** — a local AI runtime that powers the chat, commands, and all AI interactions. OpenCode handles model communication, tool use, and context management under the hood.
+
+---
 
 ## Commands
 
-Commands are customizable AI prompts triggered from the chat input by typing `/`. Each command has a name, description, icon, and a system prompt template. The `$message` placeholder is replaced with your input.
+Type `/` in the chat input to browse and run commands. Each command has a name, icon, and a **system prompt template** — the `$message` placeholder gets replaced with your input.
+
+> [!tip] Custom prompts
+> Create your own commands in the settings to automate repetitive AI tasks. You can assign each command a unique icon and keyboard shortcut.
+
+---
 
 ## Context Menu
 
-Commands can be exposed in a **global system-wide context menu** accessible via a configurable keyboard shortcut. Three action modes are available:
+Commands can be exposed in a **global system-wide context menu** — accessible via a keyboard shortcut from any app on your system.
 
-- **Paste** — copies selected text, runs the command, and pastes the AI response
-- **Display** — copies selected text, runs the command, and shows the response in a popup
-- **Execute** — copies selected text and runs the command silently
+| Mode | What it does |
+|---|---|
+| **Paste** | Copies selected text, runs the command, pastes the AI response |
+| **Display** | Copies selected text, runs the command, shows the response in a popup |
+| **Execute** | Copies selected text, runs the command silently in the background |
+
+> [!note] Works everywhere
+> The context menu shortcut is global — it works even when AlIna is not focused. Configure it in UI Settings.
+
+---
 
 ## Theme & Language
 
-Change the application theme and language in **UI Settings** (gear icon → UI Settings). Custom CSS themes can be placed in the `data/css` folder and selected from the theme picker.
+Change the look and language in **UI Settings** (gear icon in the header).
+
+> [!tip] Custom themes
+> Drop your own `.css` files into the `~/.config/AlIna/themes` folder — they will appear in the theme picker automatically.
+
+---
 
 ## Split Mode
 
-Toggle split mode with the split button in the header or `Shift+Left/Right`. The dashboard appears side-by-side with the chat.
+Toggle split mode with the header button or `Shift+Left/Right`. The dashboard slides to the side and displays next to the chat.
+
+---
 
 ## Keyboard Shortcuts
 
 | Shortcut | Action |
 |---|---|
-| Focus shortcut | Brings the app window to focus (configurable in UI Settings) |
-| Context menu shortcut | Opens the global AI context menu (configurable in UI Settings) |
-| Command shortcuts | Each command can have its own paste, display, and execute shortcuts |
+| **Focus shortcut** | Brings the app window to focus |
+| **Context menu shortcut** | Opens the global AI context menu |
+| **Command shortcuts** | Per-command paste, display, and execute shortcuts |
 | `Shift+Up/Down` | Collapse / expand the dashboard |
 | `Shift+Left/Right` | Toggle split mode |
 
+> [!info] Configurable
+> Focus and context menu shortcuts can be changed in UI Settings. Command shortcuts are set per-command in the command editor.
+
+---
+
 ## Scheduler
 
-The scheduler runs AI commands automatically on a cron schedule. Each task has:
+Automate AI commands on a **cron schedule**. Each scheduled task has:
 
-- **Cron expression** — Spring 6-field format (second minute hour dayOfMonth month dayOfWeek)
+- **Cron expression** — Spring 6-field format (e.g. `0 0 8 * * MON-FRI`)
 - **Prompt** — the message sent to the AI
 - **Execution mode** — current tab, new tab, or background (silent)
 - **Model** — optional override for the AI model
 
+> [!success] Background tasks
+> Scheduler tasks can run silently in the background — no tabs opened, no interruptions.
+
+---
+
 ## Dashboard
 
-The dashboard is a focus board displayed above (or beside in split mode) the chat. It contains configurable widgets:
+The dashboard is a **focus board** displayed above the chat (or beside it in split mode). All widgets are toggleable in Dashboard Settings.
+
+---
 
 ### Music
 
@@ -57,20 +91,20 @@ Controls the currently playing media. Shows track info and playback controls.
 
 ### Tasks
 
-Displays a checklist from a markdown file (e.g., Obsidian vault). Supports task groups via `#tags`.
+Displays a checklist loaded from a **markdown file** (e.g. an Obsidian vault). Supports grouping tasks with `#tags`.
 
 ### Google Calendar
 
-Shows today's events from Google Calendar. Supports meeting notifications and AI prompts per event.
+Shows **today's events** from Google Calendar. Supports meeting join-link notifications and per-event AI prompts.
 
 ### GitHub
 
-Lists pull requests that need your review. Requires a personal access token.
+Lists **pull requests** awaiting your review. Requires a personal access token.
 
 ### Jira
 
-Shows your assigned Jira issues. Requires email and API token.
+Shows your **assigned issues**. Requires an Atlassian email and API token.
 
 ### Obsidian
 
-Displays recently edited notes from an Obsidian vault via the Obsidian CLI.
+Displays **recently edited notes** from an Obsidian vault via the Obsidian CLI.
