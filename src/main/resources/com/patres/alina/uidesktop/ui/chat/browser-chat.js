@@ -361,18 +361,21 @@
     }
 
     function updateNoteCount(count, label) {
+        const hasNotes = count > 0;
+        const particleCount = hasNotes ? count : 10000;
+
         const canvas = $('welcome-logo-canvas');
         if (canvas) {
             if (_particleRAF !== null) {
                 cancelAnimationFrame(_particleRAF);
                 _particleRAF = null;
             }
-            requestAnimationFrame(() => _startParticleLogo(canvas, count));
+            requestAnimationFrame(() => _startParticleLogo(canvas, particleCount));
         }
 
         const el = $('welcome-note-count');
         if (!el) return;
-        if (count <= 0) {
+        if (!hasNotes) {
             el.style.display = 'none';
             return;
         }
