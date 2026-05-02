@@ -109,7 +109,7 @@
         return ranges;
     }
 
-    function _startParticleLogo(canvas) {
+    function _startParticleLogo(canvas, particleCount) {
         const W = canvas.width;
         const H = canvas.height;
         const ctx = canvas.getContext('2d');
@@ -118,7 +118,7 @@
         const TEXT = 'AlIna';
         const ACCENT_CHARS = new Set(['A', 'I']);
 
-        const pixels = _sampleTextPixels(TEXT, W, H, fontSize);
+        let pixels = _sampleTextPixels(TEXT, W, H, fontSize);
         const ranges = _charRanges(TEXT, W, H, fontSize);
 
         function charColorFor(x) {
@@ -132,6 +132,30 @@
 
         if (pixels.length === 0) return;
 
+        // Subsample pixels to match the requested particle count
+        const count = (particleCount != null && particleCount > 0)
+            ? Math.min(particleCount, pixels.length)
+            : pixels.length;
+
+        if (count < pixels.length) {
+            // Fisher-Yates partial shuffle to pick `count` random pixels
+            for (let i = pixels.length - 1; i > 0 && (pixels.length - i) < count; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pixels[i], pixels[j]] = [pixels[j], pixels[i]];
+            }
+            pixels = pixels.slice(pixels.length - count);
+        }
+
+        // Scale dot size based on particle count
+        const dotScale = count < 10 ? 10
+            : count < 25  ? 7
+            : count < 50  ? 5
+            : count < 100 ? 4
+            : count < 250 ? 3.0
+            : count < 500 ? 2.0
+            : count < 1000 ? 1.5
+            : 1;
+
         // Build particles
         const particles = pixels.map(p => {
             // Start from random position outside canvas — full circle using random offset
@@ -144,7 +168,7 @@
                 x:  sx,
                 y:  sy,
                 color: charColorFor(p.x),
-                r: 0.3 + Math.random() * 0.3,      // small dots
+                r: (0.3 + Math.random() * 0.3) * dotScale,
                 // drift orbit params
                 orbitAngle: Math.random() * Math.PI * 2,
                 orbitSpeed: (Math.random() < 0.5 ? 1 : -1) * (0.015 + Math.random() * 0.025),
@@ -169,6 +193,8 @@
 
             ctx.clearRect(0, 0, W, H);
 
+            // Batch particles by colour to minimise draw calls
+            const batches = new Map();
             for (const p of particles) {
                 // Normalised progress for this particle (0→1)
                 const t = Math.max(0, Math.min(1, (elapsed - p.delay * GATHER_DURATION) / GATHER_DURATION));
@@ -186,10 +212,20 @@
                 const ox = Math.cos(p.orbitAngle) * p.orbitRadius * orbitFactor;
                 const oy = Math.sin(p.orbitAngle) * p.orbitRadius * orbitFactor;
 
-                ctx.fillStyle = p.color;
-                ctx.globalAlpha = 0.7;
-                const s = p.r * 2;
-                ctx.fillRect(cx + ox - p.r, cy + oy - p.r, s, s);
+                if (!batches.has(p.color)) batches.set(p.color, []);
+                batches.get(p.color).push(cx + ox, cy + oy, p.r);
+            }
+
+            ctx.globalAlpha = 0.7;
+            for (const [color, data] of batches) {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                for (let i = 0; i < data.length; i += 3) {
+                    const dx = data[i], dy = data[i + 1], dr = data[i + 2];
+                    ctx.moveTo(dx + dr, dy);
+                    ctx.arc(dx, dy, dr, 0, Math.PI * 2);
+                }
+                ctx.fill();
             }
             ctx.globalAlpha = 1;
 
@@ -216,6 +252,7 @@
 
         const header = h('div', { className: 'welcome-header' },
             logoCanvas,
+            h('div', { className: 'welcome-note-count', id: 'welcome-note-count' }),
             h('div', { className: 'welcome-subtitle', id: 'welcome-subtitle' },
                 'Type a message to start, or press ',
                 h('kbd', {}, '/'),
@@ -229,8 +266,7 @@
 
         chatContainer.appendChild(welcome);
 
-        // Start particle animation after paint
-        requestAnimationFrame(() => _startParticleLogo(logoCanvas));
+        // Particle animation is started by updateNoteCount once the count is known
     }
 
     function populateWelcomeData(greetingText, commandsJson, commandsLabel, recentJson, tipPrefix, tipText, recentLabel) {
@@ -322,6 +358,31 @@
     function updateWelcomeSubtitle(text) {
         const el = $('welcome-subtitle');
         if (el) el.textContent = text;
+    }
+
+    function updateNoteCount(count, label) {
+        const canvas = $('welcome-logo-canvas');
+        if (canvas) {
+            if (_particleRAF !== null) {
+                cancelAnimationFrame(_particleRAF);
+                _particleRAF = null;
+            }
+            requestAnimationFrame(() => _startParticleLogo(canvas, count));
+        }
+
+        const el = $('welcome-note-count');
+        if (!el) return;
+        if (count <= 0) {
+            el.style.display = 'none';
+            return;
+        }
+        el.style.display = 'flex';
+        const { accent } = _getThemeColors();
+        el.innerHTML = '';
+        const dot = h('span', { className: 'welcome-note-dot' });
+        dot.style.backgroundColor = accent;
+        el.appendChild(dot);
+        el.appendChild(document.createTextNode(count + ' ' + (label || 'notes')));
     }
 
     function removeWelcomeScreen() {

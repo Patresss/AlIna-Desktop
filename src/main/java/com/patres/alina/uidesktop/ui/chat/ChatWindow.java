@@ -66,6 +66,9 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import javax.imageio.ImageIO;
@@ -94,6 +97,7 @@ public class ChatWindow extends BorderPane {
     private boolean settingFromHistory = false;
     private final java.util.Map<String, ChatThread> recentThreadCache = new java.util.HashMap<>();
     private final List<ImageAttachment> pendingImages = new ArrayList<>();
+    private ScheduledExecutorService noteCountScheduler;
 
     @FXML
     private StackPane chatAnswersPane;
@@ -239,6 +243,11 @@ public class ChatWindow extends BorderPane {
 
         if (browser != null) {
             browser.dispose();
+        }
+
+        if (noteCountScheduler != null) {
+            noteCountScheduler.shutdownNow();
+            noteCountScheduler = null;
         }
     }
 
@@ -992,10 +1001,36 @@ public class ChatWindow extends BorderPane {
                 FxThreadRunner.run(() ->
                         browser.populateWelcomeData(greeting, commandsJson, commandsLabel, recentJson, tipPrefix, tipText, recentLabel)
                 );
+
+                // Fetch initial note count and start periodic refresh
+                refreshNoteCount();
+                startNoteCountScheduler();
             } catch (final Exception e) {
                 logger.warn("Failed to populate welcome screen data", e);
             }
         });
+    }
+
+    private void refreshNoteCount() {
+        try {
+            final long count = BackendApi.getNoteCount();
+            final String label = LanguageManager.getLanguageString("welcome.notes");
+            FxThreadRunner.run(() -> browser.updateNoteCount(count, label));
+        } catch (final Exception e) {
+            logger.warn("Failed to refresh note count", e);
+        }
+    }
+
+    private void startNoteCountScheduler() {
+        if (noteCountScheduler != null) {
+            return;
+        }
+        noteCountScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            final Thread t = Thread.ofVirtual().unstarted(r);
+            t.setName("note-count-scheduler");
+            return t;
+        });
+        noteCountScheduler.scheduleAtFixedRate(this::refreshNoteCount, 5, 5, TimeUnit.MINUTES);
     }
 
     private static String buildGreeting() {

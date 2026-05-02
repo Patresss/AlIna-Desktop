@@ -24,6 +24,7 @@ import com.patres.alina.server.integration.GitHubPullRequestResult;
 import com.patres.alina.server.integration.GitHubService;
 import com.patres.alina.server.integration.JiraIssueResult;
 import com.patres.alina.server.integration.JiraService;
+import com.patres.alina.server.integration.NoteCountService;
 import com.patres.alina.server.scheduler.ScheduledTask;
 import com.patres.alina.server.scheduler.SchedulerService;
 import com.patres.alina.server.workspace.WorkspaceController;
@@ -159,6 +160,15 @@ public class BackendApi {
 
     public static GitHubPullRequestResult fetchGitHubPendingReviews(final String githubToken, final int maxResults) {
         return AppLauncher.getBean(GitHubService.class).fetchPendingReviews(githubToken, maxResults);
+    }
+
+    // ═══════════════════════════════════════════
+    // Note count
+    // ═══════════════════════════════════════════
+
+    public static long getNoteCount() {
+        final WorkspaceSettings settings = getWorkspaceSettings();
+        return NoteCountService.countAllNotes(settings);
     }
 
     // ═══════════════════════════════════════════

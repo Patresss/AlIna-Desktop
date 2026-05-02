@@ -488,6 +488,13 @@ public class Browser extends StackPane {
     }
 
     /**
+     * Updates the note count that drives the particle logo on the welcome screen.
+     */
+    public void updateNoteCount(final long count, final String label) {
+        safeJavaScriptCall("updateNoteCount", (int) count, label);
+    }
+
+    /**
      * Populates the welcome screen with greeting, commands, recent threads and tip data.
      */
     public void populateWelcomeData(final String greeting,

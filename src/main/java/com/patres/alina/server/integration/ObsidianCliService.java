@@ -121,10 +121,44 @@ public final class ObsidianCliService {
         return path;
     }
 
+    /**
+     * Counts the total number of {@code .md} files in the vault (excluding hidden and excluded paths).
+     *
+     * @param cliPath          path to the obsidian-cli executable (may be empty for default)
+     * @param vaultName        optional vault name (empty means default vault)
+     * @param excludePatterns  comma-separated list of regex patterns to exclude
+     * @return the number of markdown files, or 0 if the vault is unreachable
+     */
+    public static long countNotes(final String cliPath, final String vaultName, final String excludePatterns) {
+        final String executable = resolveCliPath(cliPath);
+        final List<Pattern> compiled = compileExcludePatterns(excludePatterns);
+        try {
+            final Path vaultPath = resolveVaultPath(executable, vaultName);
+            if (vaultPath == null) {
+                return 0;
+            }
+            return countMarkdownFiles(vaultPath, compiled);
+        } catch (final Exception e) {
+            logger.warn("Obsidian: failed to count notes", e);
+            return 0;
+        }
+    }
+
+    private static long countMarkdownFiles(final Path vaultPath, final List<Pattern> excludePatterns) throws IOException {
+        try (final Stream<Path> stream = Files.walk(vaultPath)) {
+            return stream
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.toString().endsWith(".md"))
+                    .filter(p -> !isHiddenPath(vaultPath, p))
+                    .filter(p -> !isExcluded(vaultPath, p, excludePatterns))
+                    .count();
+        }
+    }
+
     // ── Filesystem scan ──────────────────────────────────────────
 
     private static List<ObsidianNote> findRecentlyModifiedNotes(final Path vaultPath, final int limit,
-                                                                  final List<Pattern> excludePatterns) throws IOException {
+                                                                   final List<Pattern> excludePatterns) throws IOException {
         try (final Stream<Path> stream = Files.walk(vaultPath)) {
             return stream
                     .filter(Files::isRegularFile)
