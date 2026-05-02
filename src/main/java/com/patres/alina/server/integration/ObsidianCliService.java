@@ -149,7 +149,7 @@ public final class ObsidianCliService {
             return stream
                     .filter(Files::isRegularFile)
                     .filter(p -> p.toString().endsWith(".md"))
-                    .filter(p -> !isHiddenPath(vaultPath, p))
+//                    .filter(p -> !isHiddenPath(vaultPath, p))
                     .filter(p -> !isExcluded(vaultPath, p, excludePatterns))
                     .count();
         }

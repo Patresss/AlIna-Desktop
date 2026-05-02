@@ -94,6 +94,7 @@ public class ChatWindow extends BorderPane {
     private boolean settingFromHistory = false;
     private final java.util.Map<String, ChatThread> recentThreadCache = new java.util.HashMap<>();
     private final List<ImageAttachment> pendingImages = new ArrayList<>();
+    private NoteCountRefresher noteCountRefresher;
 
     @FXML
     private StackPane chatAnswersPane;
@@ -239,6 +240,11 @@ public class ChatWindow extends BorderPane {
 
         if (browser != null) {
             browser.dispose();
+        }
+
+        if (noteCountRefresher != null) {
+            noteCountRefresher.stop();
+            noteCountRefresher = null;
         }
     }
 
@@ -993,22 +999,13 @@ public class ChatWindow extends BorderPane {
                         browser.populateWelcomeData(greeting, commandsJson, commandsLabel, recentJson, tipPrefix, tipText, recentLabel)
                 );
 
-                // Fetch note count for particle logo
-                refreshNoteCount();
+                // Fetch initial note count and start periodic refresh
+                noteCountRefresher = new NoteCountRefresher(browser);
+                noteCountRefresher.start();
             } catch (final Exception e) {
                 logger.warn("Failed to populate welcome screen data", e);
             }
         });
-    }
-
-    private void refreshNoteCount() {
-        try {
-            final long count = BackendApi.getNoteCount();
-            final String label = LanguageManager.getLanguageString("welcome.notes");
-            FxThreadRunner.run(() -> browser.updateNoteCount(count, label));
-        } catch (final Exception e) {
-            logger.warn("Failed to refresh note count", e);
-        }
     }
 
     private static String buildGreeting() {
