@@ -1201,6 +1201,10 @@ blockquote {
     font-size: 12px;
     font-weight: 500;
     color: var(--color-fg-default);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
 }
 
 /* ── Recent conversation chips ──────────────── */

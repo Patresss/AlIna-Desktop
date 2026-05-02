@@ -34,6 +34,21 @@
     // ── Utility: getElementById shorthand ───────────
     const $ = (id) => document.getElementById(id);
 
+    /**
+     * Adds a tooltip (title) to a chip that only appears when the
+     * .welcome-chip-name inside it is visually truncated (ellipsis).
+     */
+    function addTruncationTooltip(chipEl, fullText) {
+        chipEl.addEventListener('mouseenter', function () {
+            const nameEl = this.querySelector('.welcome-chip-name');
+            if (nameEl && nameEl.scrollWidth > nameEl.clientWidth) {
+                this.title = fullText;
+            } else {
+                this.title = '';
+            }
+        });
+    }
+
     // ── Welcome screen ──────────────────────────────
     // ── Particle Logo ────────────────────────────────
     let _particleRAF = null;
@@ -259,6 +274,7 @@
                     h('span', { className: 'welcome-chip-recent-icon' }, '↩'),
                     h('span', { className: 'welcome-chip-name' }, conv.name)
                 );
+                addTruncationTooltip(chip, conv.name);
                 recentRow.appendChild(chip);
             }
             recentSection.appendChild(recentRow);
@@ -285,9 +301,14 @@
                 },
                     h('span', { className: 'welcome-chip-name' }, cmd.name)
                 );
-                if (cmd.description) {
-                    chip.title = cmd.description;
-                }
+                chip.addEventListener('mouseenter', function () {
+                    const nameEl = this.querySelector('.welcome-chip-name');
+                    if (nameEl && nameEl.scrollWidth > nameEl.clientWidth) {
+                        this.title = cmd.name;
+                    } else {
+                        this.title = cmd.description || '';
+                    }
+                });
                 chipRow.appendChild(chip);
             }
             cmdSection.appendChild(chipRow);
