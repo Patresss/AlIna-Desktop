@@ -115,6 +115,11 @@ public class ApplicationHeaderButtonBox extends HBox {
     }
 
     @FXML
+    public void openAbout() {
+        applicationWindow.openAbout();
+    }
+
+    @FXML
     public void openDashboardSettings() {
         applicationWindow.openDashboardSettings();
     }

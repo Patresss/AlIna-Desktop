@@ -39,7 +39,7 @@
             <String fx:value="flat" />
          </styleClass>
       </Button>
-      <Button minWidth="0.0" mnemonicParsing="false" nodeOrientation="LEFT_TO_RIGHT" onAction="#openDashboardSettings" text="Button">
+      <Button minWidth="0.0" mnemonicParsing="false" nodeOrientation="LEFT_TO_RIGHT" onAction="#openAbout" text="Button">
          <graphic>
             <FontIcon iconLiteral="mdoal-info" />
          </graphic>

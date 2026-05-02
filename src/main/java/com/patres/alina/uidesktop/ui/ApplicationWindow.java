@@ -12,6 +12,7 @@ import com.patres.alina.uidesktop.common.event.CommandShortcutExecutedEvent;
 import com.patres.alina.uidesktop.quickaction.settings.QuickActionSettingsPane;
 import com.patres.alina.uidesktop.scheduler.SchedulerSettingsPane;
 import com.patres.alina.uidesktop.scheduler.SchedulerTaskExecutor;
+import com.patres.alina.uidesktop.settings.ui.AboutPane;
 import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.settings.ui.DashboardSettingsPane;
 import com.patres.alina.uidesktop.settings.ui.OpenCodeSettingsPane;
@@ -76,6 +77,7 @@ public class ApplicationWindow extends BorderPane {
     private final ApplicationModalPaneContent commandPane = new CommandPane(appModalPane::hide, this);
     private final ApplicationModalPaneContent quickActionSettingsPane = new QuickActionSettingsPane(appModalPane::hide);
     private final ApplicationModalPaneContent schedulerSettingsPane = new SchedulerSettingsPane(appModalPane::hide);
+    private final ApplicationModalPaneContent aboutPane = new AboutPane(appModalPane::hide);
     private final DashboardPane dashboardPane = new DashboardPane();
     private final MediaControlWidget mediaControlWidget = new MediaControlWidget();
     private final GitHubWidget gitHubWidget = new GitHubWidget();
@@ -473,6 +475,11 @@ public class ApplicationWindow extends BorderPane {
     public void openDashboardSettings() {
         dashboardSettingsPane.reload();
         appModalPane.show(dashboardSettingsPane);
+    }
+
+    public void openAbout() {
+        aboutPane.reload();
+        appModalPane.show(aboutPane);
     }
 
     public void openOpenCodeSettings() {
