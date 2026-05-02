@@ -491,7 +491,7 @@
         const loader = $('loader');
         loader.classList.add('active');
         loader.classList.remove('user-message');
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        scrollToBottomIfNeeded();
     }
 
     function showLoaderForUserMessage() {
@@ -605,7 +605,7 @@
         if (summaryBadgeNode && activity.dataset) {
             summaryBadgeNode.textContent = activity.dataset.count;
         }
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        scrollToBottomIfNeeded();
     }
 
     function finalizeAssistantActivity() {
@@ -680,7 +680,7 @@
         }
         const bodyNode = $('assistant-reasoning-body');
         if (bodyNode) bodyNode.innerHTML = htmlContent;
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        scrollToBottomIfNeeded();
     }
 
     function showAssistantCommentary(title, htmlContent) {
@@ -703,7 +703,7 @@
         }
         const bodyNode = $('assistant-commentary-body');
         if (bodyNode) bodyNode.innerHTML = htmlContent;
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        scrollToBottomIfNeeded();
     }
 
     function finalizeAssistantReasoning() {
@@ -792,7 +792,7 @@
 
         const messageId = `assistant-permission-${requestId}`;
         if ($(messageId)) {
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            scrollToBottomIfNeeded();
             return;
         }
 
@@ -831,7 +831,7 @@
         );
 
         chatContainer.appendChild(card);
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        scrollToBottomIfNeeded();
     }
 
     function markAssistantPermissionRequestPending(requestId, statusLabel) {
@@ -840,7 +840,7 @@
         for (const btn of card.querySelectorAll('button')) btn.disabled = true;
         const status = $(`assistant-permission-${requestId}-status`);
         if (status) status.textContent = statusLabel || '';
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        scrollToBottomIfNeeded();
     }
 
     function resolveAssistantPermissionRequest(requestId, statusLabel) {
@@ -849,7 +849,7 @@
         for (const btn of card.querySelectorAll('button')) btn.disabled = true;
         const status = $(`assistant-permission-${requestId}-status`);
         if (status) status.textContent = statusLabel || '';
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        scrollToBottomIfNeeded();
     }
 
     // ── Streaming messages ──────────────────────────
@@ -873,7 +873,7 @@
         streamingDiv.id = 'streaming-message';
         streamingDiv.innerHTML = '';
 
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        scrollToBottomIfNeeded();
     }
 
     function appendToStreamingMessage(escapedToken) {
@@ -881,7 +881,7 @@
         if (streamingDiv) {
             // Use textContent to preserve markdown syntax during streaming
             streamingDiv.textContent += escapedToken;
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            scrollToBottomIfNeeded();
         }
     }
 
@@ -891,7 +891,7 @@
             streamingDiv.innerHTML = htmlContent;
             enhanceCodeBlocks(streamingDiv);
             void streamingDiv.offsetHeight;
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            scrollToBottomIfNeeded();
         }
     }
 
@@ -903,7 +903,7 @@
             enhanceCodeBlocks(streamingDiv);
             addMessageActions(streamingDiv);
             void streamingDiv.offsetHeight;
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            scrollToBottomIfNeeded();
         }
     }
 
@@ -916,6 +916,17 @@
             enhanceCodeBlocks(streamingDiv);
             addMessageActions(streamingDiv);
             void streamingDiv.offsetHeight;
+            scrollToBottomIfNeeded();
+        }
+    }
+
+    function isNearBottom(threshold) {
+        const scrollBottom = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+        return scrollBottom <= (threshold || 300);
+    }
+
+    function scrollToBottomIfNeeded() {
+        if (isNearBottom()) {
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
     }
@@ -985,7 +996,7 @@
             delete node.dataset.prevHtml;
         }
         node.removeAttribute('id');
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        scrollToBottomIfNeeded();
     }
 
     function discardRegenerationBackup() {
@@ -1015,7 +1026,7 @@
         }
 
         card.innerHTML = buildTodoHtml(items, title);
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        scrollToBottomIfNeeded();
     }
 
     function buildTodoHtml(items, title) {
