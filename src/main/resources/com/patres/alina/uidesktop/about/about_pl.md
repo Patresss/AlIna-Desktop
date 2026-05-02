@@ -13,7 +13,7 @@ AlIna to desktopowy asystent AI ze zintegrowanymi narzędziami produktywności.
 
 ## Komendy
 
-Wpisz `/` w polu czatu, aby przeglądać i uruchamiać komendy. Każda komenda ma nazwę, ikonę i **szablon promptu systemowego** — placeholder `$message` jest zastępowany Twoim tekstem.
+Wpisz `/` w polu czatu, aby przeglądać i uruchamiać komendy. Każda komenda ma nazwę, ikonę i **szablon promptu systemowego** — placeholder `$ARGUMENTS` jest zastępowany Twoim tekstem.
 
 > [!tip] Własne prompty
 > Twórz własne komendy w ustawieniach, aby automatyzować powtarzalne zadania AI. Każdej komendzie możesz przypisać unikalną ikonę i skrót klawiszowy.

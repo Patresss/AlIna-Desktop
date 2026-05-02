@@ -13,7 +13,7 @@ AlIna is a desktop AI assistant with integrated productivity tools.
 
 ## Commands
 
-Type `/` in the chat input to browse and run commands. Each command has a name, icon, and a **system prompt template** — the `$message` placeholder gets replaced with your input.
+Type `/` in the chat input to browse and run commands. Each command has a name, icon, and a **system prompt template** — the `$ARGUMENTS` placeholder gets replaced with your input.
 
 > [!tip] Custom prompts
 > Create your own commands in the settings to automate repetitive AI tasks. You can assign each command a unique icon and keyboard shortcut.
