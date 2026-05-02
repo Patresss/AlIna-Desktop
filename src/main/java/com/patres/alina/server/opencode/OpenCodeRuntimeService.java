@@ -49,6 +49,9 @@ public class OpenCodeRuntimeService {
     private final ObjectMapper objectMapper;
 
     private final Map<String, ActiveStream> activeStreams = new ConcurrentHashMap<>();
+    /** Maps subagent session IDs to the parent chat thread ID, so that permission
+     *  requests from subagents (e.g. explorer, general) can be routed to the correct UI thread. */
+    private final Map<String, String> subagentSessionMap = new ConcurrentHashMap<>();
 
     private volatile String appliedConfigJson;
 
@@ -110,6 +113,7 @@ public class OpenCodeRuntimeService {
                     }
                 } finally {
                     activeStreams.remove(chatThreadId, stream);
+                    subagentSessionMap.values().removeIf(chatThreadId::equals);
                     closeQuietly(stream);
                 }
             });
@@ -349,6 +353,8 @@ public class OpenCodeRuntimeService {
             final String type = event.path("type").asText();
             final JsonNode properties = event.path("properties");
 
+            registerSubagentSessionIfNeeded(stream, properties);
+
             switch (type) {
                 case "message.updated" -> handleMessageUpdated(stream, properties);
                 case "message.part.delta" -> handleMessagePartDelta(stream, properties, sink);
@@ -362,6 +368,32 @@ public class OpenCodeRuntimeService {
             }
         } catch (Exception e) {
             logger.debug("Cannot process OpenCode event {}", json, e);
+        }
+    }
+
+    /**
+     * Detects subagent session IDs and maps them to the parent chat thread.
+     * When OpenCode spawns a subagent (e.g. explorer, general), the subagent's SSE events
+     * carry its own session ID — different from the parent. By registering these unknown
+     * session IDs, we can later route permission requests from subagents to the correct UI thread.
+     */
+    private void registerSubagentSessionIfNeeded(final ActiveStream stream, final JsonNode properties) {
+        if (stream.sessionId == null) {
+            return;
+        }
+        String eventSessionId = properties.path("sessionID").asText(null);
+        if (eventSessionId == null || eventSessionId.isBlank()) {
+            eventSessionId = properties.path("session").path("id").asText(null);
+        }
+        if (eventSessionId == null || eventSessionId.isBlank() || eventSessionId.equals(stream.sessionId)) {
+            return;
+        }
+        // Check if this session belongs to another known parent stream
+        final String knownSessionId = eventSessionId;
+        final boolean isKnownParent = activeStreams.values().stream()
+                .anyMatch(s -> knownSessionId.equals(s.sessionId));
+        if (!isKnownParent) {
+            subagentSessionMap.putIfAbsent(eventSessionId, stream.threadId);
         }
     }
 
@@ -753,6 +785,11 @@ public class OpenCodeRuntimeService {
                 .orElse(null);
         if (fromStream != null) {
             return fromStream;
+        }
+        // Check subagent session map (subagents spawned by a parent session)
+        final String fromSubagent = subagentSessionMap.get(sessionId);
+        if (fromSubagent != null) {
+            return fromSubagent;
         }
         // Fallback: reverse lookup in registry (handles title updates arriving after stream ends)
         return sessionRegistry.getThreadId(sessionId);
