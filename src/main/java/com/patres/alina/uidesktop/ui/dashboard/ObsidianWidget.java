@@ -26,6 +26,7 @@ import javafx.util.Duration;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -114,14 +115,13 @@ public class ObsidianWidget extends VBox {
     private void refreshAsync() {
         Thread.startVirtualThread(() -> {
             final WorkspaceSettings settings = BackendApi.getWorkspaceSettings();
-            final String cliPath = settings.obsidianCliPath();
-            final String vaultName = settings.obsidianVaultName();
+            final Path notesDirectory = Path.of(settings.openCodeWorkingDirectory()).toAbsolutePath().normalize();
             final int limit = settings.dashboardObsidianNoteLimit();
             final String excludePatterns = settings.obsidianExcludePatterns();
 
-            final ObsidianNotesResult result = ObsidianCliService.fetchRecentNotes(cliPath, vaultName, limit, excludePatterns);
+            final ObsidianNotesResult result = ObsidianCliService.fetchRecentNotes(notesDirectory, limit, excludePatterns);
 
-            if (!result.cliMissing() && result.errorMessage().isEmpty()) {
+            if (result.errorMessage().isEmpty()) {
                 trackChanges(result.notes());
             }
 
@@ -136,11 +136,6 @@ public class ObsidianWidget extends VBox {
         setVisible(true);
 
         contentBox.getChildren().clear();
-
-        if (result.cliMissing()) {
-            renderError(LanguageManager.getLanguageString("dashboard.obsidian.cliMissing"));
-            return;
-        }
 
         if (!result.errorMessage().isEmpty()) {
             renderError(result.errorMessage());
@@ -231,7 +226,7 @@ public class ObsidianWidget extends VBox {
     private void openNoteInObsidian(final ObsidianNote note) {
         final WorkspaceSettings settings = BackendApi.getWorkspaceSettings();
         Thread.startVirtualThread(() ->
-                ObsidianCliService.openNote(settings.obsidianCliPath(), settings.obsidianVaultName(), note.path())
+                ObsidianCliService.openNote(settings.obsidianCliPath(), note.path())
         );
     }
 

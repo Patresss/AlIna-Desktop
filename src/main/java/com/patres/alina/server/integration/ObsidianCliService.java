@@ -3,87 +3,69 @@ package com.patres.alina.server.integration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
 
 /**
- * Service that fetches recently modified notes from an Obsidian vault.
+ * Service that fetches recently modified markdown notes from a directory.
  * <p>
  * Strategy:
  * <ol>
- *   <li>Resolve the vault root path using {@code obsidian-cli vault info=path}.</li>
- *   <li>Walk the vault directory and find {@code .md} files sorted by last-modified time (newest first).</li>
- *   <li>Return the top N results as vault-relative paths.</li>
+ *   <li>Walk the given root directory and find {@code .md} files sorted by last-modified time (newest first).</li>
+ *   <li>Return the top N results as root-relative paths.</li>
  * </ol>
- * This approach returns genuinely <em>recently modified</em> notes rather than just recently opened ones.
+ * Optionally integrates with {@code obsidian-cli} for opening notes in the Obsidian app.
  */
 public final class ObsidianCliService {
 
     private static final Logger logger = LoggerFactory.getLogger(ObsidianCliService.class);
-    private static final long COMMAND_TIMEOUT_SECONDS = 10;
     private static final String DEFAULT_CLI_PATH = "obsidian-cli";
 
     private ObsidianCliService() {
     }
 
     /**
-     * Fetches the most recently modified notes from the vault.
+     * Fetches the most recently modified notes from the given directory.
      *
-     * @param cliPath          path to the obsidian-cli executable (may be empty for default)
-     * @param vaultName        optional vault name (empty means default vault)
+     * @param notesDirectory   root directory to scan for {@code .md} files
      * @param limit            maximum number of notes to return
-     * @param excludePatterns  comma-separated list of regex patterns to exclude (matched against vault-relative path)
+     * @param excludePatterns  comma-separated list of glob patterns to exclude (matched against root-relative path)
      * @return result containing notes or error information
      */
-    public static ObsidianNotesResult fetchRecentNotes(final String cliPath, final String vaultName,
-                                                       final int limit, final String excludePatterns) {
-        final String executable = resolveCliPath(cliPath);
+    public static ObsidianNotesResult fetchRecentNotes(final Path notesDirectory, final int limit,
+                                                       final String excludePatterns) {
         final List<Pattern> compiled = compileExcludePatterns(excludePatterns);
         try {
-            // Step 1: resolve vault path via CLI
-            final Path vaultPath = resolveVaultPath(executable, vaultName);
-            if (vaultPath == null) {
-                return ObsidianNotesResult.error("Could not determine Obsidian vault path");
+            if (notesDirectory == null || !Files.isDirectory(notesDirectory)) {
+                return ObsidianNotesResult.error("Notes directory does not exist: " + notesDirectory);
             }
 
-            // Step 2: scan filesystem for recently modified .md files
-            final List<ObsidianNote> notes = findRecentlyModifiedNotes(vaultPath, limit, compiled);
+            final List<ObsidianNote> notes = findRecentlyModifiedNotes(notesDirectory, limit, compiled);
             return ObsidianNotesResult.success(notes);
-        } catch (final IOException e) {
-            if (isCommandNotFound(e)) {
-                logger.warn("Obsidian: CLI not found at '{}'", executable);
-                return ObsidianNotesResult.cliNotFound();
-            }
-            logger.warn("Obsidian: failed to fetch recent notes", e);
-            return ObsidianNotesResult.error(e.getMessage() != null ? e.getMessage() : "Unknown error");
         } catch (final Exception e) {
-            logger.warn("Obsidian: failed to fetch recent notes", e);
+            logger.warn("Notes: failed to fetch recent notes from {}", notesDirectory, e);
             return ObsidianNotesResult.error(e.getMessage() != null ? e.getMessage() : "Unknown error");
         }
     }
 
     /**
-     * Opens a note in Obsidian.
+     * Opens a note in Obsidian (requires obsidian-cli).
      *
      * @param cliPath   path to the obsidian-cli executable
-     * @param vaultName optional vault name
      * @param notePath  the vault-relative path to the note
      */
-    public static void openNote(final String cliPath, final String vaultName, final String notePath) {
+    public static void openNote(final String cliPath, final String notePath) {
         final String executable = resolveCliPath(cliPath);
         try {
-            final List<String> command = buildOpenCommand(executable, vaultName, notePath);
+            final List<String> command = buildOpenCommand(executable, notePath);
             final ProcessBuilder pb = new ProcessBuilder(command);
             pb.redirectErrorStream(true);
             pb.start();
@@ -93,53 +75,22 @@ public final class ObsidianCliService {
         }
     }
 
-    // ── Vault path resolution ────────────────────────────────────
-
-    private static Path resolveVaultPath(final String executable, final String vaultName) throws Exception {
-        final List<String> command = buildVaultPathCommand(executable, vaultName);
-        final CommandExecutionResult result = runCommand(command);
-
-        if (!result.finished()) {
-            logger.warn("Obsidian: vault info command timed out");
-            return null;
-        }
-        if (result.exitCode() != 0) {
-            logger.warn("Obsidian: vault info command failed with exit code {}: {}", result.exitCode(), result.output());
-            return null;
-        }
-
-        final String output = result.output().trim();
-        if (output.isEmpty()) {
-            return null;
-        }
-
-        final Path path = Path.of(output);
-        if (!Files.isDirectory(path)) {
-            logger.warn("Obsidian: vault path does not exist: {}", path);
-            return null;
-        }
-        return path;
-    }
-
     /**
-     * Counts the total number of {@code .md} files in the vault (excluding hidden and excluded paths).
+     * Counts the total number of {@code .md} files in the given directory (excluding hidden and excluded paths).
      *
-     * @param cliPath          path to the obsidian-cli executable (may be empty for default)
-     * @param vaultName        optional vault name (empty means default vault)
-     * @param excludePatterns  comma-separated list of regex patterns to exclude
-     * @return the number of markdown files, or 0 if the vault is unreachable
+     * @param notesDirectory   root directory to scan
+     * @param excludePatterns  comma-separated list of glob patterns to exclude
+     * @return the number of markdown files, or 0 if the directory is unreachable
      */
-    public static long countNotes(final String cliPath, final String vaultName, final String excludePatterns) {
-        final String executable = resolveCliPath(cliPath);
+    public static long countNotes(final Path notesDirectory, final String excludePatterns) {
         final List<Pattern> compiled = compileExcludePatterns(excludePatterns);
         try {
-            final Path vaultPath = resolveVaultPath(executable, vaultName);
-            if (vaultPath == null) {
+            if (notesDirectory == null || !Files.isDirectory(notesDirectory)) {
                 return 0;
             }
-            return countMarkdownFiles(vaultPath, compiled);
+            return countMarkdownFiles(notesDirectory, compiled);
         } catch (final Exception e) {
-            logger.warn("Obsidian: failed to count notes", e);
+            logger.warn("Notes: failed to count notes in {}", notesDirectory, e);
             return 0;
         }
     }
@@ -294,25 +245,11 @@ public final class ObsidianCliService {
 
     // ── Command building ─────────────────────────────────────────
 
-    private static List<String> buildVaultPathCommand(final String executable, final String vaultName) {
-        final List<String> command = new ArrayList<>();
-        command.add(executable);
-        command.add("vault");
-        command.add("info=path");
-        if (vaultName != null && !vaultName.isBlank()) {
-            command.add("vault=" + vaultName);
-        }
-        return command;
-    }
-
-    private static List<String> buildOpenCommand(final String executable, final String vaultName, final String notePath) {
+    private static List<String> buildOpenCommand(final String executable, final String notePath) {
         final List<String> command = new ArrayList<>();
         command.add(executable);
         command.add("open");
         command.add("path=" + notePath);
-        if (vaultName != null && !vaultName.isBlank()) {
-            command.add("vault=" + vaultName);
-        }
         return command;
     }
 
@@ -349,44 +286,10 @@ public final class ObsidianCliService {
 
     // ── Process execution ────────────────────────────────────────
 
-    private static CommandExecutionResult runCommand(final List<String> command) throws Exception {
-        final ProcessBuilder pb = new ProcessBuilder(command);
-        pb.redirectErrorStream(true);
-
-        final Process process = pb.start();
-        final String output = readProcessOutput(process);
-        final boolean finished = process.waitFor(COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        if (!finished) {
-            process.destroyForcibly();
-            return new CommandExecutionResult(-1, output, false);
-        }
-        return new CommandExecutionResult(process.exitValue(), output, true);
-    }
-
-    private static String readProcessOutput(final Process process) throws IOException {
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            final StringBuilder output = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append('\n');
-            }
-            return output.toString().trim();
-        }
-    }
-
     private static String resolveCliPath(final String configuredPath) {
         if (configuredPath == null || configuredPath.isBlank()) {
             return DEFAULT_CLI_PATH;
         }
         return configuredPath.trim();
-    }
-
-    private static boolean isCommandNotFound(final IOException e) {
-        final String message = e.getMessage();
-        return message != null && (message.contains("No such file") || message.contains("not found")
-                || message.contains("Cannot run program"));
-    }
-
-    private record CommandExecutionResult(int exitCode, String output, boolean finished) {
     }
 }

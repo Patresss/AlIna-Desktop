@@ -40,7 +40,6 @@ public record WorkspaceSettings(
         // Obsidian
         boolean showDashboardObsidian,
         String obsidianCliPath,
-        String obsidianVaultName,
         int dashboardObsidianNoteLimit,
         int dashboardObsidianRefreshSeconds,
         boolean obsidianChangeNotificationsEnabled,
@@ -106,7 +105,6 @@ public record WorkspaceSettings(
                 // Obsidian defaults
                 false,
                 "",
-                "",
                 DEFAULT_DASHBOARD_OBSIDIAN_NOTE_LIMIT,
                 DEFAULT_DASHBOARD_OBSIDIAN_REFRESH_SECONDS,
                 false,
@@ -139,7 +137,6 @@ public record WorkspaceSettings(
         githubAiPrompt = githubAiPrompt == null ? "" : githubAiPrompt.trim();
         // Obsidian
         obsidianCliPath = obsidianCliPath == null ? "" : obsidianCliPath.trim();
-        obsidianVaultName = obsidianVaultName == null ? "" : obsidianVaultName.trim();
         dashboardObsidianNoteLimit = dashboardObsidianNoteLimit > 0 ? dashboardObsidianNoteLimit : DEFAULT_DASHBOARD_OBSIDIAN_NOTE_LIMIT;
         dashboardObsidianRefreshSeconds = dashboardObsidianRefreshSeconds > 0 ? dashboardObsidianRefreshSeconds : DEFAULT_DASHBOARD_OBSIDIAN_REFRESH_SECONDS;
         obsidianAiPrompt = obsidianAiPrompt == null ? "" : obsidianAiPrompt.trim();
@@ -158,7 +155,7 @@ public record WorkspaceSettings(
                 calendarNotificationMinutesBefore, calendarChangeNotificationsEnabled,
                 githubChangeNotificationsEnabled, jiraChangeNotificationsEnabled, splitMode,
                 calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt,
-                showDashboardObsidian, obsidianCliPath, obsidianVaultName,
+                showDashboardObsidian, obsidianCliPath,
                 dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
                 obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns
         );
@@ -176,7 +173,7 @@ public record WorkspaceSettings(
                 calendarNotificationMinutesBefore, calendarChangeNotificationsEnabled,
                 githubChangeNotificationsEnabled, jiraChangeNotificationsEnabled, splitMode,
                 calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt,
-                showDashboardObsidian, obsidianCliPath, obsidianVaultName,
+                showDashboardObsidian, obsidianCliPath,
                 dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
                 obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns
         );
@@ -194,7 +191,7 @@ public record WorkspaceSettings(
                 calendarNotificationMinutesBefore, calendarChangeNotificationsEnabled,
                 githubChangeNotificationsEnabled, jiraChangeNotificationsEnabled, value,
                 calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt,
-                showDashboardObsidian, obsidianCliPath, obsidianVaultName,
+                showDashboardObsidian, obsidianCliPath,
                 dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
                 obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns
         );

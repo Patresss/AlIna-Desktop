@@ -105,7 +105,6 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
                 settings.githubAiPrompt(),
                 settings.showDashboardObsidian(),
                 settings.obsidianCliPath(),
-                settings.obsidianVaultName(),
                 settings.dashboardObsidianNoteLimit(),
                 settings.dashboardObsidianRefreshSeconds(),
                 settings.obsidianChangeNotificationsEnabled(),

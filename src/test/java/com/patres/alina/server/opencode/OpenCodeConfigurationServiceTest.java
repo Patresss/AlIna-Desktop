@@ -158,7 +158,6 @@ class OpenCodeConfigurationServiceTest {
                 // Obsidian
                 false,
                 "",
-                "",
                 WorkspaceSettings.DEFAULT_DASHBOARD_OBSIDIAN_NOTE_LIMIT,
                 WorkspaceSettings.DEFAULT_DASHBOARD_OBSIDIAN_REFRESH_SECONDS,
                 false,

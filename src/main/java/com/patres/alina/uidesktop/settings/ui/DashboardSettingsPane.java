@@ -79,7 +79,6 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     // Obsidian
     private ToggleSwitch showDashboardObsidianToggle;
     private TextField obsidianCliPathField;
-    private TextField obsidianVaultNameField;
     private Spinner<Integer> dashboardObsidianNoteLimitSpinner;
     private Spinner<Integer> dashboardObsidianRefreshSpinner;
     private ToggleSwitch obsidianChangeNotificationsToggle;
@@ -142,7 +141,6 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         // Obsidian
         showDashboardObsidianToggle.setSelected(settings.showDashboardObsidian());
         obsidianCliPathField.setText(orEmpty(settings.obsidianCliPath()));
-        obsidianVaultNameField.setText(orEmpty(settings.obsidianVaultName()));
         dashboardObsidianNoteLimitSpinner.getValueFactory().setValue(settings.dashboardObsidianNoteLimit());
         dashboardObsidianRefreshSpinner.getValueFactory().setValue(settings.dashboardObsidianRefreshSeconds());
         obsidianChangeNotificationsToggle.setSelected(settings.obsidianChangeNotificationsEnabled());
@@ -192,7 +190,6 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 // Obsidian
                 showDashboardObsidianToggle.isSelected(),
                 obsidianCliPathField.getText(),
-                obsidianVaultNameField.getText(),
                 dashboardObsidianNoteLimitSpinner.getValue(),
                 dashboardObsidianRefreshSpinner.getValue(),
                 obsidianChangeNotificationsToggle.isSelected(),
@@ -281,7 +278,6 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         final var obsidianHeader = createTextSeparator("settings.dashboard.obsidian.section", Styles.TITLE_4);
         showDashboardObsidianToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         obsidianCliPathField = createResizableTextField(settingsBox);
-        obsidianVaultNameField = createResizableTextField(settingsBox);
         dashboardObsidianNoteLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardObsidianNoteLimit(), settingsBox);
         final var obsidianNoteLimitTile = createTile("settings.workspace.obsidianNoteLimit.title", "settings.workspace.obsidianNoteLimit.description");
         obsidianNoteLimitTile.setAction(dashboardObsidianNoteLimitSpinner);
@@ -341,7 +337,6 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 obsidianHeader,
                 tileFor(showDashboardObsidianToggle, "settings.workspace.showObsidian.title", "settings.workspace.showObsidian.description"),
                 tileFor(obsidianCliPathField, "settings.workspace.obsidian.cliPath.title", "settings.workspace.obsidian.cliPath.description"),
-                tileFor(obsidianVaultNameField, "settings.workspace.obsidian.vaultName.title", "settings.workspace.obsidian.vaultName.description"),
                 obsidianNoteLimitTile,
                 obsidianRefreshTile,
                 tileFor(obsidianChangeNotificationsToggle, "settings.workspace.obsidianChangeNotifications.title", "settings.workspace.obsidianChangeNotifications.description"),
