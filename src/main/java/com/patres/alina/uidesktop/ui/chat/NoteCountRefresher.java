@@ -22,8 +22,11 @@ final class NoteCountRefresher {
     private static final Logger logger = LoggerFactory.getLogger(NoteCountRefresher.class);
     private static final long REFRESH_INTERVAL_MINUTES = 1;
 
+    private static final long UNSET = -1;
+
     private final Browser browser;
     private ScheduledExecutorService scheduler;
+    private long lastCount = UNSET;
 
     NoteCountRefresher(final Browser browser) {
         this.browser = browser;
@@ -58,6 +61,10 @@ final class NoteCountRefresher {
     private void refresh() {
         try {
             final long count = BackendApi.getNoteCount();
+            if (count == lastCount) {
+                return;
+            }
+            lastCount = count;
             final String label = LanguageManager.getLanguageString("welcome.notes");
             FxThreadRunner.run(() -> browser.updateNoteCount(count, label));
         } catch (final Exception e) {
