@@ -42,7 +42,7 @@ public class GitHubService {
             return GitHubPullRequestResult.empty();
         }
 
-        final String tokenPrefix = githubToken.length() > 10 ? githubToken.substring(0, 10) + "..." : "***";
+        final String tokenPrefix = githubToken.length() > 4 ? githubToken.substring(0, 4) + "..." : "***";
         logger.info("GitHub: starting fetch with token: {}, maxResults: {}", tokenPrefix, maxResults);
 
             try {
