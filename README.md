@@ -37,10 +37,6 @@ Key features:
 - Run UI: `./gradlew run`
 - Tests: `./gradlew test`
 
-Before first use, set your API key (e.g., OpenAI) as an environment variable or in a local config file:
-- `SPRING_AI_OPENAI_API_KEY=<your_key>`
-- Keep local overrides in `config/` (e.g., `application.local.yml`). Do not commit secrets.
-
 ## Project Structure (Summary)
 
 - `src/main/java/`

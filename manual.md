@@ -12,7 +12,6 @@ AlIna to natywna desktopowa aplikacja AI zbudowana na JavaFX i Spring Boot. Dzia
 ### Uruchomienie
 
 ```bash
-export SPRING_AI_OPENAI_API_KEY=<twój_klucz>
 ./gradlew run
 ```
 
