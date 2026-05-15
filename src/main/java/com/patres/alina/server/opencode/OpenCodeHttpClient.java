@@ -19,6 +19,7 @@ public class OpenCodeHttpClient {
     private final OpenCodeConfigurationService configurationService;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(5))
             .build();
 
