@@ -1,7 +1,8 @@
 package com.patres.alina.uidesktop.settings.ui;
 
 import atlantafx.base.theme.Styles;
-import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
+import com.patres.alina.common.ai.AiProvider;
+import com.patres.alina.common.ai.AiRuntimeStatus;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
@@ -14,11 +15,14 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
+import javafx.util.StringConverter;
 import org.kordamp.ikonli.feather.Feather;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,9 +38,13 @@ import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResiza
 public class OpenCodeSettingsPane extends SettingsModalPaneContent {
 
     private ChoiceBox<String> chatModelSelector;
+    private ChoiceBox<AiProvider> aiProviderSelector;
     private TextField openCodeHostnameField;
     private TextField openCodePortField;
     private TextField openCodeWorkingDirectoryField;
+    private TextField codexCommandField;
+    private TextField codexWorkingDirectoryField;
+    private TextField codexSandboxField;
     private TextArea openCodeStatusArea;
 
     private WorkspaceSettings settings;
@@ -50,9 +58,14 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
     protected void reset() {
         settings = BackendApi.getWorkspaceSettings();
         assistantSettings = BackendApi.getAssistantSettings();
+        aiProviderSelector.getItems().setAll(Arrays.asList(AiProvider.values()));
+        aiProviderSelector.setValue(settings.aiProvider());
         openCodeHostnameField.setText(orEmpty(settings.openCodeHostname()));
         openCodePortField.setText(String.valueOf(settings.openCodePort()));
         openCodeWorkingDirectoryField.setText(orEmpty(settings.openCodeWorkingDirectory()));
+        codexCommandField.setText(orEmpty(settings.codexCommand()));
+        codexWorkingDirectoryField.setText(orEmpty(settings.codexWorkingDirectory()));
+        codexSandboxField.setText(orEmpty(settings.codexSandbox()));
 
         final List<String> chatModels = BackendApi.getChatModels();
         chatModelSelector.getItems().setAll(chatModels);
@@ -73,9 +86,13 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
                 settings.tasksFile(),
                 settings.dashboardTaskLimit(),
                 settings.taskGroups(),
+                Optional.ofNullable(aiProviderSelector.getValue()).orElse(WorkspaceSettings.DEFAULT_AI_PROVIDER),
                 openCodeHostnameField.getText(),
                 parseInteger(openCodePortField.getText(), WorkspaceSettings.DEFAULT_OPENCODE_PORT),
                 openCodeWorkingDirectoryField.getText(),
+                codexCommandField.getText(),
+                codexWorkingDirectoryField.getText(),
+                codexSandboxField.getText(),
                 settings.githubToken(),
                 settings.dashboardTasksRefreshSeconds(),
                 settings.dashboardGithubRefreshSeconds(),
@@ -131,6 +148,22 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
 
         final var header = createTextSeparator("settings.opencode.title", Styles.TITLE_3);
 
+        final var providerHeader = createTextSeparator("settings.workspace.aiProvider.section", Styles.TITLE_4);
+        aiProviderSelector = createResizableRegion(ChoiceBox::new, settingsBox);
+        aiProviderSelector.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(final AiProvider provider) {
+                return provider == null ? "" : provider.displayName();
+            }
+
+            @Override
+            public AiProvider fromString(final String value) {
+                return AiProvider.from(value);
+            }
+        });
+        final var providerTile = createTile("settings.workspace.aiProvider.title", "settings.workspace.aiProvider.description");
+        providerTile.setAction(aiProviderSelector);
+
         // ── Chat model ──
         final var chatModelHeader = createTextSeparator("settings.chatModel.title", Styles.TITLE_4);
         chatModelSelector = createResizableRegion(ChoiceBox::new, settingsBox);
@@ -139,11 +172,16 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
 
         // ── Runtime ──
         final var runtimeHeader = createTextSeparator("settings.workspace.runtime.title", Styles.TITLE_4);
+        final var openCodeHeader = createTextSeparator("settings.workspace.openCode.section", Styles.TITLE_4);
+        final var codexHeader = createTextSeparator("settings.workspace.codex.section", Styles.TITLE_4);
         final var runtimeStatusHeader = createTextSeparator("settings.workspace.openCode.status.section", Styles.TITLE_4);
 
         openCodeHostnameField = createResizableTextField(settingsBox);
         openCodePortField = createResizableTextField(settingsBox);
         openCodeWorkingDirectoryField = createResizableTextField(settingsBox);
+        codexCommandField = createResizableTextField(settingsBox);
+        codexWorkingDirectoryField = createResizableTextField(settingsBox);
+        codexSandboxField = createResizableTextField(settingsBox);
 
         openCodeStatusArea = createResizableTextArea(settingsBox);
         openCodeStatusArea.setPrefRowCount(8);
@@ -153,16 +191,24 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
 
         final Button refreshOpenCodeStatusButton = createButton(Feather.REFRESH_CCW, e -> refreshOpenCodeStatus());
         final Node openCodeWorkingDirectoryPicker = createFilePickerField(openCodeWorkingDirectoryField, this::chooseOpenCodeWorkingDirectory);
+        final Node codexWorkingDirectoryPicker = createFilePickerField(codexWorkingDirectoryField, this::chooseCodexWorkingDirectory);
         final VBox openCodeStatusBox = new VBox(8, openCodeStatusArea, refreshOpenCodeStatusButton);
 
         return List.of(
                 header,
+                providerHeader,
+                providerTile,
                 chatModelHeader,
                 chatModelTile,
                 runtimeHeader,
+                openCodeHeader,
                 tileFor(openCodeHostnameField, "settings.workspace.openCode.hostname.title", "settings.workspace.openCode.hostname.description"),
                 tileFor(openCodePortField, "settings.workspace.openCode.port.title", "settings.workspace.openCode.port.description"),
                 tileFor(openCodeWorkingDirectoryPicker, "settings.workspace.openCode.directory.title", "settings.workspace.openCode.directory.description"),
+                codexHeader,
+                tileFor(codexCommandField, "settings.workspace.codex.command.title", "settings.workspace.codex.command.description"),
+                tileFor(codexWorkingDirectoryPicker, "settings.workspace.codex.directory.title", "settings.workspace.codex.directory.description"),
+                tileFor(codexSandboxField, "settings.workspace.codex.sandbox.title", "settings.workspace.codex.sandbox.description"),
                 runtimeStatusHeader,
                 tileFor(openCodeStatusBox, "settings.workspace.openCode.status.title", "settings.workspace.openCode.status.description")
         );
@@ -183,12 +229,20 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
     }
 
     private void chooseOpenCodeWorkingDirectory() {
+        chooseWorkingDirectory(openCodeWorkingDirectoryField, "OpenCode working directory");
+    }
+
+    private void chooseCodexWorkingDirectory() {
+        chooseWorkingDirectory(codexWorkingDirectoryField, "Codex working directory");
+    }
+
+    private void chooseWorkingDirectory(final TextField targetField, final String title) {
         final DirectoryChooser chooser = new DirectoryChooser();
-        chooser.setTitle("OpenCode working directory");
-        applyInitialDirectory(chooser, openCodeWorkingDirectoryField.getText());
+        chooser.setTitle(title);
+        applyInitialDirectory(chooser, targetField.getText());
         final File selected = chooser.showDialog(settingsBox.getScene() == null ? null : settingsBox.getScene().getWindow());
         if (selected != null) {
-            openCodeWorkingDirectoryField.setText(selected.getAbsolutePath());
+            targetField.setText(selected.getAbsolutePath());
         }
     }
 
@@ -217,7 +271,7 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
 
     private void refreshOpenCodeStatus() {
         try {
-            final OpenCodeRuntimeStatus status = BackendApi.getOpenCodeRuntimeStatus();
+            final AiRuntimeStatus status = BackendApi.getAiRuntimeStatus();
             openCodeStatusArea.setText(formatOpenCodeStatus(status));
         } catch (Exception e) {
             openCodeStatusArea.setText("Status: unavailable" + System.lineSeparator()
@@ -225,21 +279,25 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
         }
     }
 
-    private String formatOpenCodeStatus(final OpenCodeRuntimeStatus status) {
+    private String formatOpenCodeStatus(final AiRuntimeStatus status) {
         if (status == null) {
             return "Status unavailable.";
         }
-        return String.join(System.lineSeparator(),
-                "Status: " + (status.healthy() ? "running" : "unreachable"),
-                "Version: " + fallback(status.version(), "-"),
-                "Base URL: " + fallback(status.baseUrl(), "-"),
-                "Host: " + fallback(status.hostname(), "-"),
-                "Port: " + status.port(),
-                "Working directory: " + fallback(status.workingDirectory(), "-"),
-                "Working directory exists: " + yesNo(status.workingDirectoryExists()),
-                "Process started by AlIna: " + yesNo(status.processRunning()),
-                "Message: " + fallback(status.statusMessage(), "-")
-        );
+        final List<String> lines = new ArrayList<>();
+        lines.add("Runtime: " + fallback(status.displayName(), status.provider() == null ? "-" : status.provider().displayName()));
+        lines.add("Status: " + (status.healthy() ? "running" : "unreachable"));
+        lines.add("Version: " + fallback(status.version(), "-"));
+        lines.add("Command: " + fallback(status.command(), "-"));
+        if (status.baseUrl() != null && !status.baseUrl().isBlank()) {
+            lines.add("Base URL: " + status.baseUrl());
+            lines.add("Host: " + fallback(status.hostname(), "-"));
+            lines.add("Port: " + status.port());
+        }
+        lines.add("Working directory: " + fallback(status.workingDirectory(), "-"));
+        lines.add("Working directory exists: " + yesNo(status.workingDirectoryExists()));
+        lines.add("Process started by AlIna: " + yesNo(status.processRunning()));
+        lines.add("Message: " + fallback(status.statusMessage(), "-"));
+        return String.join(System.lineSeparator(), lines);
     }
 
     private String orEmpty(final String value) {

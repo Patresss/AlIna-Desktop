@@ -2,11 +2,13 @@ package com.patres.alina.uidesktop.settings.ui;
 
 import atlantafx.base.controls.ToggleSwitch;
 import atlantafx.base.theme.Styles;
-import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
+import com.patres.alina.common.ai.AiProvider;
+import com.patres.alina.common.ai.AiRuntimeStatus;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextArea;
@@ -15,11 +17,14 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
+import javafx.util.StringConverter;
 import org.kordamp.ikonli.feather.Feather;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.patres.alina.uidesktop.ui.util.TranslatedComponentUtils.createTextSeparator;
@@ -43,9 +48,13 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
     private ToggleSwitch calendarShowOnlyCurrentAndFutureToggle;
 
     private TextField tasksFileField;
+    private ChoiceBox<AiProvider> aiProviderSelector;
     private TextField openCodeHostnameField;
     private TextField openCodePortField;
     private TextField openCodeWorkingDirectoryField;
+    private TextField codexCommandField;
+    private TextField codexWorkingDirectoryField;
+    private TextField codexSandboxField;
     private TextArea openCodeStatusArea;
     private PasswordField githubTokenField;
     private TextField jiraEmailField;
@@ -80,9 +89,14 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         calendarHideAllDayToggle.setSelected(settings.calendarHideAllDayEvents());
         calendarShowOnlyCurrentAndFutureToggle.setSelected(settings.calendarShowOnlyCurrentAndFuture());
         tasksFileField.setText(orEmpty(settings.tasksFile()));
+        aiProviderSelector.getItems().setAll(Arrays.asList(AiProvider.values()));
+        aiProviderSelector.setValue(settings.aiProvider());
         openCodeHostnameField.setText(orEmpty(settings.openCodeHostname()));
         openCodePortField.setText(String.valueOf(settings.openCodePort()));
         openCodeWorkingDirectoryField.setText(orEmpty(settings.openCodeWorkingDirectory()));
+        codexCommandField.setText(orEmpty(settings.codexCommand()));
+        codexWorkingDirectoryField.setText(orEmpty(settings.codexWorkingDirectory()));
+        codexSandboxField.setText(orEmpty(settings.codexSandbox()));
         dashboardTaskLimitSpinner.getValueFactory().setValue(settings.dashboardTaskLimit());
         dashboardTasksRefreshSpinner.getValueFactory().setValue(settings.dashboardTasksRefreshSeconds());
         dashboardGithubRefreshSpinner.getValueFactory().setValue(settings.dashboardGithubRefreshSeconds());
@@ -106,9 +120,13 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 tasksFileField.getText(),
                 dashboardTaskLimitSpinner.getValue(),
                 settings.taskGroups(),
+                aiProviderSelector.getValue(),
                 openCodeHostnameField.getText(),
                 parseInteger(openCodePortField.getText(), WorkspaceSettings.DEFAULT_OPENCODE_PORT),
                 openCodeWorkingDirectoryField.getText(),
+                codexCommandField.getText(),
+                codexWorkingDirectoryField.getText(),
+                codexSandboxField.getText(),
                 githubTokenField.getText(),
                 dashboardTasksRefreshSpinner.getValue(),
                 dashboardGithubRefreshSpinner.getValue(),
@@ -169,9 +187,24 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         calendarHideAllDayToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         calendarShowOnlyCurrentAndFutureToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         tasksFileField = createResizableTextField(settingsBox);
+        aiProviderSelector = createResizableRegion(ChoiceBox::new, settingsBox);
+        aiProviderSelector.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(final AiProvider provider) {
+                return provider == null ? "" : provider.displayName();
+            }
+
+            @Override
+            public AiProvider fromString(final String value) {
+                return AiProvider.from(value);
+            }
+        });
         openCodeHostnameField = createResizableTextField(settingsBox);
         openCodePortField = createResizableTextField(settingsBox);
         openCodeWorkingDirectoryField = createResizableTextField(settingsBox);
+        codexCommandField = createResizableTextField(settingsBox);
+        codexWorkingDirectoryField = createResizableTextField(settingsBox);
+        codexSandboxField = createResizableTextField(settingsBox);
         githubTokenField = createResizablePasswordField(settingsBox);
         jiraEmailField = createResizableTextField(settingsBox);
         jiraApiTokenField = createResizablePasswordField(settingsBox);
@@ -240,6 +273,7 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
 
         final Button refreshOpenCodeStatusButton = createButton(Feather.REFRESH_CCW, e -> refreshOpenCodeStatus());
         final Node openCodeWorkingDirectoryPicker = createFilePickerField(openCodeWorkingDirectoryField, this::chooseOpenCodeWorkingDirectory);
+        final Node codexWorkingDirectoryPicker = createFilePickerField(codexWorkingDirectoryField, this::chooseCodexWorkingDirectory);
         final VBox openCodeStatusBox = new VBox(8, openCodeStatusArea, refreshOpenCodeStatusButton);
 
         return List.of(
@@ -268,9 +302,13 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 tileFor(jiraEmailField, "settings.workspace.jira.email.title", "settings.workspace.jira.email.description"),
                 tileFor(jiraApiTokenField, "settings.workspace.jira.token.title", "settings.workspace.jira.token.description"),
                 runtimeHeader,
+                tileFor(aiProviderSelector, "settings.workspace.aiProvider.title", "settings.workspace.aiProvider.description"),
                 tileFor(openCodeHostnameField, "settings.workspace.openCode.hostname.title", "settings.workspace.openCode.hostname.description"),
                 tileFor(openCodePortField, "settings.workspace.openCode.port.title", "settings.workspace.openCode.port.description"),
                 tileFor(openCodeWorkingDirectoryPicker, "settings.workspace.openCode.directory.title", "settings.workspace.openCode.directory.description"),
+                tileFor(codexCommandField, "settings.workspace.codex.command.title", "settings.workspace.codex.command.description"),
+                tileFor(codexWorkingDirectoryPicker, "settings.workspace.codex.directory.title", "settings.workspace.codex.directory.description"),
+                tileFor(codexSandboxField, "settings.workspace.codex.sandbox.title", "settings.workspace.codex.sandbox.description"),
                 runtimeStatusHeader,
                 tileFor(openCodeStatusBox, "settings.workspace.openCode.status.title", "settings.workspace.openCode.status.description")
         );
@@ -291,12 +329,20 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
     }
 
     private void chooseOpenCodeWorkingDirectory() {
+        chooseWorkingDirectory(openCodeWorkingDirectoryField, "OpenCode working directory");
+    }
+
+    private void chooseCodexWorkingDirectory() {
+        chooseWorkingDirectory(codexWorkingDirectoryField, "Codex working directory");
+    }
+
+    private void chooseWorkingDirectory(final TextField targetField, final String title) {
         final DirectoryChooser chooser = new DirectoryChooser();
-        chooser.setTitle("OpenCode working directory");
-        applyInitialDirectory(chooser, openCodeWorkingDirectoryField.getText());
+        chooser.setTitle(title);
+        applyInitialDirectory(chooser, targetField.getText());
         final File selected = chooser.showDialog(settingsBox.getScene() == null ? null : settingsBox.getScene().getWindow());
         if (selected != null) {
-            openCodeWorkingDirectoryField.setText(selected.getAbsolutePath());
+            targetField.setText(selected.getAbsolutePath());
         }
     }
 
@@ -325,7 +371,7 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
 
     private void refreshOpenCodeStatus() {
         try {
-            final OpenCodeRuntimeStatus status = BackendApi.getOpenCodeRuntimeStatus();
+            final AiRuntimeStatus status = BackendApi.getAiRuntimeStatus();
             openCodeStatusArea.setText(formatOpenCodeStatus(status));
         } catch (Exception e) {
             openCodeStatusArea.setText("Status: unavailable" + System.lineSeparator()
@@ -333,21 +379,25 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         }
     }
 
-    private String formatOpenCodeStatus(final OpenCodeRuntimeStatus status) {
+    private String formatOpenCodeStatus(final AiRuntimeStatus status) {
         if (status == null) {
             return "Status unavailable.";
         }
-        return String.join(System.lineSeparator(),
-                "Status: " + (status.healthy() ? "running" : "unreachable"),
-                "Version: " + fallback(status.version(), "-"),
-                "Base URL: " + fallback(status.baseUrl(), "-"),
-                "Host: " + fallback(status.hostname(), "-"),
-                "Port: " + status.port(),
-                "Working directory: " + fallback(status.workingDirectory(), "-"),
-                "Working directory exists: " + yesNo(status.workingDirectoryExists()),
-                "Process started by AlIna: " + yesNo(status.processRunning()),
-                "Message: " + fallback(status.statusMessage(), "-")
-        );
+        final List<String> lines = new ArrayList<>();
+        lines.add("Runtime: " + fallback(status.displayName(), status.provider() == null ? "-" : status.provider().displayName()));
+        lines.add("Status: " + (status.healthy() ? "running" : "unreachable"));
+        lines.add("Version: " + fallback(status.version(), "-"));
+        lines.add("Command: " + fallback(status.command(), "-"));
+        if (status.baseUrl() != null && !status.baseUrl().isBlank()) {
+            lines.add("Base URL: " + status.baseUrl());
+            lines.add("Host: " + fallback(status.hostname(), "-"));
+            lines.add("Port: " + status.port());
+        }
+        lines.add("Working directory: " + fallback(status.workingDirectory(), "-"));
+        lines.add("Working directory exists: " + yesNo(status.workingDirectoryExists()));
+        lines.add("Process started by AlIna: " + yesNo(status.processRunning()));
+        lines.add("Message: " + fallback(status.statusMessage(), "-"));
+        return String.join(System.lineSeparator(), lines);
     }
 
     private String orEmpty(final String value) {

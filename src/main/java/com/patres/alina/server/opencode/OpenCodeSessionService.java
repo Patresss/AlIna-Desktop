@@ -2,14 +2,15 @@ package com.patres.alina.server.opencode;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.patres.alina.common.ai.AiProvider;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.common.thread.ChatThread;
+import com.patres.alina.server.ai.AiSessionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import com.patres.alina.server.opencode.OpenCodeSessionRegistry;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -24,7 +25,7 @@ import java.util.Optional;
  * Replaces local .jsonl file storage for thread listing, history display, and lifecycle management.
  */
 @Service
-public class OpenCodeSessionService {
+public class OpenCodeSessionService implements AiSessionService {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenCodeSessionService.class);
 
@@ -40,10 +41,16 @@ public class OpenCodeSessionService {
         this.sessionRegistry = sessionRegistry;
     }
 
+    @Override
+    public AiProvider provider() {
+        return AiProvider.OPENCODE;
+    }
+
     /**
      * Resolves the OpenCode sessionId for a given AlIna chatThreadId.
      * Returns null if no mapping exists yet.
      */
+    @Override
     public String resolveSessionId(final String chatThreadId) {
         return sessionRegistry.get(chatThreadId);
     }
@@ -51,6 +58,7 @@ public class OpenCodeSessionService {
     /**
      * Fetches a ChatThread by AlIna chatThreadId, resolving via the session registry.
      */
+    @Override
     public Optional<ChatThread> getSessionByChatThreadId(final String chatThreadId) {
         final String sessionId = sessionRegistry.get(chatThreadId);
         if (sessionId == null) {
@@ -62,6 +70,7 @@ public class OpenCodeSessionService {
     /**
      * Returns all sessions visible to the current workspace, sorted by most recently updated.
      */
+    @Override
     public List<ChatThread> getSessions() {
         try {
             final JsonNode response = httpClient.get("/session");
@@ -82,6 +91,7 @@ public class OpenCodeSessionService {
     /**
      * Returns a single session by its OpenCode session ID (which equals the AlIna chatThreadId).
      */
+    @Override
     public Optional<ChatThread> getSession(final String sessionId) {
         try {
             final JsonNode response = httpClient.get("/session/" + sessionId);
@@ -95,6 +105,7 @@ public class OpenCodeSessionService {
     /**
      * Deletes a session from the OpenCode server.
      */
+    @Override
     public void deleteSession(final String sessionId) {
         try {
             httpClient.delete("/session/" + sessionId);
@@ -106,6 +117,7 @@ public class OpenCodeSessionService {
     /**
      * Renames a session title via the OpenCode server.
      */
+    @Override
     public void renameSession(final String sessionId, final String newTitle) {
         try {
             final JsonNode body = objectMapper.createObjectNode().put("title", newTitle);
@@ -119,6 +131,7 @@ public class OpenCodeSessionService {
      * Returns the displayable messages (user + assistant text) for a session,
      * in conversation order.
      */
+    @Override
     public List<ChatMessageResponseModel> getMessages(final String sessionId) {
         try {
             final JsonNode response = httpClient.get("/session/" + sessionId + "/message");

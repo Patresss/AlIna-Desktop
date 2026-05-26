@@ -1,5 +1,7 @@
 package com.patres.alina.common.settings;
 
+import com.patres.alina.common.ai.AiProvider;
+
 public record WorkspaceSettings(
         boolean showDashboard,
         boolean dashboardCollapsed,
@@ -7,9 +9,13 @@ public record WorkspaceSettings(
         String tasksFile,
         int dashboardTaskLimit,
         String taskGroups,
+        AiProvider aiProvider,
         String openCodeHostname,
         int openCodePort,
         String openCodeWorkingDirectory,
+        String codexCommand,
+        String codexWorkingDirectory,
+        String codexSandbox,
         String githubToken,
         int dashboardTasksRefreshSeconds,
         int dashboardGithubRefreshSeconds,
@@ -49,9 +55,13 @@ public record WorkspaceSettings(
 
     public static final String DEFAULT_TASKS_FILE = "profile/default/focus.md";
     public static final int DEFAULT_DASHBOARD_TASK_LIMIT = 6;
+    public static final AiProvider DEFAULT_AI_PROVIDER = AiProvider.OPENCODE;
     public static final String DEFAULT_OPENCODE_HOSTNAME = "127.0.0.1";
     public static final int DEFAULT_OPENCODE_PORT = 4096;
     public static final String DEFAULT_OPENCODE_WORKING_DIRECTORY = System.getProperty("user.home", ".");
+    public static final String DEFAULT_CODEX_COMMAND = "codex";
+    public static final String DEFAULT_CODEX_WORKING_DIRECTORY = DEFAULT_OPENCODE_WORKING_DIRECTORY;
+    public static final String DEFAULT_CODEX_SANDBOX = "workspace-write";
     public static final int DEFAULT_DASHBOARD_TASKS_REFRESH_SECONDS = 15;
     public static final int DEFAULT_DASHBOARD_GITHUB_REFRESH_SECONDS = 60;
     public static final int DEFAULT_DASHBOARD_MEDIA_REFRESH_SECONDS = 5;
@@ -72,9 +82,13 @@ public record WorkspaceSettings(
                 DEFAULT_TASKS_FILE,
                 DEFAULT_DASHBOARD_TASK_LIMIT,
                 "",
+                DEFAULT_AI_PROVIDER,
                 DEFAULT_OPENCODE_HOSTNAME,
                 DEFAULT_OPENCODE_PORT,
                 DEFAULT_OPENCODE_WORKING_DIRECTORY,
+                DEFAULT_CODEX_COMMAND,
+                DEFAULT_CODEX_WORKING_DIRECTORY,
+                DEFAULT_CODEX_SANDBOX,
                 "",
                 DEFAULT_DASHBOARD_TASKS_REFRESH_SECONDS,
                 DEFAULT_DASHBOARD_GITHUB_REFRESH_SECONDS,
@@ -113,13 +127,79 @@ public record WorkspaceSettings(
         );
     }
 
+    public WorkspaceSettings(
+            boolean showDashboard,
+            boolean dashboardCollapsed,
+            boolean keepWindowAlwaysOnTop,
+            String tasksFile,
+            int dashboardTaskLimit,
+            String taskGroups,
+            String openCodeHostname,
+            int openCodePort,
+            String openCodeWorkingDirectory,
+            String githubToken,
+            int dashboardTasksRefreshSeconds,
+            int dashboardGithubRefreshSeconds,
+            int dashboardMediaRefreshSeconds,
+            int dashboardGithubPrLimit,
+            int dashboardJiraRefreshSeconds,
+            int dashboardJiraIssueLimit,
+            String jiraEmail,
+            String jiraApiToken,
+            boolean showDashboardMusic,
+            boolean showDashboardTasks,
+            boolean showDashboardGithub,
+            boolean showDashboardJira,
+            boolean showDashboardCalendar,
+            int dashboardCalendarRefreshSeconds,
+            boolean calendarHideAllDayEvents,
+            boolean calendarShowOnlyCurrentAndFuture,
+            boolean calendarNotificationsEnabled,
+            int calendarNotificationMinutesBefore,
+            boolean calendarChangeNotificationsEnabled,
+            boolean githubChangeNotificationsEnabled,
+            boolean jiraChangeNotificationsEnabled,
+            boolean splitMode,
+            String calendarAiPrompt,
+            String tasksAiPrompt,
+            String jiraAiPrompt,
+            String githubAiPrompt,
+            boolean showDashboardObsidian,
+            String obsidianCliPath,
+            int dashboardObsidianNoteLimit,
+            int dashboardObsidianRefreshSeconds,
+            boolean obsidianChangeNotificationsEnabled,
+            String obsidianAiPrompt,
+            String obsidianExcludePatterns
+    ) {
+        this(
+                showDashboard, dashboardCollapsed, keepWindowAlwaysOnTop, tasksFile, dashboardTaskLimit, taskGroups,
+                DEFAULT_AI_PROVIDER, openCodeHostname, openCodePort, openCodeWorkingDirectory,
+                DEFAULT_CODEX_COMMAND, DEFAULT_CODEX_WORKING_DIRECTORY, DEFAULT_CODEX_SANDBOX,
+                githubToken, dashboardTasksRefreshSeconds, dashboardGithubRefreshSeconds, dashboardMediaRefreshSeconds,
+                dashboardGithubPrLimit, dashboardJiraRefreshSeconds, dashboardJiraIssueLimit,
+                jiraEmail, jiraApiToken, showDashboardMusic, showDashboardTasks, showDashboardGithub,
+                showDashboardJira, showDashboardCalendar, dashboardCalendarRefreshSeconds,
+                calendarHideAllDayEvents, calendarShowOnlyCurrentAndFuture, calendarNotificationsEnabled,
+                calendarNotificationMinutesBefore, calendarChangeNotificationsEnabled,
+                githubChangeNotificationsEnabled, jiraChangeNotificationsEnabled, splitMode,
+                calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt,
+                showDashboardObsidian, obsidianCliPath, dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
+                obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns
+        );
+    }
+
     public WorkspaceSettings {
         tasksFile = defaultIfBlank(tasksFile, DEFAULT_TASKS_FILE);
         dashboardTaskLimit = dashboardTaskLimit > 0 ? dashboardTaskLimit : DEFAULT_DASHBOARD_TASK_LIMIT;
         taskGroups = taskGroups == null ? "" : taskGroups.trim();
+        aiProvider = aiProvider == null ? DEFAULT_AI_PROVIDER : aiProvider;
         openCodeHostname = defaultIfBlank(openCodeHostname, DEFAULT_OPENCODE_HOSTNAME);
         openCodePort = openCodePort > 0 ? openCodePort : DEFAULT_OPENCODE_PORT;
         openCodeWorkingDirectory = defaultIfBlank(openCodeWorkingDirectory, DEFAULT_OPENCODE_WORKING_DIRECTORY);
+        codexCommand = defaultIfBlank(codexCommand, DEFAULT_CODEX_COMMAND);
+        codexWorkingDirectory = defaultIfBlank(codexWorkingDirectory, DEFAULT_CODEX_WORKING_DIRECTORY);
+        codexSandbox = defaultIfBlank(codexSandbox, DEFAULT_CODEX_SANDBOX);
         githubToken = githubToken == null ? "" : githubToken.trim();
         dashboardTasksRefreshSeconds = dashboardTasksRefreshSeconds > 0 ? dashboardTasksRefreshSeconds : DEFAULT_DASHBOARD_TASKS_REFRESH_SECONDS;
         dashboardGithubRefreshSeconds = dashboardGithubRefreshSeconds > 0 ? dashboardGithubRefreshSeconds : DEFAULT_DASHBOARD_GITHUB_REFRESH_SECONDS;
@@ -146,7 +226,8 @@ public record WorkspaceSettings(
     public WorkspaceSettings withKeepWindowAlwaysOnTop(final boolean value) {
         return new WorkspaceSettings(
                 showDashboard, dashboardCollapsed, value, tasksFile, dashboardTaskLimit, taskGroups,
-                openCodeHostname, openCodePort, openCodeWorkingDirectory, githubToken,
+                aiProvider, openCodeHostname, openCodePort, openCodeWorkingDirectory,
+                codexCommand, codexWorkingDirectory, codexSandbox, githubToken,
                 dashboardTasksRefreshSeconds, dashboardGithubRefreshSeconds, dashboardMediaRefreshSeconds,
                 dashboardGithubPrLimit, dashboardJiraRefreshSeconds, dashboardJiraIssueLimit,
                 jiraEmail, jiraApiToken, showDashboardMusic, showDashboardTasks, showDashboardGithub,
@@ -164,7 +245,8 @@ public record WorkspaceSettings(
     public WorkspaceSettings withDashboardCollapsed(final boolean value) {
         return new WorkspaceSettings(
                 showDashboard, value, keepWindowAlwaysOnTop, tasksFile, dashboardTaskLimit, taskGroups,
-                openCodeHostname, openCodePort, openCodeWorkingDirectory, githubToken,
+                aiProvider, openCodeHostname, openCodePort, openCodeWorkingDirectory,
+                codexCommand, codexWorkingDirectory, codexSandbox, githubToken,
                 dashboardTasksRefreshSeconds, dashboardGithubRefreshSeconds, dashboardMediaRefreshSeconds,
                 dashboardGithubPrLimit, dashboardJiraRefreshSeconds, dashboardJiraIssueLimit,
                 jiraEmail, jiraApiToken, showDashboardMusic, showDashboardTasks, showDashboardGithub,
@@ -182,7 +264,8 @@ public record WorkspaceSettings(
     public WorkspaceSettings withSplitMode(final boolean value) {
         return new WorkspaceSettings(
                 showDashboard, dashboardCollapsed, keepWindowAlwaysOnTop, tasksFile, dashboardTaskLimit, taskGroups,
-                openCodeHostname, openCodePort, openCodeWorkingDirectory, githubToken,
+                aiProvider, openCodeHostname, openCodePort, openCodeWorkingDirectory,
+                codexCommand, codexWorkingDirectory, codexSandbox, githubToken,
                 dashboardTasksRefreshSeconds, dashboardGithubRefreshSeconds, dashboardMediaRefreshSeconds,
                 dashboardGithubPrLimit, dashboardJiraRefreshSeconds, dashboardJiraIssueLimit,
                 jiraEmail, jiraApiToken, showDashboardMusic, showDashboardTasks, showDashboardGithub,

@@ -4,16 +4,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.patres.alina.common.ai.AiProvider;
+import com.patres.alina.common.ai.AiRuntimeStatus;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.ChatThreadTitleUpdatedEvent;
 import com.patres.alina.common.event.Event;
 import com.patres.alina.common.message.ImageAttachment;
 import com.patres.alina.common.message.TodoItem;
-import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
 import com.patres.alina.common.permission.PermissionApprovalAction;
 import com.patres.alina.common.permission.PermissionResolutionModel;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.WorkspaceSettings;
+import com.patres.alina.server.ai.AiRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -36,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
-public class OpenCodeRuntimeService {
+public class OpenCodeRuntimeService implements AiRuntime {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenCodeRuntimeService.class);
 
@@ -71,14 +73,22 @@ public class OpenCodeRuntimeService {
         this.objectMapper = objectMapper;
     }
 
+    @Override
+    public AiProvider provider() {
+        return AiProvider.OPENCODE;
+    }
+
+    @Override
     public boolean isEnabled() {
         return true;
     }
 
+    @Override
     public boolean ownsPermissionRequest(final String requestId) {
         return permissionBridge.owns(requestId);
     }
 
+    @Override
     public Flux<String> sendMessageStream(final String chatThreadId,
                                           final String chatThreadTitle,
                                           final String userMessage,
@@ -120,6 +130,7 @@ public class OpenCodeRuntimeService {
         }, FluxSink.OverflowStrategy.BUFFER);
     }
 
+    @Override
     public void cancelStreaming(final String chatThreadId) {
         final ActiveStream stream = activeStreams.remove(chatThreadId);
         if (stream == null) {
@@ -136,6 +147,7 @@ public class OpenCodeRuntimeService {
         closeQuietly(stream);
     }
 
+    @Override
     public PermissionResolutionModel resolvePermissionRequest(final String requestId,
                                                              final PermissionApprovalAction action) {
         return permissionBridge.resolve(requestId, action, (resolvedRequestId, pendingPermission) -> {
@@ -146,6 +158,7 @@ public class OpenCodeRuntimeService {
         });
     }
 
+    @Override
     public List<String> getAvailableModels() {
         return modelService.getAvailableModels();
     }
@@ -161,6 +174,7 @@ public class OpenCodeRuntimeService {
      * Returns {@code null} when the thread has no mapped session or when the directory
      * cannot be resolved from the OpenCode API.
      */
+    @Override
     public String getSessionWebUrl(final String chatThreadId) {
         if (chatThreadId == null || chatThreadId.isBlank()) {
             return null;
@@ -186,7 +200,8 @@ public class OpenCodeRuntimeService {
         }
     }
 
-    public OpenCodeRuntimeStatus getRuntimeStatus() {
+    @Override
+    public AiRuntimeStatus getRuntimeStatus() {
         final WorkspaceSettings workspace = configurationService.workspaceSettings();
         final Path workingDirectory = configurationService.resolveWorkingDirectory();
 
@@ -203,7 +218,10 @@ public class OpenCodeRuntimeService {
             statusMessage = e.getMessage();
         }
 
-        return new OpenCodeRuntimeStatus(
+        return new AiRuntimeStatus(
+                AiProvider.OPENCODE,
+                "OpenCode",
+                OpenCodeConfigurationService.OPENCODE_COMMAND,
                 workspace.openCodeHostname(),
                 workspace.openCodePort(),
                 httpClient.baseUrl(),
@@ -216,6 +234,7 @@ public class OpenCodeRuntimeService {
         );
     }
 
+    @Override
     public synchronized void prepareForFreshChat() {
         try {
             activeStreams.values().forEach(stream -> {
@@ -228,6 +247,17 @@ public class OpenCodeRuntimeService {
             serverManager.prepareForFreshChat(this::applyConfigIfNeeded);
         } catch (Exception e) {
             throw new IllegalStateException("Cannot prepare OpenCode runtime for a fresh chat", e);
+        }
+    }
+
+    @Override
+    public void prepareForHistoryAccess() {
+        if (!httpClient.isHealthy()) {
+            try {
+                serverManager.ensureRunning(force -> { });
+            } catch (Exception e) {
+                logger.warn("Failed to auto-start OpenCode server", e);
+            }
         }
     }
 

@@ -4,7 +4,7 @@ import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
 import com.patres.alina.server.event.AssistantSettingsUpdatedEvent;
-import com.patres.alina.server.opencode.OpenCodeRuntimeService;
+import com.patres.alina.server.ai.AiRuntimeRegistry;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,12 +13,12 @@ import java.util.List;
 public class SettingsService {
 
     private final FileManager<AssistantSettings> assistantSettingsManager;
-    private final OpenCodeRuntimeService openCodeRuntimeService;
+    private final AiRuntimeRegistry aiRuntimeRegistry;
 
     public SettingsService(FileManager<AssistantSettings> assistantSettingsManager,
-                           OpenCodeRuntimeService openCodeRuntimeService) {
+                           AiRuntimeRegistry aiRuntimeRegistry) {
         this.assistantSettingsManager = assistantSettingsManager;
-        this.openCodeRuntimeService = openCodeRuntimeService;
+        this.aiRuntimeRegistry = aiRuntimeRegistry;
     }
 
     public AssistantSettings getApplicationSettings() {
@@ -31,7 +31,7 @@ public class SettingsService {
     }
 
     public List<String> getChatModels() {
-        return openCodeRuntimeService.getAvailableModels();
+        return aiRuntimeRegistry.currentRuntime().getAvailableModels();
     }
 
 }

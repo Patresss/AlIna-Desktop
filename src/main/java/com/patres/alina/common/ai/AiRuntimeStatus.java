@@ -1,6 +1,9 @@
-package com.patres.alina.common.opencode;
+package com.patres.alina.common.ai;
 
-public record OpenCodeRuntimeStatus(
+public record AiRuntimeStatus(
+        AiProvider provider,
+        String displayName,
+        String command,
         String hostname,
         int port,
         String baseUrl,
