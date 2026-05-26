@@ -346,8 +346,8 @@ public class OpenCodeRuntimeService {
     }
 
     private void processEvent(final ActiveStream stream,
-                              final String json,
-                              final FluxSink<String> sink) {
+                               final String json,
+                               final FluxSink<String> sink) {
         try {
             final JsonNode event = objectMapper.readTree(json);
             final String type = event.path("type").asText();
@@ -362,6 +362,7 @@ public class OpenCodeRuntimeService {
                 case "permission.asked" -> handlePermissionAsked(properties);
                 case "session.error" -> handleSessionError(stream, properties, sink);
                 case "session.idle" -> handleSessionIdle(stream, properties);
+                case "session.status" -> handleSessionStatus(stream, properties);
                 case "session.updated" -> handleSessionUpdated(properties);
                 default -> {
                 }
@@ -460,11 +461,13 @@ public class OpenCodeRuntimeService {
             return;
         }
         final String incomingMessageId = properties.path("messageID").asText(null);
-        if (incomingMessageId != null && !incomingMessageId.isBlank() && stream.assistantMessageId == null) {
+        if (incomingMessageId != null && !incomingMessageId.isBlank()) {
+            // In OpenCode 1.15+, there are no message.updated events to track
+            // the current assistant message. When a new messageID appears in a
+            // delta, it means a new assistant turn started (e.g. after tool
+            // execution). We must always update the tracked ID so that subsequent
+            // deltas from this message are not dropped.
             stream.assistantMessageId = incomingMessageId;
-        }
-        if (!matchesAssistantMessage(stream, incomingMessageId)) {
-            return;
         }
         if (!"text".equals(properties.path("field").asText())) {
             return;
@@ -596,9 +599,125 @@ public class OpenCodeRuntimeService {
         if (!matchesSession(stream, properties.path("sessionID").asText())) {
             return;
         }
-        // Do not treat session.idle as final completion.
-        // OpenCode can go idle between tool-call stages and then continue
-        // with another assistant message in the same session.
+        // Stop the tool polling thread
+        stream.pollingTools.set(false);
+        // In OpenCode 1.15+, session.idle signals that the assistant response is complete.
+        // Token counts and model info are no longer sent via SSE events, so we fetch them
+        // from the session REST API before marking the stream as completed.
+        if (stream.assistantMessageId != null) {
+            fetchSessionMetadata(stream);
+            // Final tool activity fetch to catch any tools missed by polling
+            fetchToolActivity(stream);
+            stream.completed.set(true);
+        }
+    }
+
+    private void handleSessionStatus(final ActiveStream stream, final JsonNode properties) {
+        if (!matchesSession(stream, properties.path("sessionID").asText())) {
+            return;
+        }
+        final String status = properties.path("status").path("type").asText("");
+        if ("busy".equals(status) && !stream.pollingTools.get()) {
+            stream.pollingTools.set(true);
+            Thread.startVirtualThread(() -> pollToolActivity(stream));
+        } else if ("idle".equals(status)) {
+            stream.pollingTools.set(false);
+        }
+    }
+
+    /**
+     * Polls the messages REST API to detect tool call parts during the busy phase.
+     * OpenCode 1.15+ does not emit SSE events for tool calls, so we must poll.
+     */
+    private void pollToolActivity(final ActiveStream stream) {
+        while (stream.pollingTools.get() && !stream.cancelled.get() && !stream.completed.get()) {
+            try {
+                Thread.sleep(500);
+                if (!stream.pollingTools.get()) {
+                    break;
+                }
+                fetchToolActivity(stream);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                logger.debug("Tool polling error for session {}", stream.sessionId, e);
+            }
+        }
+    }
+
+    /**
+     * Fetches messages from the REST API and publishes tool activity events
+     * for any tool parts not yet seen.
+     */
+    private void fetchToolActivity(final ActiveStream stream) {
+        try {
+            final JsonNode messages = httpClient.get("/session/%s/message".formatted(stream.sessionId));
+            if (!messages.isArray()) {
+                return;
+            }
+            for (final JsonNode msg : messages) {
+                final JsonNode info = msg.path("info");
+                if (!"assistant".equals(info.path("role").asText())) {
+                    continue;
+                }
+                final JsonNode parts = msg.path("parts");
+                if (!parts.isArray()) {
+                    continue;
+                }
+                for (final JsonNode part : parts) {
+                    if (!"tool".equals(part.path("type").asText())) {
+                        continue;
+                    }
+                    final String callId = part.path("callID").asText("");
+                    final JsonNode state = part.path("state");
+                    final String stateStatus = state.path("status").asText("");
+                    final String dedupeKey = callId + ":" + stateStatus;
+                    if (stream.seenActivity.add(dedupeKey)) {
+                        publishActivity(stream.threadId, part.path("tool").asText(), state);
+                    }
+                    final String toolName = part.path("tool").asText("");
+                    if ("todowrite".equalsIgnoreCase(toolName) && "completed".equals(stateStatus)) {
+                        publishTodoUpdate(stream.threadId, part);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.debug("Failed to fetch tool activity for session {}", stream.sessionId, e);
+        }
+    }
+
+    /**
+     * Fetches token count, model, agent and cost from the session REST API.
+     * OpenCode 1.15+ no longer sends {@code message.updated} events via SSE,
+     * so metadata must be retrieved from the session endpoint after completion.
+     */
+    private void fetchSessionMetadata(final ActiveStream stream) {
+        try {
+            final JsonNode session = httpClient.get("/session/" + stream.sessionId);
+            final JsonNode model = session.path("model");
+            final String modelId = model.path("id").asText("");
+            final String providerId = model.path("providerID").asText("");
+            if (!modelId.isBlank()) {
+                stream.modelUsed = providerId.isBlank() ? modelId : providerId + "/" + modelId;
+            }
+            final JsonNode tokens = session.path("tokens");
+            final long input = tokens.path("input").asLong(0);
+            final long output = tokens.path("output").asLong(0);
+            final long reasoning = tokens.path("reasoning").asLong(0);
+            final long cacheRead = tokens.path("cache").path("read").asLong(0);
+            final long cacheWrite = tokens.path("cache").path("write").asLong(0);
+            final long total = input + output + reasoning + cacheRead + cacheWrite;
+            if (total > 0) {
+                stream.tokensTotal = total;
+            }
+            final double costValue = session.path("cost").asDouble(0.0);
+            if (costValue > 0.0) {
+                stream.cost = costValue;
+            }
+        } catch (Exception e) {
+            logger.debug("Failed to fetch session metadata for {}", stream.sessionId, e);
+        }
     }
 
     private void handleSessionUpdated(final JsonNode properties) {
@@ -863,6 +982,7 @@ public class OpenCodeRuntimeService {
         private final FluxSink<String> sink;
         private final AtomicBoolean cancelled = new AtomicBoolean(false);
         private final AtomicBoolean completed = new AtomicBoolean(false);
+        private final AtomicBoolean pollingTools = new AtomicBoolean(false);
         private final Map<String, String> textParts = new ConcurrentHashMap<>();
         private final Map<String, String> partTypes = new ConcurrentHashMap<>();
         private final Map<String, String> reasoningParts = new ConcurrentHashMap<>();
