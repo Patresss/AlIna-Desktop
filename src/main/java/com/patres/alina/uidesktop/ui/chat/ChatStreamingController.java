@@ -261,6 +261,7 @@ public class ChatStreamingController {
                 browser.discardRegenerationBackup();
             }
             browser.finishStreamingMessage();
+            attachProcessPanelIfNeeded();
             attachMessageFooter(event.getModelUsed(), event.getAgentUsed(), event.getTokensTotal(), event.getCost());
             final boolean wasBackground = backgroundMode;
             endStreamingUiState();
@@ -557,8 +558,13 @@ public class ChatStreamingController {
     }
 
     private void attachProcessPanelIfNeeded() {
+        final List<String> activitiesSnapshot;
+        synchronized (activityLabels) {
+            activitiesSnapshot = List.copyOf(activityLabels);
+        }
         if ((latestReasoningContent == null || latestReasoningContent.isBlank())
-                && (latestCommentaryContent == null || latestCommentaryContent.isBlank())) {
+                && (latestCommentaryContent == null || latestCommentaryContent.isBlank())
+                && activitiesSnapshot.isEmpty()) {
             return;
         }
 
@@ -569,7 +575,7 @@ public class ChatStreamingController {
                 latestReasoningContent,
                 LanguageManager.getLanguageString("chat.commentary.title"),
                 latestCommentaryContent,
-                ""
+                buildToolsHtml(activitiesSnapshot)
         );
     }
 
@@ -580,6 +586,11 @@ public class ChatStreamingController {
         }
         if (latestCommentaryContent != null && !latestCommentaryContent.isBlank()) {
             parts.add(LanguageManager.getLanguageString("chat.commentary.title"));
+        }
+        synchronized (activityLabels) {
+            if (!activityLabels.isEmpty()) {
+                parts.add("Tools");
+            }
         }
         if (streamingStartedAt != null && !Instant.EPOCH.equals(streamingStartedAt)) {
             parts.add(Duration.between(streamingStartedAt, Instant.now()).toSeconds() + "s");
