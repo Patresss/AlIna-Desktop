@@ -1,8 +1,9 @@
 package com.patres.alina.server.thread;
 
 import com.patres.alina.common.thread.ChatThread;
-import com.patres.alina.server.ai.AiRuntimeRegistry;
-import com.patres.alina.server.ai.AiSessionService;
+import com.patres.alina.server.opencode.OpenCodeHttpClient;
+import com.patres.alina.server.opencode.OpenCodeServerManager;
+import com.patres.alina.server.opencode.OpenCodeSessionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,10 +18,16 @@ public class ChatThreadService {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatThreadService.class);
 
-    private final AiRuntimeRegistry aiRuntimeRegistry;
+    private final OpenCodeSessionService openCodeSessionService;
+    private final OpenCodeServerManager serverManager;
+    private final OpenCodeHttpClient httpClient;
 
-    public ChatThreadService(final AiRuntimeRegistry aiRuntimeRegistry) {
-        this.aiRuntimeRegistry = aiRuntimeRegistry;
+    public ChatThreadService(final OpenCodeSessionService openCodeSessionService,
+                             final OpenCodeServerManager serverManager,
+                             final OpenCodeHttpClient httpClient) {
+        this.openCodeSessionService = openCodeSessionService;
+        this.serverManager = serverManager;
+        this.httpClient = httpClient;
     }
 
     public ChatThread createNewChatThread() {
@@ -32,30 +39,39 @@ public class ChatThreadService {
 
     public Optional<ChatThread> getChatThread(final String chatThreadId) {
         logger.debug("Getting chat thread: {}", chatThreadId);
-        return aiRuntimeRegistry.currentSessionService().getSessionByChatThreadId(chatThreadId);
+        return openCodeSessionService.getSessionByChatThreadId(chatThreadId);
     }
 
     public List<ChatThread> getChatThreads() {
-        aiRuntimeRegistry.currentRuntime().prepareForHistoryAccess();
-        final List<ChatThread> threads = aiRuntimeRegistry.currentSessionService().getSessions();
-        logger.info("Found {} chat threads from {}", threads.size(), aiRuntimeRegistry.currentProvider());
+        ensureServerRunning();
+        final List<ChatThread> threads = openCodeSessionService.getSessions();
+        logger.info("Found {} chat threads from OpenCode", threads.size());
         return threads;
     }
 
-    /** No-op: modification time is owned by the active AI runtime/session store. */
+    private void ensureServerRunning() {
+        if (!httpClient.isHealthy()) {
+            logger.info("OpenCode server is not running, starting it automatically...");
+            try {
+                serverManager.ensureRunning(force -> { });
+            } catch (Exception e) {
+                logger.warn("Failed to auto-start OpenCode server", e);
+            }
+        }
+    }
+
+    /** No-op: modification time is owned by OpenCode server now. */
     public void setModifiedAt(final String chatThreadId) {
-        // intentionally empty
+        // intentionally empty — OpenCode tracks session timestamps
     }
 
     public void deleteChatThread(final String chatThreadId) {
-        final AiSessionService sessionService = aiRuntimeRegistry.currentSessionService();
-        final String sessionId = sessionService.resolveSessionId(chatThreadId);
-        sessionService.deleteSession(sessionId != null ? sessionId : chatThreadId);
+        final String sessionId = openCodeSessionService.resolveSessionId(chatThreadId);
+        openCodeSessionService.deleteSession(sessionId != null ? sessionId : chatThreadId);
     }
 
     public void renameChatThread(final String chatThreadId, final String newName) {
-        final AiSessionService sessionService = aiRuntimeRegistry.currentSessionService();
-        final String sessionId = sessionService.resolveSessionId(chatThreadId);
-        sessionService.renameSession(sessionId != null ? sessionId : chatThreadId, newName);
+        final String sessionId = openCodeSessionService.resolveSessionId(chatThreadId);
+        openCodeSessionService.renameSession(sessionId != null ? sessionId : chatThreadId, newName);
     }
 }

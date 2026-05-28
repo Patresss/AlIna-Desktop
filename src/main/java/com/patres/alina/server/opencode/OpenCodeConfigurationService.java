@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
 import com.patres.alina.common.settings.WorkspaceSettings;
-import com.patres.alina.common.storage.AppPaths;
 import com.patres.alina.common.storage.OpenCodePaths;
 import org.springframework.stereotype.Service;
 
@@ -46,7 +45,6 @@ public class OpenCodeConfigurationService {
         root.put("model", resolveModelIdentifier(assistant));
         root.put("default_agent", "general");
         root.put("snapshot", true);
-        normalizePermissions(root);
         return root;
     }
 
@@ -106,82 +104,6 @@ public class OpenCodeConfigurationService {
             document.put("$schema", "https://opencode.ai/config.json");
         }
         return document;
-    }
-
-    private void normalizePermissions(final ObjectNode root) {
-        final ObjectNode permission = ensureObject(root, "permission");
-        normalizeBashPermissions(permission);
-        normalizeScalarPermissions(permission);
-        addExternalDirectoryPermission(permission, AppPaths.baseDataDir());
-        addExternalDirectoryPermission(permission, resolveWorkingDirectory());
-    }
-
-    private void normalizeBashPermissions(final ObjectNode permission) {
-        final JsonNode bashNode = permission.path("bash");
-        if (!(bashNode instanceof ObjectNode bash)) {
-            return;
-        }
-        final ObjectNode additions = objectMapper.createObjectNode();
-        bash.fields().forEachRemaining(entry -> {
-            final String key = entry.getKey();
-            if (key.endsWith(" *")) {
-                final String trustedPrefix = key.substring(0, key.length() - 2);
-                if (!trustedPrefix.isBlank() && !bash.has(trustedPrefix)) {
-                    additions.set(trustedPrefix, entry.getValue());
-                }
-            }
-        });
-        bash.setAll(additions);
-    }
-
-    private void normalizeScalarPermissions(final ObjectNode permission) {
-        final ObjectNode replacements = objectMapper.createObjectNode();
-        permission.fields().forEachRemaining(entry -> {
-            final String key = entry.getKey();
-            if ("bash".equals(key) || "external_directory".equals(key)) {
-                return;
-            }
-            if (entry.getValue() instanceof ObjectNode objectNode) {
-                replacements.put(key, resolveScalarDecision(objectNode));
-            }
-        });
-        permission.setAll(replacements);
-    }
-
-    private String resolveScalarDecision(final ObjectNode node) {
-        boolean sawAsk = false;
-        String fallback = "ask";
-        for (final JsonNode value : node) {
-            final String decision = value.asText("").trim();
-            if ("allow".equalsIgnoreCase(decision)) {
-                return "allow";
-            }
-            if ("ask".equalsIgnoreCase(decision)) {
-                sawAsk = true;
-            }
-            if (!decision.isBlank()) {
-                fallback = decision;
-            }
-        }
-        return sawAsk ? "ask" : fallback;
-    }
-
-    private void addExternalDirectoryPermission(final ObjectNode permission, final Path directory) {
-        if (directory == null) {
-            return;
-        }
-        final ObjectNode externalDirectory = ensureObject(permission, "external_directory");
-        externalDirectory.put(directory.toAbsolutePath().normalize() + "/**", "allow");
-    }
-
-    private ObjectNode ensureObject(final ObjectNode parent, final String field) {
-        final JsonNode node = parent.path(field);
-        if (node instanceof ObjectNode objectNode) {
-            return objectNode;
-        }
-        final ObjectNode objectNode = objectMapper.createObjectNode();
-        parent.set(field, objectNode);
-        return objectNode;
     }
 
 }

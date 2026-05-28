@@ -1,21 +1,21 @@
 package com.patres.alina.server.workspace;
 
-import com.patres.alina.common.ai.AiRuntimeStatus;
+import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.common.settings.FileManager;
-import com.patres.alina.server.ai.AiRuntimeRegistry;
+import com.patres.alina.server.opencode.OpenCodeRuntimeService;
 import org.springframework.stereotype.Component;
 
 @Component
 public class WorkspaceController {
 
     private final FileManager<WorkspaceSettings> workspaceSettingsManager;
-    private final AiRuntimeRegistry aiRuntimeRegistry;
+    private final OpenCodeRuntimeService openCodeRuntimeService;
 
     public WorkspaceController(final FileManager<WorkspaceSettings> workspaceSettingsManager,
-                               final AiRuntimeRegistry aiRuntimeRegistry) {
+                               final OpenCodeRuntimeService openCodeRuntimeService) {
         this.workspaceSettingsManager = workspaceSettingsManager;
-        this.aiRuntimeRegistry = aiRuntimeRegistry;
+        this.openCodeRuntimeService = openCodeRuntimeService;
     }
 
     public WorkspaceSettings getWorkspaceSettings() {
@@ -26,15 +26,15 @@ public class WorkspaceController {
         workspaceSettingsManager.saveDocument(settings);
     }
 
-    public AiRuntimeStatus getAiRuntimeStatus() {
-        return aiRuntimeRegistry.currentRuntime().getRuntimeStatus();
+    public OpenCodeRuntimeStatus getOpenCodeRuntimeStatus() {
+        return openCodeRuntimeService.getRuntimeStatus();
     }
 
-    public void prepareAiRuntimeForFreshChat() {
-        aiRuntimeRegistry.currentRuntime().prepareForFreshChat();
+    public void prepareOpenCodeForFreshChat() {
+        openCodeRuntimeService.prepareForFreshChat();
     }
 
-    public String getAiSessionWebUrl(final String chatThreadId) {
-        return aiRuntimeRegistry.currentRuntime().getSessionWebUrl(chatThreadId);
+    public String getOpenCodeSessionWebUrl(final String chatThreadId) {
+        return openCodeRuntimeService.getSessionWebUrl(chatThreadId);
     }
 }

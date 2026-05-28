@@ -13,9 +13,8 @@ import com.patres.alina.server.command.Command;
 import com.patres.alina.server.command.CommandConstants;
 import com.patres.alina.server.command.CommandFileService;
 import com.patres.alina.server.assistant.AssistantPromptService;
-import com.patres.alina.server.ai.AiRuntime;
-import com.patres.alina.server.ai.AiRuntimeRegistry;
-import com.patres.alina.server.ai.AiSessionService;
+import com.patres.alina.server.opencode.OpenCodeRuntimeService;
+import com.patres.alina.server.opencode.OpenCodeSessionService;
 import com.patres.alina.server.thread.ChatThreadFacade;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import org.slf4j.Logger;
@@ -57,7 +56,8 @@ public class ChatMessageService {
     private final ChatThreadFacade chatThreadFacade;
     private final FileManager<AssistantSettings> assistantSettingsManager;
     private final AssistantPromptService assistantPromptService;
-    private final AiRuntimeRegistry aiRuntimeRegistry;
+    private final OpenCodeRuntimeService openCodeRuntimeService;
+    private final OpenCodeSessionService openCodeSessionService;
 
     private final ConcurrentHashMap<String, StreamSession> activeStreams = new ConcurrentHashMap<>();
 
@@ -65,12 +65,14 @@ public class ChatMessageService {
                               final ChatThreadFacade chatThreadFacade,
                               final FileManager<AssistantSettings> assistantSettingsManager,
                               final AssistantPromptService assistantPromptService,
-                              final AiRuntimeRegistry aiRuntimeRegistry) {
+                              final OpenCodeRuntimeService openCodeRuntimeService,
+                              final OpenCodeSessionService openCodeSessionService) {
         this.commandFileService = commandFileService;
         this.chatThreadFacade = chatThreadFacade;
         this.assistantSettingsManager = assistantSettingsManager;
         this.assistantPromptService = assistantPromptService;
-        this.aiRuntimeRegistry = aiRuntimeRegistry;
+        this.openCodeRuntimeService = openCodeRuntimeService;
+        this.openCodeSessionService = openCodeSessionService;
     }
 
     public synchronized void sendMessageStream(final ChatMessageSendModel chatMessageSendModel) {
@@ -91,7 +93,9 @@ public class ChatMessageService {
     }
 
     public synchronized void cancelStreaming(final String chatThreadId) {
-        aiRuntimeRegistry.cancelStreaming(chatThreadId);
+        if (openCodeRuntimeService.isEnabled()) {
+            openCodeRuntimeService.cancelStreaming(chatThreadId);
+        }
         final StreamSession session = activeStreams.remove(chatThreadId);
         DefaultEventBus.getInstance().publish(
                 new ChatMessageStreamEvent(chatThreadId, ChatMessageStreamEvent.StreamEventType.CANCELLED)
@@ -136,12 +140,11 @@ public class ChatMessageService {
         activeStreams.put(chatThreadId, session);
 
         try {
-            final AiRuntime runtime = aiRuntimeRegistry.currentRuntime();
-            if (!runtime.isEnabled()) {
-                throw new IllegalStateException(LanguageManager.getLanguageString("error.ai.disabled"));
+            if (!openCodeRuntimeService.isEnabled()) {
+                throw new IllegalStateException(LanguageManager.getLanguageString("error.opencode.disabled"));
             }
 
-            final Flux<String> stream = runtime.sendMessageStream(
+            final Flux<String> stream = openCodeRuntimeService.sendMessageStream(
                     chatThreadId,
                     null,
                     userMessage,
@@ -167,16 +170,16 @@ public class ChatMessageService {
                         );
                     },
                     () -> {
-                        final String modelUsed = runtime.getModelUsedForThread(chatThreadId);
-                        final String agentUsed = runtime.getAgentUsedForThread(chatThreadId);
-                        final long tokensTotal = runtime.getTokensTotalForThread(chatThreadId);
-                        final double cost = runtime.getCostForThread(chatThreadId);
+                        final String openCodeModel = openCodeRuntimeService.getModelUsedForThread(chatThreadId);
+                        final String openCodeAgent = openCodeRuntimeService.getAgentUsedForThread(chatThreadId);
+                        final long openCodeTokensTotal = openCodeRuntimeService.getTokensTotalForThread(chatThreadId);
+                        final double openCodeCost = openCodeRuntimeService.getCostForThread(chatThreadId);
                         activeStreams.remove(chatThreadId, session);
                         if (session.cancelled) return;
                         logger.info("Streaming completed for threadId: {}", chatThreadId);
 
                         DefaultEventBus.getInstance().publish(
-                                ChatMessageStreamEvent.complete(chatThreadId, modelUsed, agentUsed, tokensTotal, cost)
+                                ChatMessageStreamEvent.complete(chatThreadId, openCodeModel, openCodeAgent, openCodeTokensTotal, openCodeCost)
                         );
 
                         if (chatMessageSendModel.onComplete() != null) {
@@ -237,15 +240,16 @@ public class ChatMessageService {
     }
 
     /**
-     * Returns messages for history display from the currently selected AI runtime.
+     * Returns messages for history display, sourced from OpenCode server.
      */
     public List<ChatMessageResponseModel> getMessagesByThreadId(final String chatThreadId) {
-        final AiSessionService sessionService = aiRuntimeRegistry.currentSessionService();
-        String sessionId = sessionService.resolveSessionId(chatThreadId);
+        // First try registry lookup (AlIna threadId → OpenCode sessionId)
+        String sessionId = openCodeSessionService.resolveSessionId(chatThreadId);
+        // Fallback: chatThreadId may already be an OpenCode sessionId (e.g. sessions loaded from history)
         if (sessionId == null) {
             sessionId = chatThreadId;
         }
-        return sessionService.getMessages(sessionId);
+        return openCodeSessionService.getMessages(sessionId);
     }
 
     private String calculateContentWithCommandPrompt(final String content, final String commandId) {
@@ -276,7 +280,9 @@ public class ChatMessageService {
     }
 
     private void cancelStreamingSilently(final String chatThreadId) {
-        aiRuntimeRegistry.cancelStreaming(chatThreadId);
+        if (openCodeRuntimeService.isEnabled()) {
+            openCodeRuntimeService.cancelStreaming(chatThreadId);
+        }
         final StreamSession session = activeStreams.remove(chatThreadId);
         if (session == null) return;
         session.cancelled = true;

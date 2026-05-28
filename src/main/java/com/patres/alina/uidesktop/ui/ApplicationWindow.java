@@ -541,7 +541,7 @@ public class ApplicationWindow extends BorderPane {
     public void openCurrentOpenCodeSession() {
         getChatThread()
                 .map(ChatThread::id)
-                .map(BackendApi::getAiSessionWebUrl)
+                .map(BackendApi::getOpenCodeSessionWebUrl)
                 .ifPresent(Browser::openWebpage);
     }
 
