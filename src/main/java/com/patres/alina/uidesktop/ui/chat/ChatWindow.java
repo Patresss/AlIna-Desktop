@@ -12,6 +12,7 @@ import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.common.message.CommandUsageInfo;
 import com.patres.alina.common.message.ImageAttachment;
 import com.patres.alina.common.message.OnMessageCompleteCallback;
+import com.patres.alina.common.permission.PermissionApprovalAction;
 import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.server.command.CommandConstants;
@@ -333,6 +334,13 @@ public class ChatWindow extends BorderPane {
                 hasAnyUserMessages
         );
         streamingController.initialize();
+        browser.setPermissionActionHandler((requestId, actionName) -> {
+            try {
+                streamingController.submitPermissionAction(requestId, PermissionApprovalAction.valueOf(actionName));
+            } catch (IllegalArgumentException e) {
+                logger.warn("Ignoring unknown permission action {}", actionName, e);
+            }
+        });
 
         initializeInputHandler();
         initModelSelector();

@@ -451,6 +451,22 @@ code:not(pre code) {
     background-color: var(--color-bg-subtle);
 }
 
+.activity-entry-active .activity-entry-name::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background-color: var(--color-accent-0);
+    animation: activityPulse 1.2s ease-in-out infinite;
+}
+
+.activity-entry-stale .activity-entry-detail {
+    color: var(--color-attention-fg);
+    opacity: 0.9;
+}
+
 .activity-entry-name {
     white-space: nowrap;
     overflow: hidden;
@@ -468,6 +484,17 @@ code:not(pre code) {
 
 .activity-entry + .activity-entry {
     margin-top: 2px;
+}
+
+@keyframes activityPulse {
+    0%, 100% {
+        opacity: 0.45;
+        transform: scale(0.8);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 /* ══════════════════════════════════════════════════
@@ -1470,4 +1497,3 @@ img {
     max-width: 100% !important;
     max-height: none !important;
 }
-

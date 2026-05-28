@@ -506,8 +506,9 @@ public class CodexAgentRuntime implements AgentRuntime {
 
     private void registerPermissionRequest(final String method, final long rpcId, final JsonNode params) {
         final String codexThreadId = eventThreadId(params);
-        final String chatThreadId = chatThreadIdForCodexThread(codexThreadId);
+        final String chatThreadId = chatThreadIdForPermissionRequest(codexThreadId, params);
         if (chatThreadId == null) {
+            logger.warn("Cannot route Codex approval request {} without thread context: {}", method, params);
             return;
         }
         final String requestId = String.valueOf(rpcId);
@@ -527,6 +528,24 @@ public class CodexAgentRuntime implements AgentRuntime {
                 resolvePermissionConfigPath(),
                 permissionMatchedRule(method, params)
         ));
+    }
+
+    private String chatThreadIdForPermissionRequest(final String codexThreadId, final JsonNode params) {
+        final String byThread = chatThreadIdForCodexThread(codexThreadId);
+        if (byThread != null && activeStreams.containsKey(byThread)) {
+            return byThread;
+        }
+
+        final String byItem = itemToChatThread.get(itemId(params));
+        if (byItem != null && activeStreams.containsKey(byItem)) {
+            return byItem;
+        }
+
+        if (activeStreams.size() == 1) {
+            return activeStreams.values().iterator().next().chatThreadId;
+        }
+
+        return null;
     }
 
     private JsonNode buildPermissionResult(final PendingPermission pendingPermission,

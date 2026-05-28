@@ -650,33 +650,39 @@
 
         const bodyNode = $('assistant-activity-body');
         const lastEntry = bodyNode?.lastElementChild;
+        const matchingEntry = findLatestActivityEntryByLabel(bodyNode, label);
         const shortLabel = stripActivityPrefix(label);
+        const hasDetail = Boolean(detail?.trim());
+        const detailIsActive = hasDetail && isActiveActivityDetail(detail);
+        const shouldUpdateMatchingEntry = matchingEntry && hasDetail
+            && (!detailIsActive || matchingEntry.dataset.active === 'true');
 
-        if (lastEntry?.dataset?.label === label) {
+        let addedEntry = false;
+        if (shouldUpdateMatchingEntry) {
+            updateActivityEntryStatus(matchingEntry, detail);
+        } else if (lastEntry?.dataset?.label === label) {
             const count = parseInt(lastEntry.dataset.count || '1', 10) + 1;
             lastEntry.dataset.count = String(count);
             const nameEl = lastEntry.querySelector('.activity-entry-name');
             if (nameEl) nameEl.textContent = `${shortLabel} \u00d7${count}`;
-            if (detail?.trim()) {
-                const detailEl = lastEntry.querySelector('.activity-entry-detail');
-                if (detailEl) detailEl.textContent = detail;
-            }
         } else if (bodyNode) {
             const entry = h('div', {
                 className: 'activity-entry',
-                dataset: { label, count: '1' }
+                dataset: { label, count: '1', startedAt: String(Date.now()) }
             },
                 h('span', { className: 'activity-entry-name', textContent: shortLabel })
             );
 
             if (detail?.trim()) {
-                entry.appendChild(h('span', { className: 'activity-entry-detail', textContent: detail }));
+                entry.appendChild(h('span', { className: 'activity-entry-detail' }));
+                updateActivityEntryStatus(entry, detail);
             }
 
             bodyNode.appendChild(entry);
+            addedEntry = true;
         }
 
-        if (activity.dataset) {
+        if (activity.dataset && addedEntry) {
             const totalCount = parseInt(activity.dataset.count || '0', 10) + 1;
             activity.dataset.count = String(totalCount);
             activity.dataset.lastEntry = label;
@@ -691,6 +697,89 @@
             summaryBadgeNode.textContent = activity.dataset.count;
         }
         scrollToBottomIfNeeded();
+    }
+
+    let activityTimer = null;
+
+    function findLatestActivityEntryByLabel(bodyNode, label) {
+        if (!bodyNode?.children) return null;
+        for (let i = bodyNode.children.length - 1; i >= 0; i--) {
+            const entry = bodyNode.children[i];
+            if (entry?.dataset?.label === label) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    function updateActivityEntryStatus(entry, detail) {
+        const normalizedDetail = (detail || '').trim();
+        if (!normalizedDetail) return;
+
+        entry.dataset.detail = normalizedDetail;
+        if (!entry.dataset.startedAt) {
+            entry.dataset.startedAt = String(Date.now());
+        }
+
+        if (isActiveActivityDetail(normalizedDetail)) {
+            entry.dataset.active = 'true';
+            entry.classList.add('activity-entry-active');
+        } else {
+            delete entry.dataset.active;
+            entry.classList.remove('activity-entry-active', 'activity-entry-stale');
+        }
+
+        renderActivityEntryDetail(entry);
+        ensureActivityTimer();
+    }
+
+    function isActiveActivityDetail(detail) {
+        const value = (detail || '').trim().toLowerCase();
+        return value === 'running'
+            || value === 'inprogress'
+            || value === 'in_progress'
+            || value === 'pending'
+            || value === 'started';
+    }
+
+    function ensureActivityTimer() {
+        if (activityTimer) return;
+        activityTimer = window.setInterval(() => {
+            const activeEntries = document.querySelectorAll('.activity-entry[data-active="true"]');
+            activeEntries.forEach(renderActivityEntryDetail);
+            if (activeEntries.length === 0) {
+                window.clearInterval(activityTimer);
+                activityTimer = null;
+            }
+        }, 1000);
+    }
+
+    function renderActivityEntryDetail(entry) {
+        const detail = entry.dataset.detail || '';
+        if (!detail) return;
+
+        let detailEl = entry.querySelector('.activity-entry-detail');
+        if (!detailEl) {
+            detailEl = h('span', { className: 'activity-entry-detail' });
+            entry.appendChild(detailEl);
+        }
+
+        const elapsed = Date.now() - parseInt(entry.dataset.startedAt || String(Date.now()), 10);
+        const elapsedText = formatActivityElapsed(elapsed);
+        detailEl.textContent = `${detail} \u00b7 ${elapsedText}`;
+
+        if (entry.dataset.active === 'true' && elapsed >= 60000) {
+            entry.classList.add('activity-entry-stale');
+            detailEl.textContent = `${detail} \u00b7 ${elapsedText} \u00b7 long-running`;
+        }
+    }
+
+    function formatActivityElapsed(milliseconds) {
+        const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        if (minutes <= 0) return `${seconds}s`;
+        return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
     }
 
     function finalizeAssistantActivity() {

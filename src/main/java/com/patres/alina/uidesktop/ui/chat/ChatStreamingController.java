@@ -270,7 +270,14 @@ public class ChatStreamingController {
         FxThreadRunner.run(() -> {
             browser.hideLoader();
             endStreamingUiState();
-            showPermissionComposer(event.getPermissionRequestId(), title, message);
+            browser.showAssistantPermissionRequest(
+                    event.getPermissionRequestId(),
+                    title,
+                    message,
+                    LanguageManager.getLanguageString("chat.permission.approve"),
+                    LanguageManager.getLanguageString("chat.permission.approveAlways"),
+                    LanguageManager.getLanguageString("chat.permission.deny")
+            );
             statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.permission.pending"));
         });
     }
@@ -393,13 +400,18 @@ public class ChatStreamingController {
         if (requestId == null || requestId.isBlank()) {
             return;
         }
+        submitPermissionAction(requestId, action);
+    }
 
+    public void submitPermissionAction(final String requestId, final PermissionApprovalAction action) {
         FxThreadRunner.run(() -> browser.markAssistantPermissionRequestPending(
                 requestId,
                 LanguageManager.getLanguageString("chat.permission.processing")
         ));
 
-        FxThreadRunner.run(() -> markPermissionComposerPending(LanguageManager.getLanguageString("chat.permission.processing")));
+        if (requestId.equals(activePermissionRequestId)) {
+            FxThreadRunner.run(() -> markPermissionComposerPending(LanguageManager.getLanguageString("chat.permission.processing")));
+        }
 
         Thread.startVirtualThread(() -> {
             try {
@@ -412,7 +424,9 @@ public class ChatStreamingController {
                                     : resolution.message()
                     ));
                     FxThreadRunner.run(() -> {
-                        hidePermissionComposer();
+                        if (requestId.equals(activePermissionRequestId)) {
+                            hidePermissionComposer();
+                        }
                         endStreamingUiState();
                         chatTextArea.clear();
                         setChatInputReady();
@@ -430,7 +444,9 @@ public class ChatStreamingController {
                                         ? LanguageManager.getLanguageString("chat.permission.denied")
                                         : resolution.message()
                         );
-                        hidePermissionComposer();
+                        if (requestId.equals(activePermissionRequestId)) {
+                            hidePermissionComposer();
+                        }
                         endStreamingUiState();
                         chatTextArea.clear();
                         setChatInputReady();
@@ -449,7 +465,9 @@ public class ChatStreamingController {
 
                 FxThreadRunner.run(() -> {
                     browser.resolveAssistantPermissionRequest(requestId, approvalMessage);
-                    hidePermissionComposer();
+                    if (requestId.equals(activePermissionRequestId)) {
+                        hidePermissionComposer();
+                    }
                     statusPrompt.showStatusPrompt(
                             resolution.autoContinues()
                                     ? LanguageManager.getLanguageString("chat.stream.connecting")
@@ -470,7 +488,9 @@ public class ChatStreamingController {
                             requestId,
                             LanguageManager.getLanguageString("chat.permission.error", e.getMessage())
                     );
-                    hidePermissionComposer();
+                    if (requestId.equals(activePermissionRequestId)) {
+                        hidePermissionComposer();
+                    }
                     endStreamingUiState();
                     chatTextArea.clear();
                     setChatInputReady();
