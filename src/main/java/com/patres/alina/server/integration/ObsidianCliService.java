@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 public final class ObsidianCliService {
 
     private static final Logger logger = LoggerFactory.getLogger(ObsidianCliService.class);
-    private static final String DEFAULT_CLI_PATH = "obsidian-cli";
+    private static final String DEFAULT_CLI_PATH = "obsidian";
 
     private ObsidianCliService() {
     }
