@@ -175,8 +175,17 @@ public class ChatStreamingController {
         if (content == null || content.isBlank()) {
             return;
         }
+        final boolean startsNewCommentaryMessage = latestCommentaryContent != null
+                && !latestCommentaryContent.isBlank()
+                && !content.equals(latestCommentaryContent)
+                && !content.startsWith(latestCommentaryContent);
         latestCommentaryContent = content;
         FxThreadRunner.run(() -> {
+            browser.hideLoader();
+            if (startsNewCommentaryMessage) {
+                browser.finalizeAssistantCommentary();
+            }
+            browser.showAssistantCommentary(LanguageManager.getLanguageString("chat.commentary.title"), content);
             updateComposerProcessStatus();
             statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.commentary.status"));
         });
@@ -187,8 +196,17 @@ public class ChatStreamingController {
         if (content == null || content.isBlank()) {
             return;
         }
+        final boolean startsNewReasoningMessage = latestReasoningContent != null
+                && !latestReasoningContent.isBlank()
+                && !content.equals(latestReasoningContent)
+                && !content.startsWith(latestReasoningContent);
         latestReasoningContent = content;
         FxThreadRunner.run(() -> {
+            browser.hideLoader();
+            if (startsNewReasoningMessage) {
+                browser.finalizeAssistantReasoning();
+            }
+            browser.showAssistantReasoning(LanguageManager.getLanguageString("chat.reasoning.title"), content);
             updateComposerProcessStatus();
             statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.reasoning.status"));
         });
@@ -202,6 +220,8 @@ public class ChatStreamingController {
             streamingStarted = true;
             FxThreadRunner.run(() -> {
                 browser.finalizeAssistantActivity();
+                browser.finalizeAssistantReasoning();
+                browser.finalizeAssistantCommentary();
                 browser.hideLoader();
                 browser.startStreamingAssistantMessage(replaceExistingAssistantMessageOnStart);
                 replaceExistingAssistantMessageOnStart = false;
@@ -256,6 +276,8 @@ public class ChatStreamingController {
             browser.hideLoader();
             hidePermissionComposer();
             browser.finalizeAssistantActivity();
+            browser.finalizeAssistantReasoning();
+            browser.finalizeAssistantCommentary();
             browser.finalizeTodoList();
             if (regenerating) {
                 browser.discardRegenerationBackup();

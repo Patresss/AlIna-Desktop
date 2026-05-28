@@ -769,25 +769,21 @@
     }
 
     function showAssistantCommentary(title, htmlContent) {
+        removeWelcomeScreen();
         const chatContainer = $('chat-container');
         if (!chatContainer) return;
 
         let card = $('assistant-commentary-message');
         if (!card) {
-            const body = h('div', { className: 'commentary-body', id: 'assistant-commentary-body' });
-            const details = h('details', { className: 'commentary-details', open: true },
-                h('summary', { className: 'commentary-summary', textContent: title }),
-                body
-            );
             card = h('div', {
-                className: 'chat-message assistant commentary-message',
+                className: 'chat-message assistant',
                 id: 'assistant-commentary-message',
                 dataset: { transient: 'true' }
-            }, details);
+            });
             chatContainer.appendChild(card);
         }
-        const bodyNode = $('assistant-commentary-body');
-        if (bodyNode) bodyNode.innerHTML = htmlContent;
+        card.innerHTML = htmlContent;
+        enhanceCodeBlocks(card);
         scrollToBottomIfNeeded();
     }
 
@@ -802,7 +798,10 @@
         const card = $('assistant-commentary-message');
         if (!card) return;
         card.removeAttribute('id');
-        $('assistant-commentary-body')?.removeAttribute('id');
+        if (card.dataset) delete card.dataset.transient;
+        enhanceCodeBlocks(card);
+        addMessageActions(card);
+        void card.offsetHeight;
     }
 
     function clearAssistantReasoning() {

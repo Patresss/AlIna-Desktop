@@ -367,11 +367,11 @@ public class CodexAgentRuntime implements AgentRuntime {
         }
         final String existing = chatThreadToCodexThread.get(request.chatThreadId());
         if (existing != null && !existing.isBlank()) {
-            resumeThread(existing, model);
+            resumeThread(existing, model, developerInstructions(request));
             return existing;
         }
         if (isCodexThreadId(request.chatThreadId())) {
-            resumeThread(request.chatThreadId(), model);
+            resumeThread(request.chatThreadId(), model, developerInstructions(request));
             chatThreadToCodexThread.put(request.chatThreadId(), request.chatThreadId());
             return request.chatThreadId();
         }
@@ -383,6 +383,7 @@ public class CodexAgentRuntime implements AgentRuntime {
         }
         params.put("cwd", resolveWorkingDirectory(workspaceSettingsManager.getSettings()).toString());
         params.put("approvalsReviewer", "user");
+        putDeveloperInstructions(params, developerInstructions(request));
         params.put("serviceName", "alina_desktop");
         params.put("sessionStartSource", request.forceNewSession() ? "clear" : "startup");
         final JsonNode response = client.request("thread/start", params);
@@ -395,7 +396,9 @@ public class CodexAgentRuntime implements AgentRuntime {
         return codexThreadId;
     }
 
-    private void resumeThread(final String codexThreadId, final String model) throws Exception {
+    private void resumeThread(final String codexThreadId,
+                              final String model,
+                              final String developerInstructions) throws Exception {
         final ObjectNode params = objectMapper.createObjectNode();
         params.put("threadId", codexThreadId);
         if (model != null && !model.isBlank()) {
@@ -404,6 +407,7 @@ public class CodexAgentRuntime implements AgentRuntime {
         }
         params.put("cwd", resolveWorkingDirectory(workspaceSettingsManager.getSettings()).toString());
         params.put("approvalsReviewer", "user");
+        putDeveloperInstructions(params, developerInstructions);
         client.request("thread/resume", params);
     }
 
@@ -420,7 +424,7 @@ public class CodexAgentRuntime implements AgentRuntime {
         final ArrayNode input = params.putArray("input");
         final ObjectNode text = input.addObject();
         text.put("type", "text");
-        text.put("text", composeUserText(request.systemPrompt(), request.historySummary(), request.userMessage()));
+        text.put("text", request.userMessage() == null ? "" : request.userMessage());
         addImageInputs(input, request.imageAttachments());
         return client.request("turn/start", params);
     }
@@ -433,18 +437,21 @@ public class CodexAgentRuntime implements AgentRuntime {
         }
     }
 
-    private String composeUserText(final String systemPrompt,
-                                   final String historySummary,
-                                   final String userMessage) {
+    private String developerInstructions(final AgentMessageRequest request) {
         final StringBuilder builder = new StringBuilder();
-        if (systemPrompt != null && !systemPrompt.isBlank()) {
-            builder.append(systemPrompt.trim()).append(System.lineSeparator()).append(System.lineSeparator());
+        if (request.systemPrompt() != null && !request.systemPrompt().isBlank()) {
+            builder.append(request.systemPrompt().trim()).append(System.lineSeparator()).append(System.lineSeparator());
         }
-        if (historySummary != null && !historySummary.isBlank()) {
-            builder.append(historySummary.trim()).append(System.lineSeparator()).append(System.lineSeparator());
+        if (request.historySummary() != null && !request.historySummary().isBlank()) {
+            builder.append(request.historySummary().trim());
         }
-        builder.append(userMessage == null ? "" : userMessage);
         return builder.toString();
+    }
+
+    private void putDeveloperInstructions(final ObjectNode params, final String developerInstructions) {
+        if (developerInstructions != null && !developerInstructions.isBlank()) {
+            params.put("developerInstructions", developerInstructions);
+        }
     }
 
     private void handleServerMessage(final JsonNode message) {
@@ -488,6 +495,7 @@ public class CodexAgentRuntime implements AgentRuntime {
             case "item/agentMessage/delta" -> handleAgentMessageDelta(params);
             case "item/plan/delta" -> handlePlanDelta(params);
             case "item/reasoning/summaryTextDelta", "item/reasoning/textDelta" -> handleReasoningDelta(params);
+            case "item/reasoning/summaryPartAdded" -> handleReasoningSummaryPartAdded(params);
             case "item/commandExecution/outputDelta" -> handleCommandOutputDelta(params);
             case "serverRequest/resolved" -> handleServerRequestResolved(params);
             case "error" -> handleError(params);
@@ -676,10 +684,15 @@ public class CodexAgentRuntime implements AgentRuntime {
             if (!itemId.isBlank() && !phase.isBlank()) {
                 stream.itemPhases.put(itemId, phase);
             }
+            if (completed) {
+                publishCompletedAgentMessage(stream, itemId, item.path("text").asText(""), phase);
+            }
             return;
         }
         if ("reasoning".equals(type)) {
-            publishReasoningIfPresent(stream, itemId, item.path("summary").asText(""));
+            final String summary = joinedText(item.path("summary"));
+            final String content = joinedText(item.path("content"));
+            publishReasoningIfPresent(stream, itemId, !summary.isBlank() ? summary : content);
             return;
         }
         publishActivityForItem(stream, item, completed);
@@ -702,6 +715,7 @@ public class CodexAgentRuntime implements AgentRuntime {
             Event.publish(ChatMessageStreamEvent.commentary(stream.chatThreadId, updated));
             return;
         }
+        stream.messageParts.merge(itemId, delta, String::concat);
         stream.sink.next(delta);
     }
 
@@ -733,6 +747,39 @@ public class CodexAgentRuntime implements AgentRuntime {
         final String updated = stream.reasoningParts.getOrDefault(itemId, "") + delta;
         stream.reasoningParts.put(itemId, updated);
         Event.publish(new ChatMessageStreamEvent(stream.chatThreadId, updated, true));
+    }
+
+    private void handleReasoningSummaryPartAdded(final JsonNode params) {
+        final ActiveStream stream = streamForDelta(params);
+        if (stream == null) {
+            return;
+        }
+        final String itemId = itemId(params);
+        final String summary = params.path("summary").asText(params.path("text").asText(""));
+        publishReasoningIfPresent(stream, itemId, summary);
+    }
+
+    private void publishCompletedAgentMessage(final ActiveStream stream,
+                                              final String itemId,
+                                              final String currentText,
+                                              final String phase) {
+        if (currentText == null || currentText.isBlank()) {
+            return;
+        }
+        if ("commentary".equalsIgnoreCase(phase)) {
+            final String previous = stream.commentaryParts.getOrDefault(itemId, "");
+            stream.commentaryParts.put(itemId, currentText);
+            if (!currentText.equals(previous)) {
+                Event.publish(ChatMessageStreamEvent.commentary(stream.chatThreadId, currentText));
+            }
+            return;
+        }
+        final String previous = stream.messageParts.getOrDefault(itemId, "");
+        stream.messageParts.put(itemId, currentText);
+        final String delta = currentText.startsWith(previous) ? currentText.substring(previous.length()) : currentText;
+        if (!delta.isBlank()) {
+            stream.sink.next(delta);
+        }
     }
 
     private void handleCommandOutputDelta(final JsonNode params) {
@@ -814,6 +861,29 @@ public class CodexAgentRuntime implements AgentRuntime {
         }
         stream.reasoningParts.put(itemId, summary);
         Event.publish(new ChatMessageStreamEvent(stream.chatThreadId, summary, true));
+    }
+
+    private String joinedText(final JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return "";
+        }
+        if (node.isTextual()) {
+            return node.asText("");
+        }
+        if (!node.isArray()) {
+            return "";
+        }
+        final StringBuilder builder = new StringBuilder();
+        for (final JsonNode item : node) {
+            final String text = item.asText("");
+            if (!text.isBlank()) {
+                if (!builder.isEmpty()) {
+                    builder.append(System.lineSeparator());
+                }
+                builder.append(text);
+            }
+        }
+        return builder.toString();
     }
 
     private void indexItems(final String chatThreadId, final JsonNode items) {
@@ -1147,6 +1217,7 @@ public class CodexAgentRuntime implements AgentRuntime {
         private final Set<String> seenActivity = ConcurrentHashMap.newKeySet();
         private final Set<String> pendingPermissionRequestIds = ConcurrentHashMap.newKeySet();
         private final Map<String, String> itemPhases = new ConcurrentHashMap<>();
+        private final Map<String, String> messageParts = new ConcurrentHashMap<>();
         private final Map<String, String> reasoningParts = new ConcurrentHashMap<>();
         private final Map<String, String> commentaryParts = new ConcurrentHashMap<>();
         private volatile String codexThreadId;
