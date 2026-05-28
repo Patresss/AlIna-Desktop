@@ -81,7 +81,7 @@ Options & metadata:
 ## Data & Configuration
 
 - Conversations: `~/.config/AlIna/conversations/`
-- Commands: local OpenCode commands from `<working-directory>/.opencode/commands/` first, then global `~/.config/opencode/commands/`.
+- Commands: local commands from `<working-directory>/.agents/commands/`; if that directory is missing, legacy `<working-directory>/.opencode/commands/` is used.
 - User themes (CSS): `~/.config/AlIna/themes/`
 - Skills: `~/.config/opencode/skills/` via native OpenCode config.
 - Assistant profile: `~/.config/AlIna/profile/default/`
