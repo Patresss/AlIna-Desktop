@@ -7,7 +7,6 @@ import com.patres.alina.common.ai.AiRuntimeStatus;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.Event;
 import com.patres.alina.common.message.ImageAttachment;
-import com.patres.alina.common.message.TodoItem;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.server.ai.AiRuntime;
 import org.slf4j.Logger;
@@ -296,16 +295,11 @@ public class CodexRuntimeService implements AiRuntime {
         }
 
         emitOutputFileMessage(stream, sink);
-        if (stream.errorMessage != null && stream.response.isEmpty()) {
-            sessionService.clearCodexSessionId(stream.threadId);
-            throw new IllegalStateException("Codex failed: " + stream.errorMessage);
-        }
         if (exitCode != 0 && stream.response.isEmpty()) {
-            sessionService.clearCodexSessionId(stream.threadId);
             throw new IllegalStateException("Codex failed: " + summarize(rawOutput.toString()));
         }
-        if (exitCode != 0) {
-            logger.warn("Codex exited with code {} after streaming a response: {}", exitCode, summarize(rawOutput.toString()));
+        if (stream.errorMessage != null && stream.response.isEmpty()) {
+            throw new IllegalStateException(stream.errorMessage);
         }
         if (!stream.response.isEmpty()) {
             sessionService.addAssistantMessage(stream.threadId, stream.response.toString());
@@ -333,15 +327,11 @@ public class CodexRuntimeService implements AiRuntime {
                              final FluxSink<String> sink) {
         final JsonNode msg = event.path("msg").isObject() ? event.path("msg") : event;
         final String type = text(msg, "type", text(event, "type", ""));
-        if (isErrorEvent(type)) {
-            stream.errorMessage = firstNonBlank(extractErrorSummary(event), "Codex stream error");
-            return;
-        }
         switch (type) {
-            case "session_configured", "thread.started" -> handleSessionConfigured(stream, msg);
+            case "session_configured" -> handleSessionConfigured(stream, msg);
             case "agent_message_content_delta" -> emitDelta(stream, text(msg, "delta", ""), sink);
             case "agent_message" -> emitFinalMessage(stream, extractText(msg), sink);
-            case "task_complete", "turn_complete", "turn.completed" -> {
+            case "task_complete", "turn_complete" -> {
                 parseTokenUsage(stream, msg);
                 emitFinalMessage(stream, text(msg, "last_agent_message", ""), sink);
             }
@@ -356,27 +346,18 @@ public class CodexRuntimeService implements AiRuntime {
                     Event.publish(new ChatMessageStreamEvent(stream.threadId, content, true));
                 }
             }
-            case "exec_command_begin" -> publishCommandActivity(stream, msg);
-            case "mcp_tool_call_begin" -> publishMcpActivity(stream, msg);
-            case "patch_apply_begin", "apply_patch_approval_request" -> publishActivity(
-                    stream.threadId,
-                    ChatMessageStreamEvent.ActivityType.TOOL,
-                    "apply_patch",
-                    "Codex"
-            );
-            case "item.started", "item_started", "item.updated", "item_updated" -> {
-                publishItemActivity(stream, msg);
-                publishTodoList(stream, msg);
-            }
+            case "exec_command_begin" -> publishActivity(stream.threadId, "terminal", describeCommand(msg));
+            case "mcp_tool_call_begin" -> publishActivity(stream.threadId, "tool", firstNonBlank(
+                    text(msg, "tool_title", ""),
+                    text(msg, "tool_name", ""),
+                    text(msg, "server_name", "")
+            ));
             case "stream_error", "error" -> stream.errorMessage = firstNonBlank(
-                    extractErrorSummary(event),
+                    text(msg, "message", ""),
+                    text(msg.path("error"), "message", ""),
                     "Codex stream error"
             );
-            case "item.completed", "item_completed" -> {
-                publishItemActivity(stream, msg);
-                publishTodoList(stream, msg);
-                emitFinalMessage(stream, extractText(msg.path("item")), sink);
-            }
+            case "item_completed" -> emitFinalMessage(stream, extractText(msg.path("item")), sink);
             default -> {
             }
         }
@@ -410,23 +391,17 @@ public class CodexRuntimeService implements AiRuntime {
         if (finalMessage == null || finalMessage.isBlank()) {
             return;
         }
-        final String normalized = finalMessage.trim();
         final String current = stream.response.toString();
-        if (normalized.equals(current.trim())) {
+        if (finalMessage.equals(current)) {
             return;
         }
-        if (!stream.seenAssistantMessages.add(normalized)) {
-            return;
-        }
-        if (!current.isBlank() && finalMessage.startsWith(current)) {
+        if (finalMessage.startsWith(current)) {
             emitDelta(stream, finalMessage.substring(current.length()), sink);
             return;
         }
         if (current.isBlank()) {
             emitDelta(stream, finalMessage, sink);
-            return;
         }
-        emitDelta(stream, System.lineSeparator() + System.lineSeparator() + finalMessage, sink);
     }
 
     private void emitOutputFileMessage(final ActiveStream stream,
@@ -501,9 +476,10 @@ public class CodexRuntimeService implements AiRuntime {
                 return;
             }
             final long input = candidate.path("input_tokens").asLong(0);
+            final long cachedInput = candidate.path("cached_input_tokens").asLong(0);
             final long output = candidate.path("output_tokens").asLong(0);
             final long reasoning = candidate.path("reasoning_output_tokens").asLong(0);
-            final long summed = input + output + reasoning;
+            final long summed = input + cachedInput + output + reasoning;
             if (summed > 0) {
                 stream.tokensTotal = summed;
                 return;
@@ -512,167 +488,46 @@ public class CodexRuntimeService implements AiRuntime {
     }
 
     private String describeCommand(final JsonNode msg) {
-        return firstNonBlank(
-                commandText(msg.path("parsed_cmd")),
-                commandText(msg.path("cmd")),
-                commandText(msg.path("command")),
-                commandText(msg.path("shell_command")),
-                commandText(msg.path("display_command")),
-                commandText(msg.path("interaction_input")),
-                commandText(msg.path("context").path("parsed_cmd")),
-                commandText(msg.path("context").path("cmd")),
-                commandText(msg.path("context").path("command")),
-                text(msg, "program", ""),
-                "command"
-        );
-    }
-
-    private void publishCommandActivity(final ActiveStream stream, final JsonNode msg) {
-        publishActivity(
-                stream.threadId,
-                ChatMessageStreamEvent.ActivityType.TOOL,
-                describeCommand(msg),
-                "Codex terminal"
-        );
-    }
-
-    private void publishMcpActivity(final ActiveStream stream, final JsonNode msg) {
-        final JsonNode invocation = msg.path("invocation");
-        final String server = firstNonBlank(
-                text(msg, "server_name", ""),
-                text(msg, "server", ""),
-                text(invocation, "server", ""),
-                text(invocation, "connector_name", ""),
-                "MCP"
-        );
-        final String tool = firstNonBlank(
-                text(msg, "tool_title", ""),
-                text(msg, "tool_name", ""),
-                text(invocation, "tool_title", ""),
-                text(invocation, "tool_name", ""),
-                text(invocation, "name", ""),
-                "tool"
-        );
-        publishActivity(stream.threadId, ChatMessageStreamEvent.ActivityType.MCP, tool, server);
-    }
-
-    private void publishItemActivity(final ActiveStream stream, final JsonNode msg) {
-        final JsonNode item = msg.path("item");
-        final String itemType = firstNonBlank(
-                text(item, "type", ""),
-                text(item, "kind", ""),
-                text(msg, "item_type", "")
-        );
-        if (itemType.equalsIgnoreCase("local_shell_call")
-                || itemType.equalsIgnoreCase("execution")
-                || itemType.equalsIgnoreCase("exec_command")
-                || itemType.equalsIgnoreCase("command_execution")) {
-            publishActivity(
-                    stream.threadId,
-                    ChatMessageStreamEvent.ActivityType.TOOL,
-                    describeCommand(item),
-                    "Codex terminal"
-            );
-            return;
+        final String command = text(msg, "command", "");
+        if (!command.isBlank()) {
+            return command;
         }
-        if (itemType.equalsIgnoreCase("function_call")
-                || itemType.equalsIgnoreCase("custom_tool_call")
-                || itemType.equalsIgnoreCase("mcp_tool_call")) {
-            final String name = firstNonBlank(
-                    text(item, "name", ""),
-                    text(item, "tool_name", ""),
-                    text(item, "tool_title", ""),
-                    text(item, "call_id", ""),
-                    "tool"
-            );
-            publishActivity(stream.threadId, ChatMessageStreamEvent.ActivityType.TOOL, name, "Codex");
-        }
-    }
-
-    private void publishTodoList(final ActiveStream stream, final JsonNode msg) {
-        final JsonNode item = msg.path("item");
-        final String itemType = text(item, "type", "");
-        if (!itemType.equalsIgnoreCase("todo_list")) {
-            return;
-        }
-        final JsonNode items = item.path("items");
-        if (!items.isArray()) {
-            return;
-        }
-        final List<TodoItem> todoItems = new ArrayList<>();
-        for (final JsonNode todo : items) {
-            final String content = firstNonBlank(
-                    text(todo, "text", ""),
-                    text(todo, "content", ""),
-                    text(todo, "title", "")
-            );
-            if (content.isBlank()) {
-                continue;
+        final JsonNode parsed = msg.path("parsed_cmd");
+        if (parsed.isArray()) {
+            final List<String> parts = new ArrayList<>();
+            for (final JsonNode node : parsed) {
+                if (node.isTextual()) {
+                    parts.add(node.asText());
+                }
             }
-            final String status = firstNonBlank(
-                    text(todo, "status", ""),
-                    todo.path("completed").asBoolean(false) ? "completed" : "pending"
-            );
-            final String priority = firstNonBlank(text(todo, "priority", ""), "medium");
-            todoItems.add(new TodoItem(content, status, priority));
+            if (!parts.isEmpty()) {
+                return String.join(" ", parts);
+            }
         }
-        if (!todoItems.isEmpty()) {
-            Event.publish(ChatMessageStreamEvent.todoUpdate(stream.threadId, todoItems));
+        final JsonNode cmd = msg.path("cmd");
+        if (cmd.isArray()) {
+            final List<String> parts = new ArrayList<>();
+            for (final JsonNode node : cmd) {
+                if (node.isTextual()) {
+                    parts.add(node.asText());
+                }
+            }
+            if (!parts.isEmpty()) {
+                return String.join(" ", parts);
+            }
         }
+        return firstNonBlank(text(msg, "program", ""), "command");
     }
 
     private void publishActivity(final String threadId,
-                                 final ChatMessageStreamEvent.ActivityType activityType,
-                                 final String name,
+                                 final String kind,
                                  final String detail) {
-        final String activityName = firstNonBlank(name, "tool");
-        final String dedupeKey = activityType + ":" + activityName + ":" + firstNonBlank(detail, "");
-        final ActiveStream stream = activeStreams.get(threadId);
-        if (stream != null && !stream.seenActivities.add(dedupeKey)) {
-            return;
-        }
         Event.publish(new ChatMessageStreamEvent(
                 threadId,
-                activityType,
-                activityName,
-                detail
+                ChatMessageStreamEvent.ActivityType.TOOL,
+                firstNonBlank(detail, kind),
+                kind
         ));
-    }
-
-    private String commandText(final JsonNode node) {
-        if (node == null || node.isMissingNode() || node.isNull()) {
-            return "";
-        }
-        if (node.isTextual()) {
-            return node.asText();
-        }
-        if (node.isArray()) {
-            final List<String> parts = new ArrayList<>();
-            for (final JsonNode item : node) {
-                final String value = commandText(item);
-                if (!value.isBlank()) {
-                    parts.add(value);
-                }
-            }
-            return String.join(" ", parts);
-        }
-        if (node.isObject()) {
-            final String direct = firstNonBlank(
-                    commandText(node.path("cmd")),
-                    commandText(node.path("command")),
-                    commandText(node.path("shell_command")),
-                    commandText(node.path("display_command")),
-                    commandText(node.path("input")),
-                    commandText(node.path("query")),
-                    text(node, "program", "")
-            );
-            if (!direct.isBlank()) {
-                return direct;
-            }
-            final String type = text(node, "type", "");
-            return type.isBlank() ? "" : type;
-        }
-        return "";
     }
 
     private List<Path> writeImageAttachments(final List<ImageAttachment> imageAttachments) throws IOException {
@@ -759,85 +614,14 @@ public class CodexRuntimeService implements AiRuntime {
         if (output == null || output.isBlank()) {
             return "Unknown Codex error";
         }
-        final List<String> messages = new ArrayList<>();
-        final List<String> eventTypes = new ArrayList<>();
-        for (final String line : output.lines().map(String::trim).filter(line -> !line.isBlank()).toList()) {
-            if (line.startsWith("{")) {
-                try {
-                    final JsonNode event = objectMapper.readTree(line);
-                    final JsonNode msg = event.path("msg").isObject() ? event.path("msg") : event;
-                    final String type = text(msg, "type", text(event, "type", ""));
-                    if (!type.isBlank()) {
-                        eventTypes.add(type);
-                    }
-                    final String error = extractErrorSummary(event);
-                    if (!error.isBlank()) {
-                        messages.add(error);
-                    }
-                } catch (Exception ignored) {
-                    messages.add(line);
-                }
-            } else if (!line.startsWith("WARNING:")) {
-                messages.add(line);
-            }
-        }
-        final String text = messages.stream()
+        final String text = output.lines()
+                .filter(line -> !line.trim().startsWith("{"))
                 .map(String::trim)
-                .filter(message -> !message.isBlank())
-                .distinct()
+                .filter(line -> !line.isBlank())
                 .collect(Collectors.joining(System.lineSeparator()));
-        if (!text.isBlank()) {
-            return limit(text);
+        if (text.isBlank()) {
+            return "Codex exited without an assistant response.";
         }
-        if (!eventTypes.isEmpty()) {
-            final int from = Math.max(0, eventTypes.size() - 5);
-            return "Codex exited without an assistant response. Last events: "
-                    + String.join(", ", eventTypes.subList(from, eventTypes.size()));
-        }
-        return "Codex exited without an assistant response.";
-    }
-
-    private boolean isErrorEvent(final String type) {
-        if (type == null || type.isBlank()) {
-            return false;
-        }
-        final String normalized = type.toLowerCase();
-        return normalized.equals("error")
-                || normalized.equals("stream_error")
-                || normalized.endsWith(".failed")
-                || normalized.endsWith("_failed");
-    }
-
-    private String extractErrorSummary(final JsonNode event) {
-        if (event == null || event.isMissingNode() || event.isNull()) {
-            return "";
-        }
-        final JsonNode msg = event.path("msg").isObject() ? event.path("msg") : event;
-        final String type = text(msg, "type", text(event, "type", ""));
-        final JsonNode item = msg.path("item");
-        final String failedToolOutput = "failed".equalsIgnoreCase(text(item, "status", ""))
-                ? firstNonBlank(text(item, "aggregated_output", ""), text(item, "output", ""))
-                : "";
-        final String message = firstNonBlank(
-                text(msg, "message", ""),
-                text(event, "message", ""),
-                text(msg.path("error"), "message", ""),
-                text(event.path("error"), "message", ""),
-                text(msg, "error", ""),
-                text(event, "error", ""),
-                failedToolOutput
-        );
-        if (!message.isBlank()) {
-            final String command = commandText(item.path("command"));
-            if (!command.isBlank() && !failedToolOutput.isBlank()) {
-                return command + ": " + limit(message.trim());
-            }
-            return limit(message.trim());
-        }
-        return isErrorEvent(type) ? type : "";
-    }
-
-    private String limit(final String text) {
         return text.length() > 1_000 ? text.substring(0, 1_000) + "..." : text;
     }
 
@@ -884,8 +668,6 @@ public class CodexRuntimeService implements AiRuntime {
         private volatile String modelUsed;
         private volatile long tokensTotal;
         private volatile String errorMessage;
-        private final Set<String> seenAssistantMessages = ConcurrentHashMap.newKeySet();
-        private final Set<String> seenActivities = ConcurrentHashMap.newKeySet();
 
         private ActiveStream(final String threadId) {
             this.threadId = threadId;
