@@ -247,6 +247,7 @@ public class ChatStreamingController {
             browser.finalizeAssistantReasoning();
             browser.finalizeAssistantCommentary();
             browser.showAssistantActivity(label, detail);
+            browser.showLoader();
             updateComposerProcessStatus();
             statusPrompt.showStatusPrompt(label);
         });
