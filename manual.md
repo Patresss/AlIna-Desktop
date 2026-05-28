@@ -53,7 +53,7 @@ Szablony promptów wielokrotnego użytku. Każde polecenie ma:
 - skróty klawiaturowe dla trybów paste/display/execute
 - ustawienia widoczności (picker czatu, menu kontekstowe, ekran powitalny)
 
-Polecenia można tworzyć i edytować w **Settings → Commands**. Pliki poleceń przechowywane są domyślnie w `<katalog_roboczy>/.agents/commands/`; jeśli ten katalog nie istnieje, używany jest legacy `<katalog_roboczy>/.opencode/commands/`.
+Polecenia można tworzyć i edytować w **Settings → Commands**. Pliki poleceń przechowywane są w `<katalog_roboczy>/.opencode/commands/` lub `~/.config/opencode/commands/`.
 
 Przykładowe polecenia: `morning-plan`, `standup-sync`, `translate-to-english-or-polish`, `popraw-bledy`.
 
@@ -144,7 +144,7 @@ Przyciski od lewej: **New Session** | **History** | **About** | **Open OpenCode 
 | Rozmowy | `~/.config/AlIna/conversations/` |
 | Konfiguracja | `~/.config/AlIna/config/` |
 | Motywy | `~/.config/AlIna/themes/` |
-| Polecenia | `<katalog_roboczy>/.agents/commands/` |
+| Polecenia | `~/.config/opencode/commands/` |
 | Skills | `~/.config/opencode/skills/` |
 | MCP | `~/.config/opencode/opencode.json` |
 

@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import com.patres.alina.common.storage.AppPaths;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Configuration
@@ -24,7 +26,13 @@ public class LocalStorageConfiguration {
     @Bean
     public Path commandsStoragePath(final Path localStorageBasePath) {
         final Path commandsDir = OpenCodePaths.commandsDir();
-        logger.info("Using legacy global commands storage directory: {}", commandsDir);
-        return commandsDir;
+        try {
+            Files.createDirectories(commandsDir);
+            logger.info("Created commands storage directory: {}", commandsDir);
+            return commandsDir;
+        } catch (IOException e) {
+            logger.error("Failed to create commands storage directory: {}", commandsDir, e);
+            throw new RuntimeException("Failed to create commands storage directory", e);
+        }
     }
 }

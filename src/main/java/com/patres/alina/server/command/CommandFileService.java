@@ -4,7 +4,6 @@ import com.patres.alina.common.card.State;
 import com.patres.alina.common.card.UpdateStateRequest;
 import com.patres.alina.common.settings.FileManager;
 import com.patres.alina.common.settings.WorkspaceSettings;
-import com.patres.alina.common.storage.AiWorkspacePaths;
 import com.patres.alina.server.parser.MarkdownParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +26,6 @@ import java.util.UUID;
 public class CommandFileService {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandFileService.class);
-    private static final String COMMANDS_DIRECTORY = "commands";
 
     private final Path commandsDirectory;
     private final MarkdownParser markdownParser;
@@ -58,7 +56,7 @@ public class CommandFileService {
     private enum ListMode { ENABLED_ONLY, ALL }
 
     private List<Command> loadCommands(final ListMode mode) {
-        logger.debug("Loading command list from command directories: {} (mode={})", resolveCommandDirectories(), mode);
+        logger.debug("Loading command list from OpenCode command directories: {} (mode={})", resolveCommandDirectories(), mode);
 
         final Map<String, Command> commandsById = new LinkedHashMap<>();
         for (final Path directory : resolveCommandDirectories()) {
@@ -81,7 +79,7 @@ public class CommandFileService {
         final List<Command> commands = commandsById.values().stream()
                 .sorted(createCommandComparator())
                 .toList();
-        logger.debug("Loaded {} commands from command files", commands.size());
+        logger.debug("Loaded {} commands from OpenCode command files", commands.size());
         return commands;
     }
 
@@ -304,16 +302,17 @@ public class CommandFileService {
     }
 
     private List<Path> resolveCommandDirectories() {
-        if (workspaceSettingsManager != null) {
-            return resolveExistingWorkspaceCommandsDirectory()
-                    .map(List::of)
-                    .orElseGet(List::of);
+        final java.util.ArrayList<Path> directories = new java.util.ArrayList<>();
+        localOpenCodeCommandsDirectory().ifPresent(directories::add);
+        if (directories.stream().noneMatch(commandsDirectory::equals)) {
+            directories.add(commandsDirectory);
         }
-        return List.of(commandsDirectory);
+        return List.copyOf(directories);
     }
 
     private Path resolveWriteDirectory() {
-        final Path directory = resolveWorkspaceWriteDirectory().orElse(commandsDirectory);
+        final Optional<Path> localDirectory = localOpenCodeCommandsDirectory().filter(Files::isDirectory);
+        final Path directory = localDirectory.orElse(commandsDirectory);
         try {
             Files.createDirectories(directory);
         } catch (IOException e) {
@@ -322,39 +321,7 @@ public class CommandFileService {
         return directory;
     }
 
-    private Optional<Path> resolveExistingWorkspaceCommandsDirectory() {
-        final Optional<Path> agentsDirectory = localAgentsCommandsDirectory().filter(Files::isDirectory);
-        if (agentsDirectory.isPresent()) {
-            return agentsDirectory;
-        }
-        return localOpenCodeCommandsDirectory().filter(Files::isDirectory);
-    }
-
-    private Optional<Path> resolveWorkspaceWriteDirectory() {
-        final Optional<Path> agentsDirectory = localAgentsCommandsDirectory();
-        if (agentsDirectory.isEmpty()) {
-            return Optional.empty();
-        }
-        if (Files.isDirectory(agentsDirectory.get())) {
-            return agentsDirectory;
-        }
-        final Optional<Path> openCodeDirectory = localOpenCodeCommandsDirectory().filter(Files::isDirectory);
-        return openCodeDirectory.or(() -> agentsDirectory);
-    }
-
-    private Optional<Path> localAgentsCommandsDirectory() {
-        return localWorkspaceDirectory()
-                .map(AiWorkspacePaths::agentsDirectory)
-                .map(CommandFileService::commandsDirectory);
-    }
-
     private Optional<Path> localOpenCodeCommandsDirectory() {
-        return localWorkspaceDirectory()
-                .map(AiWorkspacePaths::openCodeDirectory)
-                .map(CommandFileService::commandsDirectory);
-    }
-
-    private Optional<Path> localWorkspaceDirectory() {
         if (workspaceSettingsManager == null) {
             return Optional.empty();
         }
@@ -362,11 +329,10 @@ public class CommandFileService {
         if (settings.openCodeWorkingDirectory() == null || settings.openCodeWorkingDirectory().isBlank()) {
             return Optional.empty();
         }
-        return Optional.of(Path.of(settings.openCodeWorkingDirectory()).toAbsolutePath().normalize());
-    }
-
-    private static Path commandsDirectory(final Path aiWorkspaceDirectory) {
-        return aiWorkspaceDirectory.resolve(COMMANDS_DIRECTORY).normalize();
+        return Optional.of(Path.of(settings.openCodeWorkingDirectory()).toAbsolutePath().normalize()
+                .resolve(".opencode")
+                .resolve("commands")
+                .normalize());
     }
 
 }

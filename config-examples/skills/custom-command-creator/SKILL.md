@@ -12,16 +12,16 @@ Pomagaj tworzyc custom commandy jako pliki Markdown kompatybilne z OpenCode i Al
 Domyslnie zapisuj nowa komende w lokalnym working directory:
 
 ```text
-.agents/commands/<slug>.md
+.opencode/commands/<slug>.md
 ```
 
-Jesli `.agents/commands/` nie istnieje, a istnieje legacy `.opencode/commands/`, zapisz do `.opencode/commands/<slug>.md`. Gdy nie istnieje zaden z tych katalogow, utworz `.agents/commands/` i zapisz tam komende.
+Globalny zapis do `~/.config/opencode/commands/<slug>.md` wybieraj tylko wtedy, gdy uzytkownik wyraznie chce komende globalna albo nie da sie ustalic sensownego working directory.
 
 ## Workflow
 
 1. Ustal nazwe, opis i intencje komendy.
 2. Wybierz slug pliku w kebab-case, np. `obsidian-polish.md`.
-3. Uzyj istniejacego `.agents/commands/`, fallbacku `.opencode/commands/`, albo utworz `.agents/commands/`, jesli oba katalogi nie istnieja.
+3. Utworz katalog `.opencode/commands/`, jesli nie istnieje.
 4. Zapisz plik Markdown z frontmatter i trescia promptu.
 5. Jesli uzytkownik nie podal ikon, skrotow albo widocznosci, ustaw domyslne metadane.
 6. Nie tworz komendy globalnej, jesli prosba dotyczy aktualnego projektu/vaulta.
