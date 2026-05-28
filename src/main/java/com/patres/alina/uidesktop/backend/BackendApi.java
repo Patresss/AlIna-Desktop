@@ -4,7 +4,7 @@ import com.patres.alina.AppLauncher;
 import com.patres.alina.common.card.UpdateStateRequest;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
-import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
+import com.patres.alina.common.agent.AgentRuntimeStatus;
 import com.patres.alina.common.permission.PermissionResolutionModel;
 import com.patres.alina.common.permission.PermissionApprovalAction;
 import com.patres.alina.common.settings.WorkspaceSettings;
@@ -142,16 +142,16 @@ public class BackendApi {
         AppLauncher.getBean(DashboardController.class).addTask(taskContent);
     }
 
-    public static OpenCodeRuntimeStatus getOpenCodeRuntimeStatus() {
-        return AppLauncher.getBean(WorkspaceController.class).getOpenCodeRuntimeStatus();
+    public static AgentRuntimeStatus getAgentRuntimeStatus() {
+        return AppLauncher.getBean(WorkspaceController.class).getAgentRuntimeStatus();
     }
 
-    public static void prepareOpenCodeForFreshChat() {
-        AppLauncher.getBean(WorkspaceController.class).prepareOpenCodeForFreshChat();
+    public static void prepareAgentForFreshChat() {
+        AppLauncher.getBean(WorkspaceController.class).prepareAgentForFreshChat();
     }
 
-    public static String getOpenCodeSessionWebUrl(final String chatThreadId) {
-        return AppLauncher.getBean(WorkspaceController.class).getOpenCodeSessionWebUrl(chatThreadId);
+    public static String getAgentSessionWebUrl(final String chatThreadId) {
+        return AppLauncher.getBean(WorkspaceController.class).getAgentSessionWebUrl(chatThreadId);
     }
 
     public static JiraIssueResult fetchJiraAssignedIssues(final String jiraEmail, final String jiraApiToken, final int maxResults) {

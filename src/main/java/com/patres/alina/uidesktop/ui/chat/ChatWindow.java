@@ -354,7 +354,7 @@ public class ChatWindow extends BorderPane {
         Thread.startVirtualThread(() -> {
             final List<String> models = BackendApi.getChatModels();
             final AssistantSettings settings = BackendApi.getAssistantSettings();
-            final String defaultModel = settings.resolveModelIdentifier();
+            final String defaultModel = resolveInitialSelectedModel(settings.resolveModelIdentifier(), models);
             selectedModel = defaultModel;
             FxThreadRunner.run(() -> {
                 modelLabel.setText(defaultModel);
@@ -369,6 +369,28 @@ public class ChatWindow extends BorderPane {
                 modelMenu.show(modelLabel, javafx.geometry.Side.TOP, 0, 0);
             }
         });
+    }
+
+    private String resolveInitialSelectedModel(final String configuredModel, final List<String> models) {
+        if (models == null || models.isEmpty()) {
+            return configuredModel;
+        }
+        if (configuredModel != null && models.contains(configuredModel)) {
+            return configuredModel;
+        }
+        final String providerless = stripProvider(configuredModel);
+        if (providerless != null && models.contains(providerless)) {
+            return providerless;
+        }
+        return models.getFirst();
+    }
+
+    private String stripProvider(final String model) {
+        if (model == null || model.isBlank()) {
+            return model;
+        }
+        final int slash = model.indexOf('/');
+        return slash >= 0 ? model.substring(slash + 1).trim() : model;
     }
 
     private void populateModelMenu(final List<String> models) {

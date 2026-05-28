@@ -216,6 +216,14 @@ public class OpenCodeRuntimeService {
         );
     }
 
+    public void ensureRunning() {
+        try {
+            ensureServerRunning();
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot start OpenCode runtime", e);
+        }
+    }
+
     public synchronized void prepareForFreshChat() {
         try {
             activeStreams.values().forEach(stream -> {

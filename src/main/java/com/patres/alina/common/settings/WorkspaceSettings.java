@@ -1,5 +1,7 @@
 package com.patres.alina.common.settings;
 
+import com.patres.alina.common.agent.AgentBackend;
+
 public record WorkspaceSettings(
         boolean showDashboard,
         boolean dashboardCollapsed,
@@ -44,7 +46,10 @@ public record WorkspaceSettings(
         int dashboardObsidianRefreshSeconds,
         boolean obsidianChangeNotificationsEnabled,
         String obsidianAiPrompt,
-        String obsidianExcludePatterns
+        String obsidianExcludePatterns,
+        String agentBackend,
+        String codexCommand,
+        String codexWorkingDirectory
 ) {
 
     public static final String DEFAULT_TASKS_FILE = "profile/default/focus.md";
@@ -63,6 +68,8 @@ public record WorkspaceSettings(
     public static final int DEFAULT_DASHBOARD_OBSIDIAN_NOTE_LIMIT = 5;
     public static final int DEFAULT_DASHBOARD_OBSIDIAN_REFRESH_SECONDS = 120;
     public static final String DEFAULT_OBSIDIAN_EXCLUDE_PATTERNS = "AGENTS.md,**/Memory/**,**/Templates/**";
+    public static final String DEFAULT_AGENT_BACKEND = AgentBackend.OPENCODE.id();
+    public static final String DEFAULT_CODEX_COMMAND = "codex";
 
     public WorkspaceSettings() {
         this(
@@ -109,7 +116,10 @@ public record WorkspaceSettings(
                 DEFAULT_DASHBOARD_OBSIDIAN_REFRESH_SECONDS,
                 false,
                 "",
-                DEFAULT_OBSIDIAN_EXCLUDE_PATTERNS
+                DEFAULT_OBSIDIAN_EXCLUDE_PATTERNS,
+                DEFAULT_AGENT_BACKEND,
+                DEFAULT_CODEX_COMMAND,
+                DEFAULT_OPENCODE_WORKING_DIRECTORY
         );
     }
 
@@ -141,6 +151,13 @@ public record WorkspaceSettings(
         dashboardObsidianRefreshSeconds = dashboardObsidianRefreshSeconds > 0 ? dashboardObsidianRefreshSeconds : DEFAULT_DASHBOARD_OBSIDIAN_REFRESH_SECONDS;
         obsidianAiPrompt = obsidianAiPrompt == null ? "" : obsidianAiPrompt.trim();
         obsidianExcludePatterns = obsidianExcludePatterns == null ? "" : obsidianExcludePatterns.trim();
+        agentBackend = defaultIfBlank(agentBackend, DEFAULT_AGENT_BACKEND);
+        codexCommand = defaultIfBlank(codexCommand, DEFAULT_CODEX_COMMAND);
+        codexWorkingDirectory = defaultIfBlank(codexWorkingDirectory, openCodeWorkingDirectory);
+    }
+
+    public AgentBackend resolveAgentBackend() {
+        return AgentBackend.from(agentBackend);
     }
 
     public WorkspaceSettings withKeepWindowAlwaysOnTop(final boolean value) {
@@ -157,7 +174,8 @@ public record WorkspaceSettings(
                 calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt,
                 showDashboardObsidian, obsidianCliPath,
                 dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
-                obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns
+                obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns,
+                agentBackend, codexCommand, codexWorkingDirectory
         );
     }
 
@@ -175,7 +193,8 @@ public record WorkspaceSettings(
                 calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt,
                 showDashboardObsidian, obsidianCliPath,
                 dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
-                obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns
+                obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns,
+                agentBackend, codexCommand, codexWorkingDirectory
         );
     }
 
@@ -193,7 +212,8 @@ public record WorkspaceSettings(
                 calendarAiPrompt, tasksAiPrompt, jiraAiPrompt, githubAiPrompt,
                 showDashboardObsidian, obsidianCliPath,
                 dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
-                obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns
+                obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns,
+                agentBackend, codexCommand, codexWorkingDirectory
         );
     }
 

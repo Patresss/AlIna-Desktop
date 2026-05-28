@@ -1,21 +1,21 @@
 package com.patres.alina.server.workspace;
 
-import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
+import com.patres.alina.common.agent.AgentRuntimeStatus;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.common.settings.FileManager;
-import com.patres.alina.server.opencode.OpenCodeRuntimeService;
+import com.patres.alina.server.agent.AgentRuntimeSelector;
 import org.springframework.stereotype.Component;
 
 @Component
 public class WorkspaceController {
 
     private final FileManager<WorkspaceSettings> workspaceSettingsManager;
-    private final OpenCodeRuntimeService openCodeRuntimeService;
+    private final AgentRuntimeSelector agentRuntimeSelector;
 
     public WorkspaceController(final FileManager<WorkspaceSettings> workspaceSettingsManager,
-                               final OpenCodeRuntimeService openCodeRuntimeService) {
+                               final AgentRuntimeSelector agentRuntimeSelector) {
         this.workspaceSettingsManager = workspaceSettingsManager;
-        this.openCodeRuntimeService = openCodeRuntimeService;
+        this.agentRuntimeSelector = agentRuntimeSelector;
     }
 
     public WorkspaceSettings getWorkspaceSettings() {
@@ -26,15 +26,15 @@ public class WorkspaceController {
         workspaceSettingsManager.saveDocument(settings);
     }
 
-    public OpenCodeRuntimeStatus getOpenCodeRuntimeStatus() {
-        return openCodeRuntimeService.getRuntimeStatus();
+    public AgentRuntimeStatus getAgentRuntimeStatus() {
+        return agentRuntimeSelector.active().getRuntimeStatus();
     }
 
-    public void prepareOpenCodeForFreshChat() {
-        openCodeRuntimeService.prepareForFreshChat();
+    public void prepareAgentForFreshChat() {
+        agentRuntimeSelector.active().prepareForFreshChat();
     }
 
-    public String getOpenCodeSessionWebUrl(final String chatThreadId) {
-        return openCodeRuntimeService.getSessionWebUrl(chatThreadId);
+    public String getAgentSessionWebUrl(final String chatThreadId) {
+        return agentRuntimeSelector.active().getSessionWebUrl(chatThreadId);
     }
 }

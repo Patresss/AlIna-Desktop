@@ -659,7 +659,7 @@ public class ChatStreamingController {
         if (label == null || label.isBlank()) {
             return "";
         }
-        return label.replace("OpenCode: ", "").replace("Skill: ", "skill: ");
+        return label.replace("OpenCode: ", "").replace("Tool: ", "").replace("Skill: ", "skill: ");
     }
 
     private String escapeHtml(final String value) {

@@ -712,7 +712,7 @@
     }
 
     function stripActivityPrefix(label) {
-        return label.replace(/^OpenCode:\s*/i, '').replace(/^Skill:\s*/i, '').replace(/^MCP:\s*/i, '');
+        return label.replace(/^OpenCode:\s*/i, '').replace(/^Tool:\s*/i, '').replace(/^Skill:\s*/i, '').replace(/^MCP:\s*/i, '');
     }
 
     function buildAssistantActivitySummary(count, lastLabel) {

@@ -2,7 +2,7 @@ package com.patres.alina.uidesktop.settings.ui;
 
 import atlantafx.base.controls.ToggleSwitch;
 import atlantafx.base.theme.Styles;
-import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
+import com.patres.alina.common.agent.AgentRuntimeStatus;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.scene.Node;
@@ -142,7 +142,10 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 settings.dashboardObsidianRefreshSeconds(),
                 settings.obsidianChangeNotificationsEnabled(),
                 settings.obsidianAiPrompt(),
-                settings.obsidianExcludePatterns()
+                settings.obsidianExcludePatterns(),
+                settings.agentBackend(),
+                settings.codexCommand(),
+                settings.codexWorkingDirectory()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;
@@ -325,7 +328,7 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
 
     private void refreshOpenCodeStatus() {
         try {
-            final OpenCodeRuntimeStatus status = BackendApi.getOpenCodeRuntimeStatus();
+            final AgentRuntimeStatus status = BackendApi.getAgentRuntimeStatus();
             openCodeStatusArea.setText(formatOpenCodeStatus(status));
         } catch (Exception e) {
             openCodeStatusArea.setText("Status: unavailable" + System.lineSeparator()
@@ -333,16 +336,19 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
         }
     }
 
-    private String formatOpenCodeStatus(final OpenCodeRuntimeStatus status) {
+    private String formatOpenCodeStatus(final AgentRuntimeStatus status) {
         if (status == null) {
             return "Status unavailable.";
         }
         return String.join(System.lineSeparator(),
+                "Backend: " + fallback(status.displayName(), "-"),
                 "Status: " + (status.healthy() ? "running" : "unreachable"),
                 "Version: " + fallback(status.version(), "-"),
+                "Transport: " + fallback(status.transport(), "-"),
+                "Command: " + fallback(status.command(), "-"),
                 "Base URL: " + fallback(status.baseUrl(), "-"),
                 "Host: " + fallback(status.hostname(), "-"),
-                "Port: " + status.port(),
+                "Port: " + (status.port() > 0 ? status.port() : "-"),
                 "Working directory: " + fallback(status.workingDirectory(), "-"),
                 "Working directory exists: " + yesNo(status.workingDirectoryExists()),
                 "Process started by AlIna: " + yesNo(status.processRunning()),

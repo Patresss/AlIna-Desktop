@@ -162,7 +162,10 @@ class OpenCodeConfigurationServiceTest {
                 WorkspaceSettings.DEFAULT_DASHBOARD_OBSIDIAN_REFRESH_SECONDS,
                 false,
                 "",
-                ""
+                "",
+                WorkspaceSettings.DEFAULT_AGENT_BACKEND,
+                WorkspaceSettings.DEFAULT_CODEX_COMMAND,
+                workingDirectory.toString()
         ));
 
         return new OpenCodeConfigurationService(

@@ -194,7 +194,10 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 dashboardObsidianRefreshSpinner.getValue(),
                 obsidianChangeNotificationsToggle.isSelected(),
                 obsidianAiPromptField.getText(),
-                obsidianExcludePatternsField.getText()
+                obsidianExcludePatternsField.getText(),
+                settings.agentBackend(),
+                settings.codexCommand(),
+                settings.codexWorkingDirectory()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;
