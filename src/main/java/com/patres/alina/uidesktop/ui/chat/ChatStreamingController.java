@@ -181,6 +181,7 @@ public class ChatStreamingController {
                 && !content.startsWith(latestCommentaryContent);
         latestCommentaryContent = content;
         FxThreadRunner.run(() -> {
+            browser.finalizeAssistantActivity();
             browser.hideLoader();
             if (startsNewCommentaryMessage) {
                 browser.finalizeAssistantCommentary();
@@ -202,6 +203,7 @@ public class ChatStreamingController {
                 && !content.startsWith(latestReasoningContent);
         latestReasoningContent = content;
         FxThreadRunner.run(() -> {
+            browser.finalizeAssistantActivity();
             browser.hideLoader();
             if (startsNewReasoningMessage) {
                 browser.finalizeAssistantReasoning();
@@ -242,6 +244,8 @@ public class ChatStreamingController {
                 browser.finishStreamingMessage();
                 streamingStarted = false;
             }
+            browser.finalizeAssistantReasoning();
+            browser.finalizeAssistantCommentary();
             browser.showAssistantActivity(label, detail);
             updateComposerProcessStatus();
             statusPrompt.showStatusPrompt(label);
