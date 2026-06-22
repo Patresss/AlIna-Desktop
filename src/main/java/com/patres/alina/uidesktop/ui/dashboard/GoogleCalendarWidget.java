@@ -36,7 +36,7 @@ import java.util.*;
 
 /**
  * Dashboard widget displaying today's Google Calendar events.
- * Uses the gws CLI + gcloud for authentication.
+ * Uses Google Calendar REST API via curl and gcloud for authentication.
  * Shows a re-authenticate button when the token is expired.
  */
 public class GoogleCalendarWidget extends VBox {

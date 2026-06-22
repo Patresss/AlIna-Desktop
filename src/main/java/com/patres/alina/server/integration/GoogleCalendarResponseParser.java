@@ -23,9 +23,12 @@ final class GoogleCalendarResponseParser {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final String TOKEN_INVALID_MESSAGE = "Token expired or invalid. Re-authenticate to fix.";
     private static final String CALENDAR_SCOPE_REQUIRED_MESSAGE =
-            "Google Calendar access needs Calendar scope. Run '%s' and try again.";
-    private static final String GWS_WRONG_BINARY_HINT =
-            "The 'gws' command on PATH is not the Google Workspace CLI. Install the correct gws CLI or adjust PATH so AlIna uses the Google calendar tool.";
+            "Google Calendar access needs Calendar scope. Run '%s' and try again. "
+                    + "If your account requires a quota project, run 'gcloud auth application-default set-quota-project <project-id>'.";
+    private static final String CALENDAR_API_DISABLED_MESSAGE =
+            "Google Calendar API is not enabled or no quota project is configured. "
+                    + "Enable calendar-json.googleapis.com in your Google Cloud project and, if needed, run "
+                    + "'gcloud auth application-default set-quota-project <project-id>'.";
     private static final String EMPTY_VALUE = "";
     private static final String ALL_DAY_LABEL = "All day";
     private static final String NO_TITLE_LABEL = "(No title)";
@@ -61,10 +64,12 @@ final class GoogleCalendarResponseParser {
             "ACCESS_TOKEN_SCOPE_INSUFFICIENT",
             "Request had insufficient authentication scopes"
     );
-    private static final List<String> WRONG_GWS_OUTPUT_MARKERS = List.of(
-            "Not in a workspace",
-            "helper to manage workspaces",
-            "git repositories"
+    private static final List<String> API_DISABLED_MARKERS = List.of(
+            "SERVICE_DISABLED",
+            "calendar-json.googleapis.com",
+            "Google Calendar API has not been used",
+            "API has not been used",
+            "quota project"
     );
     private static final Pattern VIDEO_URL_PATTERN = Pattern.compile(
             "https?://(?:"
@@ -99,11 +104,7 @@ final class GoogleCalendarResponseParser {
 
     private static String buildNonJsonErrorMessage(final String output) {
         final String trimmedOutput = output.trim();
-        final String normalizedOutput = normalizeWhitespace(output);
-        if (containsAny(normalizedOutput, WRONG_GWS_OUTPUT_MARKERS)) {
-            return GWS_WRONG_BINARY_HINT;
-        }
-        return "gws returned non-JSON output:\n" + trimmedOutput;
+        return "curl returned non-JSON output from Google Calendar API:\n" + trimmedOutput;
     }
 
     private static GoogleCalendarResult mapApiError(final JsonNode root) {
@@ -111,11 +112,16 @@ final class GoogleCalendarResponseParser {
             return null;
         }
 
-        final String errorMessage = root.path(ERROR_NODE).path(ERROR_MESSAGE_NODE).asText(UNKNOWN_ERROR_LABEL);
-        if (containsAny(errorMessage, AUTH_ERROR_MARKERS)) {
+        final JsonNode error = root.path(ERROR_NODE);
+        final String errorMessage = error.path(ERROR_MESSAGE_NODE).asText(UNKNOWN_ERROR_LABEL);
+        final String errorDetails = normalizeWhitespace(error.toString());
+        if (containsAny(errorDetails, AUTH_ERROR_MARKERS)) {
             return GoogleCalendarResult.authError(TOKEN_INVALID_MESSAGE);
         }
-        if (containsAny(errorMessage, SCOPE_ERROR_MARKERS)) {
+        if (containsAny(errorDetails, API_DISABLED_MARKERS)) {
+            return GoogleCalendarResult.error(CALENDAR_API_DISABLED_MESSAGE);
+        }
+        if (containsAny(errorDetails, SCOPE_ERROR_MARKERS)) {
             return GoogleCalendarResult.authError(
                     CALENDAR_SCOPE_REQUIRED_MESSAGE.formatted(GoogleCalendarCli.calendarAuthCommand()));
         }

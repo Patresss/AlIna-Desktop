@@ -4,12 +4,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Service for fetching today's Google Calendar events via the {@code gws} CLI.
+ * Service for fetching today's Google Calendar events via Google Calendar REST API.
  */
 public final class GoogleCalendarService {
 
     private static final Logger logger = LoggerFactory.getLogger(GoogleCalendarService.class);
-    private static final String EMPTY_RESPONSE_MESSAGE = "Empty response from gws calendar events list";
+    private static final String EMPTY_RESPONSE_MESSAGE = "Empty response from Google Calendar API";
 
     private GoogleCalendarService() {
         // utility class
