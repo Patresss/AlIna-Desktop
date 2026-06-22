@@ -1188,6 +1188,7 @@
 
         const container = $('todo-sticky-container');
         if (!container) return;
+        if (container.dataset.todoFinalized === 'true') return;
 
         container.dataset.todoJson = jsonString;
         container.dataset.todoTitle = title;
@@ -1255,6 +1256,7 @@
         card.remove();
         delete container.dataset.todoJson;
         delete container.dataset.todoTitle;
+        container.dataset.todoFinalized = 'true';
 
         let items;
         try { items = JSON.parse(jsonString); } catch { return; }
@@ -1307,6 +1309,7 @@
             container.innerHTML = '';
             delete container.dataset.todoJson;
             delete container.dataset.todoTitle;
+            delete container.dataset.todoFinalized;
         }
     }
 
