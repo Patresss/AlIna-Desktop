@@ -168,6 +168,9 @@ config/application.yml
 # Local patch artifacts (repo root)
 /*.patch
 
+# Local brainstorming artifacts
+/.superpowers/
+
 ######################
 # Release / Installer
 ######################
