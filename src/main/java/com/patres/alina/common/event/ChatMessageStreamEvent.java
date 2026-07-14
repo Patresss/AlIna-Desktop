@@ -1,6 +1,6 @@
 package com.patres.alina.common.event;
 
-import com.patres.alina.common.event.Event;
+import com.patres.alina.common.interaction.AgentInteractionRequest;
 import com.patres.alina.common.message.TodoItem;
 
 import java.util.List;
@@ -8,27 +8,21 @@ import java.util.List;
 public final class ChatMessageStreamEvent extends Event {
 
     public enum StreamEventType {
-        TOKEN,      // A new token has arrived
-        REASONING,  // A thinking/reasoning update arrived
-        COMMENTARY, // A non-final commentary update arrived
-        ACTIVITY,   // A tool or MCP activity is in progress
-        TODO_UPDATE,// The AI updated its todo list (via TodoWrite tool)
-        PERMISSION_REQUEST, // A tool or bash command requires user approval
-        COMPLETE,   // The stream is complete
-        CANCELLED,  // The stream was cancelled by the user
-        ERROR       // An error occurred
+        TOKEN,
+        REASONING,
+        COMMENTARY,
+        ACTIVITY,
+        TODO_UPDATE,
+        AGENT_INTERACTION,
+        COMPLETE,
+        CANCELLED,
+        ERROR
     }
 
     public enum ActivityType {
         TOOL,
         MCP,
         SKILL
-    }
-
-    public enum PermissionType {
-        TOOL,
-        MCP,
-        BASH
     }
 
     private final String threadId;
@@ -40,262 +34,94 @@ public final class ChatMessageStreamEvent extends Event {
     private final ActivityType activityType;
     private final String activityName;
     private final String activityDetail;
-    private final PermissionType permissionType;
-    private final String permissionRequestId;
-    private final String permissionValue;
-    private final String permissionTitle;
-    private final String permissionMessage;
-    private final String permissionConfigPath;
-    private final String permissionMatchedRule;
+    private final AgentInteractionRequest agentInteraction;
     private final List<TodoItem> todoItems;
     private final String modelUsed;
     private final String agentUsed;
     private final long tokensOutput;
     private final double cost;
 
-    public ChatMessageStreamEvent(String threadId, String token) {
-        this.threadId = threadId;
-        this.token = token;
-        this.eventType = StreamEventType.TOKEN;
-        this.errorMessage = null;
-        this.reasoningContent = null;
-        this.commentaryContent = null;
-        this.activityType = null;
-        this.activityName = null;
-        this.activityDetail = null;
-        this.permissionType = null;
-        this.permissionRequestId = null;
-        this.permissionValue = null;
-        this.permissionTitle = null;
-        this.permissionMessage = null;
-        this.permissionConfigPath = null;
-        this.permissionMatchedRule = null;
-        this.todoItems = null;
-        this.modelUsed = null;
-        this.agentUsed = null;
-        this.tokensOutput = 0;
-        this.cost = 0.0;
+    public ChatMessageStreamEvent(final String threadId, final String token) {
+        this(threadId, token, StreamEventType.TOKEN, null, null, null, null, null, null, null, null, null, null, 0, 0.0);
     }
 
-    public ChatMessageStreamEvent(String threadId, StreamEventType eventType) {
-        this.threadId = threadId;
-        this.token = null;
-        this.eventType = eventType;
-        this.errorMessage = null;
-        this.reasoningContent = null;
-        this.commentaryContent = null;
-        this.activityType = null;
-        this.activityName = null;
-        this.activityDetail = null;
-        this.permissionType = null;
-        this.permissionRequestId = null;
-        this.permissionValue = null;
-        this.permissionTitle = null;
-        this.permissionMessage = null;
-        this.permissionConfigPath = null;
-        this.permissionMatchedRule = null;
-        this.todoItems = null;
-        this.modelUsed = null;
-        this.agentUsed = null;
-        this.tokensOutput = 0;
-        this.cost = 0.0;
+    public ChatMessageStreamEvent(final String threadId, final StreamEventType eventType) {
+        this(threadId, null, eventType, null, null, null, null, null, null, null, null, null, null, 0, 0.0);
     }
 
-    public ChatMessageStreamEvent(String threadId, StreamEventType eventType, String errorMessage) {
-        this.threadId = threadId;
-        this.token = null;
-        this.eventType = eventType;
-        this.errorMessage = errorMessage;
-        this.reasoningContent = null;
-        this.commentaryContent = null;
-        this.activityType = null;
-        this.activityName = null;
-        this.activityDetail = null;
-        this.permissionType = null;
-        this.permissionRequestId = null;
-        this.permissionValue = null;
-        this.permissionTitle = null;
-        this.permissionMessage = null;
-        this.permissionConfigPath = null;
-        this.permissionMatchedRule = null;
-        this.todoItems = null;
-        this.modelUsed = null;
-        this.agentUsed = null;
-        this.tokensOutput = 0;
-        this.cost = 0.0;
+    public ChatMessageStreamEvent(final String threadId,
+                                  final StreamEventType eventType,
+                                  final String errorMessage) {
+        this(threadId, null, eventType, errorMessage, null, null, null, null, null, null, null, null, null, 0, 0.0);
     }
 
-    public ChatMessageStreamEvent(String threadId,
-                                  ActivityType activityType,
-                                  String activityName,
-                                  String activityDetail) {
-        this.threadId = threadId;
-        this.token = null;
-        this.eventType = StreamEventType.ACTIVITY;
-        this.errorMessage = null;
-        this.reasoningContent = null;
-        this.commentaryContent = null;
-        this.activityType = activityType;
-        this.activityName = activityName;
-        this.activityDetail = activityDetail;
-        this.permissionType = null;
-        this.permissionRequestId = null;
-        this.permissionValue = null;
-        this.permissionTitle = null;
-        this.permissionMessage = null;
-        this.permissionConfigPath = null;
-        this.permissionMatchedRule = null;
-        this.todoItems = null;
-        this.modelUsed = null;
-        this.agentUsed = null;
-        this.tokensOutput = 0;
-        this.cost = 0.0;
+    public ChatMessageStreamEvent(final String threadId,
+                                  final ActivityType activityType,
+                                  final String activityName,
+                                  final String activityDetail) {
+        this(threadId, null, StreamEventType.ACTIVITY, null, null, null, activityType, activityName, activityDetail,
+                null, null, null, null, 0, 0.0);
     }
 
-    public ChatMessageStreamEvent(String threadId,
-                                  PermissionType permissionType,
-                                  String permissionRequestId,
-                                  String permissionValue,
-                                  String permissionTitle,
-                                  String permissionMessage,
-                                  String permissionConfigPath,
-                                  String permissionMatchedRule) {
-        this.threadId = threadId;
-        this.token = null;
-        this.eventType = StreamEventType.PERMISSION_REQUEST;
-        this.errorMessage = null;
-        this.reasoningContent = null;
-        this.commentaryContent = null;
-        this.activityType = null;
-        this.activityName = null;
-        this.activityDetail = null;
-        this.permissionType = permissionType;
-        this.permissionRequestId = permissionRequestId;
-        this.permissionValue = permissionValue;
-        this.permissionTitle = permissionTitle;
-        this.permissionMessage = permissionMessage;
-        this.permissionConfigPath = permissionConfigPath;
-        this.permissionMatchedRule = permissionMatchedRule;
-        this.todoItems = null;
-        this.modelUsed = null;
-        this.agentUsed = null;
-        this.tokensOutput = 0;
-        this.cost = 0.0;
-    }
-
-    public ChatMessageStreamEvent(final String threadId, final String reasoningContent, final boolean reasoning) {
-        this.threadId = threadId;
-        this.token = null;
-        this.eventType = StreamEventType.REASONING;
-        this.errorMessage = null;
-        this.reasoningContent = reasoningContent;
-        this.commentaryContent = null;
-        this.activityType = null;
-        this.activityName = null;
-        this.activityDetail = null;
-        this.permissionType = null;
-        this.permissionRequestId = null;
-        this.permissionValue = null;
-        this.permissionTitle = null;
-        this.permissionMessage = null;
-        this.permissionConfigPath = null;
-        this.permissionMatchedRule = null;
-        this.todoItems = null;
-        this.modelUsed = null;
-        this.agentUsed = null;
-        this.tokensOutput = 0;
-        this.cost = 0.0;
+    public ChatMessageStreamEvent(final String threadId,
+                                  final String reasoningContent,
+                                  final boolean reasoning) {
+        this(threadId, null, StreamEventType.REASONING, null, reasoningContent, null, null, null, null,
+                null, null, null, null, 0, 0.0);
     }
 
     public static ChatMessageStreamEvent commentary(final String threadId, final String commentaryContent) {
-        return new ChatMessageStreamEvent(threadId, commentaryContent, StreamEventType.COMMENTARY);
+        return new ChatMessageStreamEvent(threadId, null, StreamEventType.COMMENTARY, null, null, commentaryContent,
+                null, null, null, null, null, null, null, 0, 0.0);
+    }
+
+    public static ChatMessageStreamEvent interaction(final String threadId,
+                                                     final AgentInteractionRequest interaction) {
+        return new ChatMessageStreamEvent(threadId, null, StreamEventType.AGENT_INTERACTION, null, null, null,
+                null, null, null, interaction, null, null, null, 0, 0.0);
     }
 
     public static ChatMessageStreamEvent complete(final String threadId,
-                                                     final String modelUsed,
-                                                     final String agentUsed,
-                                                     final long tokensOutput,
-                                                     final double cost) {
-        return new ChatMessageStreamEvent(threadId, StreamEventType.COMPLETE, modelUsed, agentUsed, tokensOutput, cost);
+                                                  final String modelUsed,
+                                                  final String agentUsed,
+                                                  final long tokensOutput,
+                                                  final double cost) {
+        return new ChatMessageStreamEvent(threadId, null, StreamEventType.COMPLETE, null, null, null,
+                null, null, null, null, null, modelUsed, agentUsed, tokensOutput, cost);
     }
 
     public static ChatMessageStreamEvent todoUpdate(final String threadId, final List<TodoItem> todoItems) {
-        return new ChatMessageStreamEvent(threadId, todoItems);
-    }
-
-    private ChatMessageStreamEvent(final String threadId, final List<TodoItem> todoItems) {
-        this.threadId = threadId;
-        this.token = null;
-        this.eventType = StreamEventType.TODO_UPDATE;
-        this.errorMessage = null;
-        this.reasoningContent = null;
-        this.commentaryContent = null;
-        this.activityType = null;
-        this.activityName = null;
-        this.activityDetail = null;
-        this.permissionType = null;
-        this.permissionRequestId = null;
-        this.permissionValue = null;
-        this.permissionTitle = null;
-        this.permissionMessage = null;
-        this.permissionConfigPath = null;
-        this.permissionMatchedRule = null;
-        this.todoItems = todoItems == null ? List.of() : List.copyOf(todoItems);
-        this.modelUsed = null;
-        this.agentUsed = null;
-        this.tokensOutput = 0;
-        this.cost = 0.0;
+        return new ChatMessageStreamEvent(threadId, null, StreamEventType.TODO_UPDATE, null, null, null,
+                null, null, null, null, todoItems == null ? List.of() : List.copyOf(todoItems),
+                null, null, 0, 0.0);
     }
 
     private ChatMessageStreamEvent(final String threadId,
-                                   final String commentaryContent,
-                                   final StreamEventType commentaryType) {
-        this.threadId = threadId;
-        this.token = null;
-        this.eventType = commentaryType;
-        this.errorMessage = null;
-        this.reasoningContent = null;
-        this.commentaryContent = commentaryContent;
-        this.activityType = null;
-        this.activityName = null;
-        this.activityDetail = null;
-        this.permissionType = null;
-        this.permissionRequestId = null;
-        this.permissionValue = null;
-        this.permissionTitle = null;
-        this.permissionMessage = null;
-        this.permissionConfigPath = null;
-        this.permissionMatchedRule = null;
-        this.todoItems = null;
-        this.modelUsed = null;
-        this.agentUsed = null;
-        this.tokensOutput = 0;
-        this.cost = 0.0;
-    }
-
-    private ChatMessageStreamEvent(final String threadId,
+                                   final String token,
                                    final StreamEventType eventType,
+                                   final String errorMessage,
+                                   final String reasoningContent,
+                                   final String commentaryContent,
+                                   final ActivityType activityType,
+                                   final String activityName,
+                                   final String activityDetail,
+                                   final AgentInteractionRequest agentInteraction,
+                                   final List<TodoItem> todoItems,
                                    final String modelUsed,
                                    final String agentUsed,
                                    final long tokensOutput,
                                    final double cost) {
         this.threadId = threadId;
-        this.token = null;
+        this.token = token;
         this.eventType = eventType;
-        this.errorMessage = null;
-        this.reasoningContent = null;
-        this.commentaryContent = null;
-        this.activityType = null;
-        this.activityName = null;
-        this.activityDetail = null;
-        this.permissionType = null;
-        this.permissionRequestId = null;
-        this.permissionValue = null;
-        this.permissionTitle = null;
-        this.permissionMessage = null;
-        this.permissionConfigPath = null;
-        this.permissionMatchedRule = null;
-        this.todoItems = null;
+        this.errorMessage = errorMessage;
+        this.reasoningContent = reasoningContent;
+        this.commentaryContent = commentaryContent;
+        this.activityType = activityType;
+        this.activityName = activityName;
+        this.activityDetail = activityDetail;
+        this.agentInteraction = agentInteraction;
+        this.todoItems = todoItems;
         this.modelUsed = modelUsed;
         this.agentUsed = agentUsed;
         this.tokensOutput = tokensOutput;
@@ -338,32 +164,8 @@ public final class ChatMessageStreamEvent extends Event {
         return activityDetail;
     }
 
-    public PermissionType getPermissionType() {
-        return permissionType;
-    }
-
-    public String getPermissionRequestId() {
-        return permissionRequestId;
-    }
-
-    public String getPermissionValue() {
-        return permissionValue;
-    }
-
-    public String getPermissionTitle() {
-        return permissionTitle;
-    }
-
-    public String getPermissionMessage() {
-        return permissionMessage;
-    }
-
-    public String getPermissionConfigPath() {
-        return permissionConfigPath;
-    }
-
-    public String getPermissionMatchedRule() {
-        return permissionMatchedRule;
+    public AgentInteractionRequest getAgentInteraction() {
+        return agentInteraction;
     }
 
     public List<TodoItem> getTodoItems() {

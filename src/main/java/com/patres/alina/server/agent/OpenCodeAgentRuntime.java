@@ -2,10 +2,10 @@ package com.patres.alina.server.agent;
 
 import com.patres.alina.common.agent.AgentBackend;
 import com.patres.alina.common.agent.AgentRuntimeStatus;
+import com.patres.alina.common.interaction.AgentInteractionResolutionModel;
+import com.patres.alina.common.interaction.AgentInteractionResponse;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
-import com.patres.alina.common.permission.PermissionApprovalAction;
-import com.patres.alina.common.permission.PermissionResolutionModel;
 import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.server.opencode.OpenCodeRuntimeService;
 import com.patres.alina.server.opencode.OpenCodeSessionService;
@@ -61,14 +61,14 @@ public class OpenCodeAgentRuntime implements AgentRuntime {
     }
 
     @Override
-    public boolean ownsPermissionRequest(final String requestId) {
-        return runtimeService.ownsPermissionRequest(requestId);
+    public boolean ownsAgentInteraction(final String requestId) {
+        return runtimeService.ownsAgentInteraction(requestId);
     }
 
     @Override
-    public PermissionResolutionModel resolvePermissionRequest(final String requestId,
-                                                             final PermissionApprovalAction action) {
-        return runtimeService.resolvePermissionRequest(requestId, action);
+    public AgentInteractionResolutionModel resolveAgentInteraction(final String requestId,
+                                                                  final AgentInteractionResponse response) {
+        return runtimeService.resolveAgentInteraction(requestId, response);
     }
 
     @Override

@@ -1,20 +1,19 @@
 package com.patres.alina.uidesktop.ui.chat;
 
 import com.patres.alina.common.event.ChatMessageStreamEvent;
+import com.patres.alina.common.event.AgentInteractionResolvedEvent;
+import com.patres.alina.common.interaction.AgentInteractionResponse;
+import com.patres.alina.common.interaction.AgentInteractionResolutionModel;
 import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.common.message.TodoItem;
-import com.patres.alina.common.permission.PermissionApprovalAction;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.util.FxThreadRunner;
 import com.patres.alina.uidesktop.ui.util.NotificationSoundPlayer;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.Tooltip;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +22,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.patres.alina.common.message.ChatMessageRole.ASSISTANT;
@@ -38,14 +38,6 @@ public class ChatStreamingController {
     private final Button streamControlButton;
     private final List<Node> actionNodes;
     private final TextArea chatTextArea;
-    private final HBox messageInputRow;
-    private final VBox permissionComposerPane;
-    private final Label permissionComposerTitleLabel;
-    private final Label permissionComposerMessageLabel;
-    private final Label permissionComposerStatusLabel;
-    private final Button permissionApproveButton;
-    private final Button permissionApproveAlwaysButton;
-    private final Button permissionDenyButton;
     private final ChatStatusPrompt statusPrompt;
     private final String chatThreadId;
 
@@ -55,7 +47,6 @@ public class ChatStreamingController {
     private volatile boolean regenerating;
     private volatile boolean replaceExistingAssistantMessageOnStart;
     private volatile boolean hasAnyUserMessages;
-    private volatile String activePermissionRequestId;
     private volatile Instant streamingStartedAt = Instant.EPOCH;
     private volatile String latestReasoningContent = "";
     private volatile String latestCommentaryContent = "";
@@ -71,14 +62,6 @@ public class ChatStreamingController {
                                    Button streamControlButton,
                                    List<Node> actionNodes,
                                    TextArea chatTextArea,
-                                   HBox messageInputRow,
-                                   VBox permissionComposerPane,
-                                   Label permissionComposerTitleLabel,
-                                   Label permissionComposerMessageLabel,
-                                   Label permissionComposerStatusLabel,
-                                   Button permissionApproveButton,
-                                   Button permissionApproveAlwaysButton,
-                                   Button permissionDenyButton,
                                    ChatStatusPrompt statusPrompt,
                                    String chatThreadId,
                                    boolean hasAnyUserMessages) {
@@ -86,14 +69,6 @@ public class ChatStreamingController {
         this.streamControlButton = streamControlButton;
         this.actionNodes = actionNodes;
         this.chatTextArea = chatTextArea;
-        this.messageInputRow = messageInputRow;
-        this.permissionComposerPane = permissionComposerPane;
-        this.permissionComposerTitleLabel = permissionComposerTitleLabel;
-        this.permissionComposerMessageLabel = permissionComposerMessageLabel;
-        this.permissionComposerStatusLabel = permissionComposerStatusLabel;
-        this.permissionApproveButton = permissionApproveButton;
-        this.permissionApproveAlwaysButton = permissionApproveAlwaysButton;
-        this.permissionDenyButton = permissionDenyButton;
         this.statusPrompt = statusPrompt;
         this.chatThreadId = chatThreadId;
         this.hasAnyUserMessages = hasAnyUserMessages;
@@ -102,10 +77,6 @@ public class ChatStreamingController {
     public void initialize() {
         FxThreadRunner.run(() -> {
             setStreamControlMode(StreamControlMode.REGENERATE);
-            hidePermissionComposer();
-            permissionApproveButton.setOnAction(_ -> submitPermissionAction(PermissionApprovalAction.APPROVE_ONCE));
-            permissionApproveAlwaysButton.setOnAction(_ -> submitPermissionAction(PermissionApprovalAction.APPROVE_ALWAYS));
-            permissionDenyButton.setOnAction(_ -> submitPermissionAction(PermissionApprovalAction.DENY));
         });
     }
 
@@ -163,11 +134,24 @@ public class ChatStreamingController {
             case COMMENTARY -> handleCommentaryEvent(event);
             case ACTIVITY -> handleActivityEvent(event);
             case TODO_UPDATE -> handleTodoUpdateEvent(event);
-            case PERMISSION_REQUEST -> handlePermissionRequestEvent(event);
+            case AGENT_INTERACTION -> handleAgentInteractionEvent(event);
             case COMPLETE -> handleCompleteEvent(event);
             case CANCELLED -> handleCancelledEvent();
             case ERROR -> handleErrorEvent(event);
         }
+    }
+
+    public void handleAgentInteractionResolved(final AgentInteractionResolvedEvent event) {
+        if (!event.getThreadId().equals(chatThreadId)) {
+            return;
+        }
+        FxThreadRunner.run(() -> {
+            browser.resolveAgentInteraction(
+                    event.getRequestId(),
+                    LanguageManager.getLanguageString("chat.interaction.resolvedExternally")
+            );
+            statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.stream.connecting"));
+        });
     }
 
     private void handleCommentaryEvent(final ChatMessageStreamEvent event) {
@@ -264,21 +248,27 @@ public class ChatStreamingController {
         });
     }
 
-    private void handlePermissionRequestEvent(final ChatMessageStreamEvent event) {
-        final String title = formatPermissionTitle(event);
-        final String message = formatPermissionMessage(event);
+    private void handleAgentInteractionEvent(final ChatMessageStreamEvent event) {
+        final var interaction = event.getAgentInteraction();
+        if (interaction == null) {
+            return;
+        }
         FxThreadRunner.run(() -> {
+            if (streamingStarted) {
+                browser.finishStreamingMessage();
+                streamingStarted = false;
+            }
+            browser.finalizeAssistantActivity();
+            browser.finalizeAssistantReasoning();
+            browser.finalizeAssistantCommentary();
             browser.hideLoader();
-            endStreamingUiState();
-            browser.showAssistantPermissionRequest(
-                    event.getPermissionRequestId(),
-                    title,
-                    message,
-                    LanguageManager.getLanguageString("chat.permission.approve"),
-                    LanguageManager.getLanguageString("chat.permission.approveAlways"),
-                    LanguageManager.getLanguageString("chat.permission.deny")
-            );
-            statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.permission.pending"));
+            setStreamControlMode(StreamControlMode.STOP);
+            if (!backgroundMode) {
+                actionNodes.forEach(node -> node.setDisable(true));
+                setChatInputBusy();
+            }
+            browser.showAgentInteraction(interaction, interactionLabels());
+            statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.interaction.pending"));
         });
     }
 
@@ -286,7 +276,6 @@ public class ChatStreamingController {
         NotificationSoundPlayer.playIfEnabled();
         FxThreadRunner.run(() -> {
             browser.hideLoader();
-            hidePermissionComposer();
             browser.finalizeAssistantActivity();
             browser.finalizeAssistantReasoning();
             browser.finalizeAssistantCommentary();
@@ -313,7 +302,6 @@ public class ChatStreamingController {
             browser.clearAssistantReasoning();
             browser.clearTodoList();
             browser.hideLoader();
-            hidePermissionComposer();
             if (regenerating) {
                 browser.restoreRegenerationTarget();
             } else {
@@ -343,7 +331,6 @@ public class ChatStreamingController {
             browser.clearAssistantReasoning();
             browser.clearTodoList();
             browser.hideLoader();
-            hidePermissionComposer();
             if (regenerating) {
                 browser.restoreRegenerationTarget();
             } else {
@@ -395,84 +382,45 @@ public class ChatStreamingController {
         });
     }
 
-    private void submitPermissionAction(final PermissionApprovalAction action) {
-        final String requestId = activePermissionRequestId;
-        if (requestId == null || requestId.isBlank()) {
-            return;
-        }
-        submitPermissionAction(requestId, action);
-    }
-
-    public void submitPermissionAction(final String requestId, final PermissionApprovalAction action) {
-        FxThreadRunner.run(() -> browser.markAssistantPermissionRequestPending(
+    public void submitAgentInteraction(final String requestId, final AgentInteractionResponse response) {
+        FxThreadRunner.run(() -> browser.markAgentInteractionPending(
                 requestId,
-                LanguageManager.getLanguageString("chat.permission.processing")
+                LanguageManager.getLanguageString("chat.interaction.processing")
         ));
-
-        if (requestId.equals(activePermissionRequestId)) {
-            FxThreadRunner.run(() -> markPermissionComposerPending(LanguageManager.getLanguageString("chat.permission.processing")));
-        }
 
         Thread.startVirtualThread(() -> {
             try {
-                final var resolution = BackendApi.resolvePermissionRequest(requestId, action);
-                if (!resolution.found()) {
-                    FxThreadRunner.run(() -> browser.resolveAssistantPermissionRequest(
-                            requestId,
-                            resolution.message() == null
-                                    ? LanguageManager.getLanguageString("chat.permission.missing")
-                                    : resolution.message()
-                    ));
-                    FxThreadRunner.run(() -> {
-                        if (requestId.equals(activePermissionRequestId)) {
-                            hidePermissionComposer();
-                        }
-                        endStreamingUiState();
-                        chatTextArea.clear();
-                        setChatInputReady();
-                        chatTextArea.requestFocus();
-                        statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.permission.missing"));
-                    });
-                    return;
-                }
-
-                if (action == PermissionApprovalAction.DENY || !resolution.approved()) {
-                    FxThreadRunner.run(() -> {
-                        browser.resolveAssistantPermissionRequest(
-                                requestId,
-                                resolution.message() == null
-                                        ? LanguageManager.getLanguageString("chat.permission.denied")
-                                        : resolution.message()
-                        );
-                        if (requestId.equals(activePermissionRequestId)) {
-                            hidePermissionComposer();
-                        }
-                        endStreamingUiState();
-                        chatTextArea.clear();
-                        setChatInputReady();
-                        chatTextArea.requestFocus();
-                        statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.permission.denied"));
-                    });
-                    return;
-                }
-
-                final String approvedText = resolution.persisted()
-                        ? LanguageManager.getLanguageString("chat.permission.approvedAlways")
-                        : LanguageManager.getLanguageString("chat.permission.approvedOnce");
-                final String approvalMessage = resolution.message() == null || resolution.message().isBlank()
-                        ? approvedText
-                        : resolution.message();
-
-                FxThreadRunner.run(() -> {
-                    browser.resolveAssistantPermissionRequest(requestId, approvalMessage);
-                    if (requestId.equals(activePermissionRequestId)) {
-                        hidePermissionComposer();
-                    }
-                    statusPrompt.showStatusPrompt(
-                            resolution.autoContinues()
-                                    ? LanguageManager.getLanguageString("chat.stream.connecting")
-                                    : LanguageManager.getLanguageString("chat.stream.connecting")
+                final var resolution = BackendApi.resolveAgentInteraction(requestId, response);
+                if (resolution.status() == AgentInteractionResolutionModel.Status.MISSING) {
+                    final String message = resolutionMessage(
+                            resolution.message(),
+                            "chat.interaction.missing"
                     );
+                    FxThreadRunner.run(() -> {
+                        browser.resolveAgentInteraction(requestId, message);
+                        statusPrompt.showStatusPrompt(message);
+                    });
+                    return;
+                }
+                if (resolution.status() == AgentInteractionResolutionModel.Status.ERROR) {
+                    final String message = resolutionMessage(
+                            resolution.message(),
+                            "chat.interaction.error",
+                            ""
+                    );
+                    FxThreadRunner.run(() -> {
+                        browser.failAgentInteraction(requestId, message);
+                        statusPrompt.showStatusPrompt(message);
+                    });
+                    return;
+                }
+                final String message = resolutionMessage(
+                        resolution.message(),
+                        resolution.accepted() ? "chat.interaction.submitted" : "chat.interaction.declined"
+                );
+                FxThreadRunner.run(() -> {
+                    browser.resolveAgentInteraction(requestId, message);
+                    statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.stream.connecting"));
                 });
 
                 if (resolution.autoContinues()) {
@@ -482,23 +430,20 @@ public class ChatStreamingController {
                 beginStreaming(false);
                 BackendApi.retryLastUserMessage(chatThreadId);
             } catch (Exception e) {
-                logger.error("Error resolving permission request {}", requestId, e);
+                logger.error("Error resolving agent interaction {}", requestId, e);
+                final String message = LanguageManager.getLanguageString("chat.interaction.error", e.getMessage());
                 FxThreadRunner.run(() -> {
-                    browser.resolveAssistantPermissionRequest(
-                            requestId,
-                            LanguageManager.getLanguageString("chat.permission.error", e.getMessage())
-                    );
-                    if (requestId.equals(activePermissionRequestId)) {
-                        hidePermissionComposer();
-                    }
-                    endStreamingUiState();
-                    chatTextArea.clear();
-                    setChatInputReady();
-                    chatTextArea.requestFocus();
-                    statusPrompt.showStatusPrompt(LanguageManager.getLanguageString("chat.permission.error", e.getMessage()));
+                    browser.failAgentInteraction(requestId, message);
+                    statusPrompt.showStatusPrompt(message);
                 });
             }
         });
+    }
+
+    private String resolutionMessage(final String message, final String fallbackKey, final Object... fallbackArguments) {
+        return message == null || message.isBlank()
+                ? LanguageManager.getLanguageString(fallbackKey, fallbackArguments)
+                : message;
     }
 
     private void beginStreamingUiState(final boolean isRegeneration) {
@@ -511,7 +456,6 @@ public class ChatStreamingController {
         browser.clearAssistantCommentary();
         browser.clearAssistantReasoning();
         browser.clearTodoList();
-        hidePermissionComposer();
         setStreamControlMode(StreamControlMode.STOP);
         if (!backgroundMode) {
             actionNodes.forEach(node -> node.setDisable(true));
@@ -716,40 +660,6 @@ public class ChatStreamingController {
                 .replace(">", "&gt;");
     }
 
-    private void showPermissionComposer(final String requestId, final String title, final String message) {
-        activePermissionRequestId = requestId;
-        permissionComposerTitleLabel.setText(title);
-        permissionComposerMessageLabel.setText(message);
-        permissionComposerStatusLabel.setText("");
-        permissionApproveButton.setText(LanguageManager.getLanguageString("chat.permission.approve"));
-        permissionApproveAlwaysButton.setText(LanguageManager.getLanguageString("chat.permission.approveAlways"));
-        permissionDenyButton.setText(LanguageManager.getLanguageString("chat.permission.deny"));
-        permissionApproveButton.setDisable(false);
-        permissionApproveAlwaysButton.setDisable(false);
-        permissionDenyButton.setDisable(false);
-        messageInputRow.setManaged(false);
-        messageInputRow.setVisible(false);
-        permissionComposerPane.setManaged(true);
-        permissionComposerPane.setVisible(true);
-    }
-
-    private void markPermissionComposerPending(final String statusText) {
-        permissionApproveButton.setDisable(true);
-        permissionApproveAlwaysButton.setDisable(true);
-        permissionDenyButton.setDisable(true);
-        permissionComposerStatusLabel.setText(statusText == null ? "" : statusText);
-    }
-
-    private void hidePermissionComposer() {
-        activePermissionRequestId = null;
-        permissionComposerPane.setVisible(false);
-        permissionComposerPane.setManaged(false);
-        messageInputRow.setVisible(true);
-        messageInputRow.setManaged(true);
-        permissionComposerStatusLabel.setText("");
-        permissionComposerMessageLabel.setText("");
-    }
-
     private String formatActivityLabel(final ChatMessageStreamEvent event) {
         final String activityName = event.getActivityName() == null ? "tool" : event.getActivityName();
         if (event.getActivityType() == ChatMessageStreamEvent.ActivityType.SKILL) {
@@ -765,29 +675,24 @@ public class ChatStreamingController {
         return LanguageManager.getLanguageString("chat.stream.activity.tool", activityName);
     }
 
-    private String formatPermissionTitle(final ChatMessageStreamEvent event) {
-        return switch (event.getPermissionType()) {
-            case MCP -> LanguageManager.getLanguageString("chat.permission.title.mcp", event.getPermissionValue());
-            case BASH -> LanguageManager.getLanguageString("chat.permission.title.bash", event.getPermissionValue());
-            case TOOL -> LanguageManager.getLanguageString("chat.permission.title.tool", event.getPermissionValue());
-        };
-    }
-
-    private String formatPermissionMessage(final ChatMessageStreamEvent event) {
-        final String reason = event.getPermissionMessage() == null || event.getPermissionMessage().isBlank()
-                ? LanguageManager.getLanguageString("chat.permission.reason.unknown")
-                : event.getPermissionMessage();
-        final String policy = event.getPermissionConfigPath() == null || event.getPermissionConfigPath().isBlank()
-                ? LanguageManager.getLanguageString("chat.permission.policy.unknown")
-                : event.getPermissionConfigPath();
-        final String rule = event.getPermissionMatchedRule() == null || event.getPermissionMatchedRule().isBlank()
-                ? LanguageManager.getLanguageString("chat.permission.rule.none")
-                : event.getPermissionMatchedRule();
-        return LanguageManager.getLanguageString(
-                "chat.permission.message",
-                reason,
-                policy,
-                rule
+    private Map<String, String> interactionLabels() {
+        return Map.ofEntries(
+                Map.entry("badgeApproval", LanguageManager.getLanguageString("chat.interaction.badge.approval")),
+                Map.entry("badgeQuestion", LanguageManager.getLanguageString("chat.interaction.badge.question")),
+                Map.entry("badgeForm", LanguageManager.getLanguageString("chat.interaction.badge.form")),
+                Map.entry("badgeLink", LanguageManager.getLanguageString("chat.interaction.badge.link")),
+                Map.entry("approveOnce", LanguageManager.getLanguageString("chat.permission.approve")),
+                Map.entry("approveSession", LanguageManager.getLanguageString("chat.permission.approveSession")),
+                Map.entry("approveAlways", LanguageManager.getLanguageString("chat.permission.approveAlways")),
+                Map.entry("deny", LanguageManager.getLanguageString("chat.permission.deny")),
+                Map.entry("submit", LanguageManager.getLanguageString("chat.interaction.submit")),
+                Map.entry("decline", LanguageManager.getLanguageString("chat.interaction.decline")),
+                Map.entry("cancel", LanguageManager.getLanguageString("chat.interaction.cancel")),
+                Map.entry("open", LanguageManager.getLanguageString("chat.interaction.open")),
+                Map.entry("confirm", LanguageManager.getLanguageString("chat.interaction.confirm")),
+                Map.entry("other", LanguageManager.getLanguageString("chat.interaction.other")),
+                Map.entry("required", LanguageManager.getLanguageString("chat.interaction.required")),
+                Map.entry("unsupported", LanguageManager.getLanguageString("chat.interaction.unsupported"))
         );
     }
 

@@ -7,11 +7,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.ChatThreadTitleUpdatedEvent;
 import com.patres.alina.common.event.Event;
+import com.patres.alina.common.interaction.AgentInteractionResolutionModel;
+import com.patres.alina.common.interaction.AgentInteractionResponse;
 import com.patres.alina.common.message.ImageAttachment;
 import com.patres.alina.common.message.TodoItem;
 import com.patres.alina.common.opencode.OpenCodeRuntimeStatus;
-import com.patres.alina.common.permission.PermissionApprovalAction;
-import com.patres.alina.common.permission.PermissionResolutionModel;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import org.slf4j.Logger;
@@ -75,7 +75,7 @@ public class OpenCodeRuntimeService {
         return true;
     }
 
-    public boolean ownsPermissionRequest(final String requestId) {
+    public boolean ownsAgentInteraction(final String requestId) {
         return permissionBridge.owns(requestId);
     }
 
@@ -113,6 +113,7 @@ public class OpenCodeRuntimeService {
                     }
                 } finally {
                     activeStreams.remove(chatThreadId, stream);
+                    permissionBridge.clearForThread(chatThreadId);
                     subagentSessionMap.values().removeIf(chatThreadId::equals);
                     closeQuietly(stream);
                 }
@@ -126,6 +127,7 @@ public class OpenCodeRuntimeService {
             return;
         }
         stream.cancelled.set(true);
+        permissionBridge.clearForThread(chatThreadId);
         if (stream.sessionId != null) {
             try {
                 httpClient.post("/session/%s/abort".formatted(stream.sessionId), objectMapper.createObjectNode());
@@ -136,9 +138,9 @@ public class OpenCodeRuntimeService {
         closeQuietly(stream);
     }
 
-    public PermissionResolutionModel resolvePermissionRequest(final String requestId,
-                                                             final PermissionApprovalAction action) {
-        return permissionBridge.resolve(requestId, action, (resolvedRequestId, pendingPermission) -> {
+    public AgentInteractionResolutionModel resolveAgentInteraction(final String requestId,
+                                                                  final AgentInteractionResponse response) {
+        return permissionBridge.resolve(requestId, response, (resolvedRequestId, pendingPermission) -> {
             final ActiveStream stream = activeStreams.get(pendingPermission.threadId());
             if (stream != null) {
                 stream.pendingPermissionRequestIds.remove(resolvedRequestId);

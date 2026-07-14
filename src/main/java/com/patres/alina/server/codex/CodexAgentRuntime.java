@@ -7,15 +7,19 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.patres.alina.common.agent.AgentBackend;
 import com.patres.alina.common.agent.AgentRuntimeStatus;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
+import com.patres.alina.common.event.AgentInteractionResolvedEvent;
 import com.patres.alina.common.event.ChatThreadTitleUpdatedEvent;
 import com.patres.alina.common.event.Event;
+import com.patres.alina.common.interaction.AgentInteractionAction;
+import com.patres.alina.common.interaction.AgentInteractionApprovalScope;
+import com.patres.alina.common.interaction.AgentInteractionRequest;
+import com.patres.alina.common.interaction.AgentInteractionResolutionModel;
+import com.patres.alina.common.interaction.AgentInteractionResponse;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.common.message.ImageAttachment;
 import com.patres.alina.common.message.TodoItem;
-import com.patres.alina.common.permission.PermissionApprovalAction;
-import com.patres.alina.common.permission.PermissionResolutionModel;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.FileManager;
 import com.patres.alina.common.settings.WorkspaceSettings;
@@ -55,11 +59,13 @@ public class CodexAgentRuntime implements AgentRuntime {
     private final FileManager<WorkspaceSettings> workspaceSettingsManager;
     private final FileManager<AssistantSettings> assistantSettingsManager;
     private final ObjectMapper objectMapper;
+    private final CodexInteractionMapper interactionMapper;
 
     private final Map<String, ActiveStream> activeStreams = new ConcurrentHashMap<>();
     private final Map<String, String> chatThreadToCodexThread = new ConcurrentHashMap<>();
     private final Map<String, String> codexThreadToChatThread = new ConcurrentHashMap<>();
-    private final Map<String, PendingPermission> pendingPermissions = new ConcurrentHashMap<>();
+    private final Map<String, PendingInteraction> pendingInteractions = new ConcurrentHashMap<>();
+    private final Set<String> resolvingInteractionIds = ConcurrentHashMap.newKeySet();
     private final Map<String, String> itemToChatThread = new ConcurrentHashMap<>();
     private volatile List<String> cachedModels = List.of();
 
@@ -71,6 +77,7 @@ public class CodexAgentRuntime implements AgentRuntime {
         this.workspaceSettingsManager = workspaceSettingsManager;
         this.assistantSettingsManager = assistantSettingsManager;
         this.objectMapper = objectMapper;
+        this.interactionMapper = new CodexInteractionMapper(objectMapper);
         this.client.addMessageListener(this::handleServerMessage);
     }
 
@@ -140,37 +147,60 @@ public class CodexAgentRuntime implements AgentRuntime {
         } catch (Exception e) {
             logger.debug("Cannot interrupt Codex turn for thread {}", chatThreadId, e);
         } finally {
+            clearPendingInteractions(stream);
             stream.completed.countDown();
         }
     }
 
     @Override
-    public boolean ownsPermissionRequest(final String requestId) {
-        return pendingPermissions.containsKey(requestId);
+    public boolean ownsAgentInteraction(final String requestId) {
+        return pendingInteractions.containsKey(requestId);
     }
 
     @Override
-    public PermissionResolutionModel resolvePermissionRequest(final String requestId,
-                                                             final PermissionApprovalAction action) {
-        final PendingPermission pendingPermission = pendingPermissions.remove(requestId);
-        if (pendingPermission == null) {
-            return PermissionResolutionModel.missing(LanguageManager.getLanguageString("chat.permission.missing"));
+    public AgentInteractionResolutionModel resolveAgentInteraction(final String requestId,
+                                                                  final AgentInteractionResponse response) {
+        final PendingInteraction pendingInteraction = pendingInteractions.get(requestId);
+        if (pendingInteraction == null) {
+            return AgentInteractionResolutionModel.missing(LanguageManager.getLanguageString("chat.interaction.missing"));
         }
+        resolvingInteractionIds.add(requestId);
         try {
-            client.respond(pendingPermission.rpcId(), buildPermissionResult(pendingPermission, action));
-            removePendingFromStream(pendingPermission);
-            if (action == PermissionApprovalAction.DENY) {
-                return PermissionResolutionModel.denied(LanguageManager.getLanguageString("chat.permission.denied"));
-            }
-            final boolean persisted = action == PermissionApprovalAction.APPROVE_ALWAYS;
-            final String message = persisted
-                    ? LanguageManager.getLanguageString("chat.permission.approvedAlways")
-                    : LanguageManager.getLanguageString("chat.permission.approvedOnce");
-            return PermissionResolutionModel.approved(persisted, true, message);
+            final JsonNode result = interactionMapper.toResult(
+                    pendingInteraction.method(),
+                    pendingInteraction.params(),
+                    response
+            );
+            client.respond(pendingInteraction.rpcId(), result);
+            pendingInteractions.remove(requestId, pendingInteraction);
+            removePendingFromStream(pendingInteraction);
+            return resolvedInteraction(response.action());
         } catch (Exception e) {
-            logger.warn("Cannot resolve Codex permission request {}", requestId, e);
-            return PermissionResolutionModel.denied(LanguageManager.getLanguageString("chat.permission.error", e.getMessage()));
+            logger.warn("Cannot resolve Codex interaction {}", requestId, e);
+            return AgentInteractionResolutionModel.error(
+                    LanguageManager.getLanguageString("chat.interaction.error", e.getMessage())
+            );
+        } finally {
+            resolvingInteractionIds.remove(requestId);
         }
+    }
+
+    private AgentInteractionResolutionModel resolvedInteraction(final AgentInteractionAction action) {
+        final boolean accepted = action != AgentInteractionAction.DENY
+                && action != AgentInteractionAction.DECLINE
+                && action != AgentInteractionAction.CANCEL;
+        final AgentInteractionApprovalScope scope = action == AgentInteractionAction.APPROVE_SCOPED
+                ? AgentInteractionApprovalScope.SESSION
+                : AgentInteractionApprovalScope.NONE;
+        final String message = switch (action) {
+            case APPROVE_ONCE -> LanguageManager.getLanguageString("chat.permission.approvedOnce");
+            case APPROVE_SCOPED -> LanguageManager.getLanguageString("chat.permission.approvedSession");
+            case DENY -> LanguageManager.getLanguageString("chat.permission.denied");
+            case SUBMIT -> LanguageManager.getLanguageString("chat.interaction.submitted");
+            case DECLINE -> LanguageManager.getLanguageString("chat.interaction.declined");
+            case CANCEL -> LanguageManager.getLanguageString("chat.interaction.cancelled");
+        };
+        return AgentInteractionResolutionModel.resolved(accepted, scope, true, message);
     }
 
     @Override
@@ -271,7 +301,7 @@ public class CodexAgentRuntime implements AgentRuntime {
             stream.completed.countDown();
         });
         activeStreams.clear();
-        pendingPermissions.clear();
+        pendingInteractions.clear();
         itemToChatThread.clear();
     }
 
@@ -461,7 +491,7 @@ public class CodexAgentRuntime implements AgentRuntime {
             }
             final String method = message.path("method").asText("");
             if (message.has("id")) {
-                handleServerRequest(method, message.path("id").asLong(), message.path("params"));
+                handleServerRequest(method, message.path("id").deepCopy(), message.path("params"));
                 return;
             }
             handleNotification(method, message.path("params"));
@@ -470,13 +500,13 @@ public class CodexAgentRuntime implements AgentRuntime {
         }
     }
 
-    private void handleServerRequest(final String method, final long rpcId, final JsonNode params) throws Exception {
+    private void handleServerRequest(final String method, final JsonNode rpcId, final JsonNode params) throws Exception {
         switch (method) {
             case "item/commandExecution/requestApproval",
                  "item/fileChange/requestApproval",
                  "item/permissions/requestApproval",
                  "item/tool/requestUserInput",
-                 "mcpServer/elicitation/request" -> registerPermissionRequest(method, rpcId, params);
+                 "mcpServer/elicitation/request" -> registerInteraction(method, rpcId, params);
             case "item/tool/call" -> client.respondError(rpcId, -32601, "AlIna does not expose dynamic Codex tools.");
             default -> client.respondError(rpcId, -32601, "Unsupported Codex app-server request: " + method);
         }
@@ -504,30 +534,43 @@ public class CodexAgentRuntime implements AgentRuntime {
         }
     }
 
-    private void registerPermissionRequest(final String method, final long rpcId, final JsonNode params) {
+    private void registerInteraction(final String method, final JsonNode rpcId, final JsonNode params) {
         final String codexThreadId = eventThreadId(params);
         final String chatThreadId = chatThreadIdForPermissionRequest(codexThreadId, params);
         if (chatThreadId == null) {
-            logger.warn("Cannot route Codex approval request {} without thread context: {}", method, params);
+            logger.warn("Cannot route Codex interaction {} without thread context: {}", method, params);
+            try {
+                client.respondError(rpcId, -32602, "Cannot associate Codex interaction with an active chat thread.");
+            } catch (Exception e) {
+                logger.warn("Cannot reject unroutable Codex interaction {}", rpcId, e);
+            }
             return;
         }
-        final String requestId = String.valueOf(rpcId);
-        final PendingPermission pendingPermission = new PendingPermission(requestId, rpcId, method, chatThreadId, codexThreadId, params);
-        pendingPermissions.put(requestId, pendingPermission);
+        final String requestId = storePendingInteraction(rpcId, method, chatThreadId, codexThreadId, params);
+        final AgentInteractionRequest interaction = interactionMapper.toRequest(requestId, method, params);
+        Event.publish(ChatMessageStreamEvent.interaction(chatThreadId, interaction));
+    }
+
+    String storePendingInteraction(final JsonNode rpcId,
+                                   final String method,
+                                   final String chatThreadId,
+                                   final String codexThreadId,
+                                   final JsonNode params) {
+        final String requestId = requestIdKey(rpcId);
+        final PendingInteraction pendingInteraction = new PendingInteraction(
+                requestId,
+                rpcId.deepCopy(),
+                method,
+                chatThreadId,
+                codexThreadId,
+                params.deepCopy()
+        );
+        pendingInteractions.put(requestId, pendingInteraction);
         final ActiveStream stream = activeStreams.get(chatThreadId);
         if (stream != null) {
             stream.pendingPermissionRequestIds.add(requestId);
         }
-        Event.publish(new ChatMessageStreamEvent(
-                chatThreadId,
-                permissionType(method, params),
-                requestId,
-                permissionValue(method, params),
-                permissionTitle(method, params),
-                permissionMessage(method, params),
-                resolvePermissionConfigPath(),
-                permissionMatchedRule(method, params)
-        ));
+        return requestId;
     }
 
     private String chatThreadIdForPermissionRequest(final String codexThreadId, final JsonNode params) {
@@ -548,45 +591,24 @@ public class CodexAgentRuntime implements AgentRuntime {
         return null;
     }
 
-    private JsonNode buildPermissionResult(final PendingPermission pendingPermission,
-                                           final PermissionApprovalAction action) {
-        if ("item/permissions/requestApproval".equals(pendingPermission.method())) {
-            final ObjectNode result = objectMapper.createObjectNode();
-            if (action == PermissionApprovalAction.DENY) {
-                result.set("permissions", objectMapper.createObjectNode());
-                return result;
-            }
-            result.set("permissions", pendingPermission.params().path("permissions").deepCopy());
-            result.put("scope", action == PermissionApprovalAction.APPROVE_ALWAYS ? "session" : "turn");
-            return result;
-        }
-        if ("mcpServer/elicitation/request".equals(pendingPermission.method())) {
-            final ObjectNode result = objectMapper.createObjectNode();
-            result.put("action", action == PermissionApprovalAction.DENY ? "decline" : "accept");
-            result.set("content", action == PermissionApprovalAction.DENY
-                    ? objectMapper.getNodeFactory().nullNode()
-                    : objectMapper.createObjectNode());
-            return result;
-        }
-        if ("item/tool/requestUserInput".equals(pendingPermission.method())) {
-            final ObjectNode result = objectMapper.createObjectNode();
-            result.set("answers", objectMapper.createObjectNode());
-            return result;
-        }
-        final ObjectNode result = objectMapper.createObjectNode();
-        final String decision = switch (action) {
-            case APPROVE_ONCE -> "accept";
-            case APPROVE_ALWAYS -> "acceptForSession";
-            case DENY -> "decline";
-        };
-        result.put("decision", decision);
-        return result;
+    private String requestIdKey(final JsonNode requestId) {
+        return (requestId.isTextual() ? "text:" : "number:") + requestId.asText();
     }
 
-    private void removePendingFromStream(final PendingPermission pendingPermission) {
-        final ActiveStream stream = activeStreams.get(pendingPermission.chatThreadId());
+    private void removePendingFromStream(final PendingInteraction pendingInteraction) {
+        final ActiveStream stream = activeStreams.get(pendingInteraction.chatThreadId());
         if (stream != null) {
-            stream.pendingPermissionRequestIds.remove(pendingPermission.requestId());
+            stream.pendingPermissionRequestIds.remove(pendingInteraction.requestId());
+        }
+    }
+
+    private void clearPendingInteractions(final ActiveStream stream) {
+        for (final String requestId : List.copyOf(stream.pendingPermissionRequestIds)) {
+            final PendingInteraction pending = pendingInteractions.get(requestId);
+            if (pending != null && pending.chatThreadId().equals(stream.chatThreadId)) {
+                pendingInteractions.remove(requestId, pending);
+            }
+            stream.pendingPermissionRequestIds.remove(requestId);
         }
     }
 
@@ -635,6 +657,7 @@ public class CodexAgentRuntime implements AgentRuntime {
         } else {
             stream.sink.complete();
         }
+        clearPendingInteractions(stream);
         stream.completed.countDown();
     }
 
@@ -820,13 +843,20 @@ public class CodexAgentRuntime implements AgentRuntime {
     }
 
     private void handleServerRequestResolved(final JsonNode params) {
-        final String requestId = params.path("requestId").asText(null);
-        if (requestId == null || requestId.isBlank()) {
+        final JsonNode requestIdNode = params.path("requestId");
+        if (requestIdNode.isMissingNode() || requestIdNode.isNull()) {
             return;
         }
-        final PendingPermission pendingPermission = pendingPermissions.remove(requestId);
-        if (pendingPermission != null) {
-            removePendingFromStream(pendingPermission);
+        final String requestId = requestIdKey(requestIdNode);
+        final PendingInteraction pendingInteraction = pendingInteractions.remove(requestId);
+        if (pendingInteraction != null) {
+            removePendingFromStream(pendingInteraction);
+            if (!resolvingInteractionIds.contains(requestId)) {
+                Event.publish(new AgentInteractionResolvedEvent(
+                        pendingInteraction.chatThreadId(),
+                        pendingInteraction.requestId()
+                ));
+            }
         }
     }
 
@@ -981,76 +1011,6 @@ public class CodexAgentRuntime implements AgentRuntime {
             return id;
         }
         return params.path("item").path("id").asText("");
-    }
-
-    private ChatMessageStreamEvent.PermissionType permissionType(final String method, final JsonNode params) {
-        if (method.contains("commandExecution")) {
-            return ChatMessageStreamEvent.PermissionType.BASH;
-        }
-        if (method.contains("mcpServer") || method.contains("requestUserInput")) {
-            return ChatMessageStreamEvent.PermissionType.MCP;
-        }
-        return ChatMessageStreamEvent.PermissionType.TOOL;
-    }
-
-    private String permissionValue(final String method, final JsonNode params) {
-        if (method.contains("commandExecution")) {
-            return commandFromParams(params);
-        }
-        if (method.contains("fileChange")) {
-            return "file changes";
-        }
-        if (method.contains("requestUserInput")) {
-            return "tool input";
-        }
-        if (method.contains("mcpServer")) {
-            return params.path("serverName").asText("MCP");
-        }
-        return "permissions";
-    }
-
-    private String permissionTitle(final String method, final JsonNode params) {
-        return "Codex approval required: " + permissionValue(method, params);
-    }
-
-    private String permissionMessage(final String method, final JsonNode params) {
-        final String reason = params.path("reason").asText("");
-        final String cwd = params.path("cwd").asText("");
-        final StringBuilder builder = new StringBuilder("Codex requires approval.");
-        if (!reason.isBlank()) {
-            builder.append(System.lineSeparator()).append("Reason: ").append(reason);
-        }
-        if (!cwd.isBlank()) {
-            builder.append(System.lineSeparator()).append("Working directory: ").append(cwd);
-        }
-        if (method.contains("commandExecution")) {
-            builder.append(System.lineSeparator()).append("Command: ").append(commandFromParams(params));
-        }
-        if (method.contains("permissions")) {
-            builder.append(System.lineSeparator()).append("Permissions: ").append(params.path("permissions"));
-        }
-        if (method.contains("mcpServer")) {
-            builder.append(System.lineSeparator()).append(params.path("message").asText(""));
-        }
-        return builder.toString();
-    }
-
-    private String permissionMatchedRule(final String method, final JsonNode params) {
-        if (method.contains("commandExecution")) {
-            final JsonNode amendment = params.path("proposedExecpolicyAmendment");
-            return amendment.isMissingNode() || amendment.isNull() ? "" : amendment.toString();
-        }
-        if (method.contains("fileChange")) {
-            return params.path("grantRoot").asText("");
-        }
-        return "";
-    }
-
-    private String resolvePermissionConfigPath() {
-        return Path.of(System.getProperty("user.home", "."), ".codex", "config.toml")
-                .toAbsolutePath()
-                .normalize()
-                .toString();
     }
 
     private String commandTitle(final JsonNode item) {
@@ -1220,12 +1180,12 @@ public class CodexAgentRuntime implements AgentRuntime {
     private record Activity(ChatMessageStreamEvent.ActivityType type, String name, String detail) {
     }
 
-    private record PendingPermission(String requestId,
-                                     long rpcId,
-                                     String method,
-                                     String chatThreadId,
-                                     String codexThreadId,
-                                     JsonNode params) {
+    private record PendingInteraction(String requestId,
+                                      JsonNode rpcId,
+                                      String method,
+                                      String chatThreadId,
+                                      String codexThreadId,
+                                      JsonNode params) {
     }
 
     private static final class ActiveStream {

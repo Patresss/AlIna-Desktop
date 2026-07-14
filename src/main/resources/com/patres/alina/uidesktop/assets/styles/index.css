@@ -99,54 +99,6 @@
 }
 
 /* ══════════════════════════════════════════════════
-   Composer approval panel
-   ══════════════════════════════════════════════════ */
-
-.composer-approval-pane {
-  -fx-background-color: -color-bg-default;
-  -fx-border-color: -color-accent-fg;
-  -fx-border-radius: 14px;
-  -fx-background-radius: 14px;
-  -fx-padding: 14px 16px 14px 16px;
-  -fx-effect: dropshadow(gaussian, -color-shadow-default, 8, 0, 0, 2);
-}
-
-.composer-approval-title {
-  -fx-font-size: 13px;
-  -fx-font-weight: 700;
-}
-
-.composer-approval-message {
-  -fx-text-fill: -color-fg-muted;
-  -fx-font-size: 12px;
-}
-
-.composer-approval-status {
-  -fx-text-fill: -color-fg-muted;
-  -fx-font-size: 12px;
-}
-
-.composer-approval-button {
-  -fx-background-color: -color-bg-subtle;
-  -fx-background-radius: 10px;
-  -fx-border-radius: 10px;
-  -fx-padding: 8px 12px 8px 12px;
-  -fx-font-weight: 700;
-}
-
-.composer-approval-button-primary {
-  -fx-border-color: -color-accent-fg;
-}
-
-.composer-approval-button-always {
-  -fx-border-color: -color-success-fg;
-}
-
-.composer-approval-button-deny {
-  -fx-border-color: -color-danger-fg;
-}
-
-/* ══════════════════════════════════════════════════
    Image attachment preview pane
    ══════════════════════════════════════════════════ */
 
@@ -973,5 +925,4 @@ ChatThreadHistoryCard {
     -fx-font-size: 12px;
     -fx-font-weight: 600;
 }
-
 

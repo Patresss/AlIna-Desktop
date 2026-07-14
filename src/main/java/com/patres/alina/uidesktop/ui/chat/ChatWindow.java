@@ -2,9 +2,12 @@ package com.patres.alina.uidesktop.ui.chat;
 
 import com.patres.alina.common.card.CardListItem;
 import com.patres.alina.common.event.CalendarAiPromptEvent;
+import com.patres.alina.common.event.AgentInteractionResolvedEvent;
 import com.patres.alina.common.event.ChatNotificationEvent;
 import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
+import com.patres.alina.common.interaction.AgentInteractionAction;
+import com.patres.alina.common.interaction.AgentInteractionResponse;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageSendModel;
@@ -12,7 +15,6 @@ import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.common.message.CommandUsageInfo;
 import com.patres.alina.common.message.ImageAttachment;
 import com.patres.alina.common.message.OnMessageCompleteCallback;
-import com.patres.alina.common.permission.PermissionApprovalAction;
 import com.patres.alina.common.thread.ChatThread;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.server.command.CommandConstants;
@@ -84,6 +86,7 @@ public class ChatWindow extends BorderPane {
 
     private final Consumer<FocusShortcutTriggeredEvent> focusShortcutTriggeredEventConsumer = event -> triggerFocusAction();
     private Consumer<ChatMessageStreamEvent> chatMessageStreamEventConsumer;
+    private Consumer<AgentInteractionResolvedEvent> agentInteractionResolvedEventConsumer;
     private final Consumer<ChatNotificationEvent> chatNotificationEventConsumer = this::handleChatNotification;
     private final Consumer<CalendarAiPromptEvent> calendarAiPromptEventConsumer = this::handleCalendarAiPrompt;
 
@@ -110,9 +113,6 @@ public class ChatWindow extends BorderPane {
     private StackPane composerPane;
 
     @FXML
-    private HBox messageInputRow;
-
-    @FXML
     private Button sendButton;
 
     @FXML
@@ -126,27 +126,6 @@ public class ChatWindow extends BorderPane {
 
     @FXML
     private VBox inputButtonsBox;
-
-    @FXML
-    private VBox permissionComposerPane;
-
-    @FXML
-    private Label permissionComposerTitleLabel;
-
-    @FXML
-    private Label permissionComposerMessageLabel;
-
-    @FXML
-    private Label permissionComposerStatusLabel;
-
-    @FXML
-    private Button permissionApproveButton;
-
-    @FXML
-    private Button permissionApproveAlwaysButton;
-
-    @FXML
-    private Button permissionDenyButton;
 
     @FXML
     private HBox statusBar;
@@ -201,6 +180,13 @@ public class ChatWindow extends BorderPane {
             );
         }
 
+        if (agentInteractionResolvedEventConsumer != null) {
+            DefaultEventBus.getInstance().subscribe(
+                    AgentInteractionResolvedEvent.class,
+                    agentInteractionResolvedEventConsumer
+            );
+        }
+
         DefaultEventBus.getInstance().subscribe(
                 ChatNotificationEvent.class,
                 chatNotificationEventConsumer
@@ -226,6 +212,14 @@ public class ChatWindow extends BorderPane {
             DefaultEventBus.getInstance().unsubscribe(
                     ChatMessageStreamEvent.class,
                     chatMessageStreamEventConsumer
+            );
+        }
+
+
+        if (agentInteractionResolvedEventConsumer != null) {
+            DefaultEventBus.getInstance().unsubscribe(
+                    AgentInteractionResolvedEvent.class,
+                    agentInteractionResolvedEventConsumer
             );
         }
 
@@ -321,24 +315,19 @@ public class ChatWindow extends BorderPane {
                 streamControlButton,
                 actionNodes,
                 chatTextArea,
-                messageInputRow,
-                permissionComposerPane,
-                permissionComposerTitleLabel,
-                permissionComposerMessageLabel,
-                permissionComposerStatusLabel,
-                permissionApproveButton,
-                permissionApproveAlwaysButton,
-                permissionDenyButton,
                 statusPrompt,
                 chatThread.id(),
                 hasAnyUserMessages
         );
         streamingController.initialize();
-        browser.setPermissionActionHandler((requestId, actionName) -> {
+        browser.setAgentInteractionActionHandler((requestId, actionName, valuesJson) -> {
             try {
-                streamingController.submitPermissionAction(requestId, PermissionApprovalAction.valueOf(actionName));
+                streamingController.submitAgentInteraction(
+                        requestId,
+                        new AgentInteractionResponse(AgentInteractionAction.valueOf(actionName), valuesJson)
+                );
             } catch (IllegalArgumentException e) {
-                logger.warn("Ignoring unknown permission action {}", actionName, e);
+                logger.warn("Ignoring unknown agent interaction action {}", actionName, e);
             }
         });
 
@@ -350,6 +339,7 @@ public class ChatWindow extends BorderPane {
         installButtonTooltips();
 
         chatMessageStreamEventConsumer = streamingController::handleStreamEvent;
+        agentInteractionResolvedEventConsumer = streamingController::handleAgentInteractionResolved;
         initEventsSubscriptions();
     }
 

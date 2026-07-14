@@ -959,69 +959,428 @@
         target.appendChild(h('div', { className: 'assistant-process' }, toggle, body));
     }
 
-    function showAssistantPermissionRequest(requestId, title, message, approveLabel, approveAlwaysLabel, denyLabel) {
-        const chatContainer = $('chat-container');
-        if (!chatContainer || !requestId) return;
+    function interactionCardId(requestId) {
+        return `assistant-interaction-${requestId}`;
+    }
 
-        const messageId = `assistant-permission-${requestId}`;
+    function interactionStatus(requestId) {
+        return $(`${interactionCardId(requestId)}-status`);
+    }
+
+    function setInteractionStatus(requestId, message, isError) {
+        const status = interactionStatus(requestId);
+        if (!status) return;
+        status.textContent = message || '';
+        status.classList.toggle('error', Boolean(isError));
+    }
+
+    function setInteractionDisabled(requestId, disabled) {
+        const card = $(interactionCardId(requestId));
+        if (!card) return;
+        for (const control of card.querySelectorAll('button, input, select, textarea')) {
+            if (disabled) {
+                control.dataset.interactionWasDisabled = control.disabled ? 'true' : 'false';
+                control.disabled = true;
+            } else {
+                control.disabled = control.dataset.interactionPermanentDisabled === 'true'
+                    || control.dataset.interactionWasDisabled === 'true';
+                delete control.dataset.interactionWasDisabled;
+            }
+        }
+    }
+
+    function sendAgentInteraction(interaction, actionName, values, pendingLabel) {
+        markAgentInteractionPending(interaction.requestId, pendingLabel);
+        if (window.alinaBrowserBridge?.handleAgentInteractionAction) {
+            window.alinaBrowserBridge.handleAgentInteractionAction(
+                interaction.requestId,
+                actionName,
+                JSON.stringify(values || {})
+            );
+        }
+    }
+
+    function createInteractionButton(interaction, label, cssClass, actionName, collector) {
+        return h('button', {
+            type: 'button',
+            className: cssClass,
+            textContent: label,
+            onclick: () => {
+                const collected = collector ? collector() : { valid: true, values: {} };
+                if (!collected.valid) {
+                    setInteractionStatus(interaction.requestId, collected.error, true);
+                    return;
+                }
+                sendAgentInteraction(interaction, actionName, collected.values, `${label}...`);
+            }
+        });
+    }
+
+    function buildApprovalInteraction(interaction, labels) {
+        const scopedLabel = interaction.approvalScope === 'PERSISTENT'
+            ? labels.approveAlways
+            : labels.approveSession;
+        return {
+            badge: labels.badgeApproval,
+            content: null,
+            actions: [
+                createInteractionButton(interaction, labels.approveOnce, 'primary', 'APPROVE_ONCE'),
+                createInteractionButton(interaction, scopedLabel, 'always', 'APPROVE_SCOPED'),
+                createInteractionButton(interaction, labels.deny, 'deny', 'DENY')
+            ]
+        };
+    }
+
+    function buildUserInputInteraction(interaction, labels) {
+        const questions = Array.isArray(interaction.payload?.questions) ? interaction.payload.questions : [];
+        const fields = h('div', { className: 'interaction-fields' });
+        const collectors = [];
+
+        questions.forEach((question, questionIndex) => {
+            const field = h('fieldset', { className: 'interaction-field' });
+            const heading = question.header || question.question || `${questionIndex + 1}`;
+            field.appendChild(h('legend', { textContent: heading }));
+            if (question.question && question.question !== heading) {
+                field.appendChild(h('div', { className: 'interaction-field-description', textContent: question.question }));
+            }
+
+            const options = Array.isArray(question.options) ? question.options : [];
+            if (options.length > 0) {
+                const radioName = `interaction-${interaction.requestId}-${questionIndex}`;
+                const optionInputs = [];
+                options.forEach((option, optionIndex) => {
+                    const input = h('input', {
+                        type: 'radio',
+                        name: radioName,
+                        value: option.label || '',
+                        id: `${radioName}-${optionIndex}`
+                    });
+                    optionInputs.push(input);
+                    const text = h('span', { className: 'interaction-option-text' },
+                        h('span', { className: 'interaction-option-label', textContent: option.label || '' }),
+                        option.description
+                            ? h('span', { className: 'interaction-option-description', textContent: option.description })
+                            : null
+                    );
+                    field.appendChild(h('label', { className: 'interaction-option' }, input, text));
+                });
+
+                const otherRadio = h('input', { type: 'radio', name: radioName, value: '__other__' });
+                const otherInput = h('input', {
+                    type: question.isSecret ? 'password' : 'text',
+                    className: 'interaction-text-input',
+                    placeholder: labels.other,
+                    oninput: () => {
+                        if (otherInput.value) otherRadio.checked = true;
+                    }
+                });
+                field.appendChild(h('label', { className: 'interaction-option interaction-option-other' },
+                    otherRadio,
+                    h('span', { className: 'interaction-option-label', textContent: labels.other }),
+                    otherInput
+                ));
+                collectors.push(() => {
+                    const selected = [...optionInputs, otherRadio].find(input => input.checked);
+                    if (!selected) return { valid: false };
+                    if (selected === otherRadio) {
+                        const value = otherInput.value.trim();
+                        return value ? { valid: true, value } : { valid: false };
+                    }
+                    return { valid: true, value: selected.value };
+                });
+            } else {
+                const input = h('input', {
+                    type: question.isSecret ? 'password' : 'text',
+                    className: 'interaction-text-input'
+                });
+                field.appendChild(input);
+                collectors.push(() => {
+                    const value = input.value.trim();
+                    return value ? { valid: true, value } : { valid: false };
+                });
+            }
+            fields.appendChild(field);
+        });
+
+        const collect = () => {
+            const values = {};
+            for (let i = 0; i < collectors.length; i++) {
+                const result = collectors[i]();
+                if (!result.valid) {
+                    return { valid: false, error: labels.required };
+                }
+                values[questions[i].id] = [result.value];
+            }
+            return { valid: true, values };
+        };
+
+        return {
+            badge: labels.badgeQuestion,
+            content: fields,
+            actions: [createInteractionButton(interaction, labels.submit, 'primary', 'SUBMIT', collect)]
+        };
+    }
+
+    function enumChoices(schema) {
+        if (Array.isArray(schema?.oneOf)) {
+            return schema.oneOf.map(option => ({ value: option.const, label: option.title || option.const }));
+        }
+        if (Array.isArray(schema?.enum)) {
+            return schema.enum.map((value, index) => ({
+                value,
+                label: Array.isArray(schema.enumNames) ? (schema.enumNames[index] || value) : value
+            }));
+        }
+        return [];
+    }
+
+    function multiEnumChoices(schema) {
+        if (Array.isArray(schema?.items?.anyOf)) {
+            return schema.items.anyOf.map(option => ({ value: option.const, label: option.title || option.const }));
+        }
+        if (Array.isArray(schema?.items?.enum)) {
+            return schema.items.enum.map(value => ({ value, label: value }));
+        }
+        return [];
+    }
+
+    function buildMcpFormInteraction(interaction, labels) {
+        const schema = interaction.payload?.requestedSchema;
+        const properties = schema && typeof schema.properties === 'object' ? schema.properties : null;
+        const required = new Set(Array.isArray(schema?.required) ? schema.required : []);
+        const fields = h('div', { className: 'interaction-fields' });
+        const collectors = [];
+        let supported = Boolean(properties);
+
+        for (const [name, fieldSchema] of Object.entries(properties || {})) {
+            const isRequired = required.has(name);
+            const field = h('div', { className: 'interaction-field' });
+            const title = fieldSchema.title || name;
+            field.appendChild(h('label', { className: 'interaction-field-label', textContent: `${title}${isRequired ? ' *' : ''}` }));
+            if (fieldSchema.description) {
+                field.appendChild(h('div', { className: 'interaction-field-description', textContent: fieldSchema.description }));
+            }
+
+            const choices = enumChoices(fieldSchema);
+            const multiChoices = multiEnumChoices(fieldSchema);
+            if (fieldSchema.type === 'string' && choices.length > 0) {
+                const select = h('select', { className: 'interaction-select' });
+                if (!isRequired) select.appendChild(h('option', { value: '', textContent: '' }));
+                choices.forEach(choice => select.appendChild(h('option', {
+                    value: choice.value,
+                    textContent: choice.label,
+                    selected: fieldSchema.default === choice.value
+                })));
+                field.appendChild(select);
+                collectors.push(() => {
+                    if (isRequired && !select.value) return { valid: false };
+                    return { valid: true, include: Boolean(select.value) || isRequired, value: select.value };
+                });
+            } else if (fieldSchema.type === 'string') {
+                const inputType = fieldSchema.format === 'email' ? 'email'
+                    : fieldSchema.format === 'uri' ? 'url'
+                    : fieldSchema.format === 'date' ? 'date'
+                    : fieldSchema.format === 'date-time' ? 'datetime-local'
+                    : 'text';
+                const inputAttributes = {
+                    type: inputType,
+                    className: 'interaction-text-input',
+                    value: fieldSchema.default || '',
+                    required: isRequired
+                };
+                if (fieldSchema.minLength != null) inputAttributes.minLength = fieldSchema.minLength;
+                if (fieldSchema.maxLength != null) inputAttributes.maxLength = fieldSchema.maxLength;
+                const input = h('input', inputAttributes);
+                field.appendChild(input);
+                collectors.push(() => ({
+                    valid: input.checkValidity(),
+                    include: Boolean(input.value) || isRequired,
+                    value: input.value
+                }));
+            } else if (fieldSchema.type === 'number' || fieldSchema.type === 'integer') {
+                const input = h('input', {
+                    type: 'number',
+                    className: 'interaction-text-input',
+                    value: fieldSchema.default ?? '',
+                    required: isRequired,
+                    min: fieldSchema.minimum ?? '',
+                    max: fieldSchema.maximum ?? '',
+                    step: fieldSchema.type === 'integer' ? '1' : 'any'
+                });
+                field.appendChild(input);
+                collectors.push(() => ({
+                    valid: input.checkValidity(),
+                    include: input.value !== '' || isRequired,
+                    value: input.value === '' ? null : Number(input.value)
+                }));
+            } else if (fieldSchema.type === 'boolean') {
+                const input = h('input', {
+                    type: 'checkbox',
+                    checked: fieldSchema.default === true
+                });
+                field.appendChild(h('label', { className: 'interaction-boolean' }, input, h('span', { textContent: title })));
+                collectors.push(() => ({ valid: true, include: true, value: input.checked }));
+            } else if (fieldSchema.type === 'array' && multiChoices.length > 0) {
+                const inputs = multiChoices.map((choice, index) => {
+                    const input = h('input', {
+                        type: 'checkbox',
+                        value: choice.value,
+                        checked: Array.isArray(fieldSchema.default) && fieldSchema.default.includes(choice.value)
+                    });
+                    field.appendChild(h('label', { className: 'interaction-option' },
+                        input,
+                        h('span', { className: 'interaction-option-label', textContent: choice.label })
+                    ));
+                    return input;
+                });
+                collectors.push(() => {
+                    const values = inputs.filter(input => input.checked).map(input => input.value);
+                    const minimum = fieldSchema.minItems ?? (isRequired ? 1 : 0);
+                    const maximum = fieldSchema.maxItems ?? Number.MAX_SAFE_INTEGER;
+                    return {
+                        valid: values.length >= minimum && values.length <= maximum,
+                        include: values.length > 0 || isRequired,
+                        value: values
+                    };
+                });
+            } else {
+                supported = false;
+                field.appendChild(h('div', {
+                    className: 'interaction-unsupported',
+                    textContent: `${labels.unsupported}: ${name}`
+                }));
+            }
+            fields.appendChild(field);
+        }
+
+        if (!properties) {
+            fields.appendChild(h('div', { className: 'interaction-unsupported', textContent: labels.unsupported }));
+        }
+
+        const collect = () => {
+            const values = {};
+            let collectorIndex = 0;
+            for (const [name, fieldSchema] of Object.entries(properties || {})) {
+                const fieldSupported = (fieldSchema.type === 'string')
+                    || fieldSchema.type === 'number'
+                    || fieldSchema.type === 'integer'
+                    || fieldSchema.type === 'boolean'
+                    || (fieldSchema.type === 'array' && multiEnumChoices(fieldSchema).length > 0);
+                if (!fieldSupported) continue;
+                const result = collectors[collectorIndex++]();
+                if (!result.valid) return { valid: false, error: labels.required };
+                if (result.include) values[name] = result.value;
+            }
+            return { valid: true, values };
+        };
+
+        const submit = createInteractionButton(interaction, labels.submit, 'primary', 'SUBMIT', collect);
+        if (!supported) {
+            submit.disabled = true;
+            submit.dataset.interactionPermanentDisabled = 'true';
+        }
+        return {
+            badge: labels.badgeForm,
+            content: fields,
+            actions: [
+                submit,
+                createInteractionButton(interaction, labels.decline, 'deny', 'DECLINE'),
+                createInteractionButton(interaction, labels.cancel, 'secondary', 'CANCEL')
+            ]
+        };
+    }
+
+    function buildMcpUrlInteraction(interaction, labels) {
+        const openButton = h('button', {
+            type: 'button',
+            className: 'secondary',
+            textContent: labels.open,
+            onclick: () => {
+                if (window.alinaBrowserBridge?.handleOpenUrl) {
+                    window.alinaBrowserBridge.handleOpenUrl(interaction.payload?.url || '');
+                }
+            }
+        });
+        return {
+            badge: labels.badgeLink,
+            content: null,
+            actions: [
+                openButton,
+                createInteractionButton(interaction, labels.confirm, 'primary', 'SUBMIT'),
+                createInteractionButton(interaction, labels.decline, 'deny', 'DECLINE'),
+                createInteractionButton(interaction, labels.cancel, 'secondary', 'CANCEL')
+            ]
+        };
+    }
+
+    function showAgentInteraction(interactionJson, labelsJson) {
+        const chatContainer = $('chat-container');
+        if (!chatContainer) return;
+
+        let interaction;
+        let labels;
+        try {
+            interaction = JSON.parse(interactionJson || '{}');
+            labels = JSON.parse(labelsJson || '{}');
+        } catch (_) {
+            return;
+        }
+        if (!interaction.requestId) return;
+
+        const messageId = interactionCardId(interaction.requestId);
         if ($(messageId)) {
             scrollToBottomIfNeeded();
             return;
         }
 
-        const createButton = (label, cssClass, actionName) => {
-            return h('button', {
-                type: 'button',
-                className: cssClass,
-                textContent: label,
-                onclick: () => {
-                    markAssistantPermissionRequestPending(requestId, `${label}...`);
-                    if (window.alinaBrowserBridge?.handlePermissionAction) {
-                        window.alinaBrowserBridge.handlePermissionAction(requestId, actionName);
-                    }
-                }
-            });
-        };
+        const built = interaction.kind === 'APPROVAL' ? buildApprovalInteraction(interaction, labels)
+            : interaction.kind === 'USER_INPUT' ? buildUserInputInteraction(interaction, labels)
+            : interaction.kind === 'MCP_URL' ? buildMcpUrlInteraction(interaction, labels)
+            : buildMcpFormInteraction(interaction, labels);
 
+        const actions = h('div', { className: 'permission-actions' });
+        built.actions.forEach(button => actions.appendChild(button));
+        const shellChildren = [
+            h('div', { className: 'permission-header' },
+                h('div', { className: 'permission-title', textContent: interaction.title || '' }),
+                h('div', { className: 'permission-badge', textContent: built.badge || '' })
+            ),
+            interaction.message
+                ? h('div', { className: 'permission-message-body', textContent: interaction.message })
+                : null,
+            built.content,
+            actions,
+            h('div', { className: 'permission-status', id: `${messageId}-status` })
+        ];
         const card = h('div', {
             className: 'chat-message assistant permission-message',
             id: messageId,
             dataset: { transient: 'true' }
-        },
-            h('div', { className: 'permission-shell' },
-                h('div', { className: 'permission-header' },
-                    h('div', { className: 'permission-title', textContent: title }),
-                    h('div', { className: 'permission-badge', textContent: 'Approval' })
-                ),
-                h('div', { className: 'permission-message-body', textContent: message }),
-                h('div', { className: 'permission-actions' },
-                    createButton(approveLabel, 'primary', 'APPROVE_ONCE'),
-                    createButton(approveAlwaysLabel, 'always', 'APPROVE_ALWAYS'),
-                    createButton(denyLabel, 'deny', 'DENY')
-                ),
-                h('div', { className: 'permission-status', id: `${messageId}-status` })
-            )
-        );
+        }, h('div', { className: 'permission-shell' }, ...shellChildren));
 
         chatContainer.appendChild(card);
         scrollToBottomIfNeeded();
     }
 
-    function markAssistantPermissionRequestPending(requestId, statusLabel) {
-        const card = $(`assistant-permission-${requestId}`);
-        if (!card) return;
-        for (const btn of card.querySelectorAll('button')) btn.disabled = true;
-        const status = $(`assistant-permission-${requestId}-status`);
-        if (status) status.textContent = statusLabel || '';
+    function markAgentInteractionPending(requestId, statusLabel) {
+        setInteractionDisabled(requestId, true);
+        setInteractionStatus(requestId, statusLabel, false);
         scrollToBottomIfNeeded();
     }
 
-    function resolveAssistantPermissionRequest(requestId, statusLabel) {
-        const card = $(`assistant-permission-${requestId}`);
-        if (!card) return;
-        for (const btn of card.querySelectorAll('button')) btn.disabled = true;
-        const status = $(`assistant-permission-${requestId}-status`);
-        if (status) status.textContent = statusLabel || '';
+    function resolveAgentInteraction(requestId, statusLabel) {
+        setInteractionDisabled(requestId, true);
+        const card = $(interactionCardId(requestId));
+        for (const secretInput of card?.querySelectorAll('input[type="password"]') || []) {
+            secretInput.value = '';
+        }
+        setInteractionStatus(requestId, statusLabel, false);
+        scrollToBottomIfNeeded();
+    }
+
+    function failAgentInteraction(requestId, statusLabel) {
+        setInteractionDisabled(requestId, false);
+        setInteractionStatus(requestId, statusLabel, true);
         scrollToBottomIfNeeded();
     }
 

@@ -2,9 +2,9 @@ package com.patres.alina.server.agent;
 
 import com.patres.alina.common.agent.AgentBackend;
 import com.patres.alina.common.agent.AgentRuntimeStatus;
+import com.patres.alina.common.interaction.AgentInteractionResolutionModel;
+import com.patres.alina.common.interaction.AgentInteractionResponse;
 import com.patres.alina.common.message.ChatMessageResponseModel;
-import com.patres.alina.common.permission.PermissionApprovalAction;
-import com.patres.alina.common.permission.PermissionResolutionModel;
 import com.patres.alina.common.thread.ChatThread;
 import reactor.core.publisher.Flux;
 
@@ -21,9 +21,9 @@ public interface AgentRuntime {
 
     void cancelStreaming(String chatThreadId);
 
-    boolean ownsPermissionRequest(String requestId);
+    boolean ownsAgentInteraction(String requestId);
 
-    PermissionResolutionModel resolvePermissionRequest(String requestId, PermissionApprovalAction action);
+    AgentInteractionResolutionModel resolveAgentInteraction(String requestId, AgentInteractionResponse response);
 
     List<String> getAvailableModels();
 

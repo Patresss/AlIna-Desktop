@@ -85,19 +85,19 @@ public class CodexAppServerClient {
         send(message);
     }
 
-    public void respond(final long id, final JsonNode result) throws Exception {
+    public void respond(final JsonNode id, final JsonNode result) throws Exception {
         ensureRunning();
         final ObjectNode message = objectMapper.createObjectNode();
-        message.put("id", id);
+        message.set("id", id.deepCopy());
         message.set("result", result == null ? objectMapper.createObjectNode() : result);
         send(message);
     }
 
-    public void respondError(final long id, final int code, final String messageText) throws Exception {
+    public void respondError(final JsonNode id, final int code, final String messageText) throws Exception {
         ensureRunning();
         final ObjectNode message = objectMapper.createObjectNode();
         final ObjectNode error = message.putObject("error");
-        message.put("id", id);
+        message.set("id", id.deepCopy());
         error.put("code", code);
         error.put("message", messageText == null || messageText.isBlank() ? "Request rejected by client" : messageText);
         send(message);

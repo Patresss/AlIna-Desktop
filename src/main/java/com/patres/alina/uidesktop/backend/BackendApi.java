@@ -5,8 +5,8 @@ import com.patres.alina.common.card.UpdateStateRequest;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.message.ChatMessageSendModel;
 import com.patres.alina.common.agent.AgentRuntimeStatus;
-import com.patres.alina.common.permission.PermissionResolutionModel;
-import com.patres.alina.common.permission.PermissionApprovalAction;
+import com.patres.alina.common.interaction.AgentInteractionResolutionModel;
+import com.patres.alina.common.interaction.AgentInteractionResponse;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.server.command.Command;
 import com.patres.alina.common.settings.AssistantSettings;
@@ -18,7 +18,7 @@ import com.patres.alina.server.dashboard.DashboardController;
 import com.patres.alina.server.message.ChatMessageController;
 import com.patres.alina.server.command.CommandController;
 import com.patres.alina.server.settings.SettingsController;
-import com.patres.alina.server.assistant.PermissionRequestController;
+import com.patres.alina.server.assistant.AgentInteractionController;
 import com.patres.alina.server.thread.ChatThreadController;
 import com.patres.alina.server.integration.GitHubPullRequestResult;
 import com.patres.alina.server.integration.GitHubService;
@@ -51,8 +51,9 @@ public class BackendApi {
         AppLauncher.getBean(ChatMessageController.class).retryLastUserMessage(chatThreadId);
     }
 
-    public static PermissionResolutionModel resolvePermissionRequest(String requestId, PermissionApprovalAction action) {
-        return AppLauncher.getBean(PermissionRequestController.class).resolve(requestId, action);
+    public static AgentInteractionResolutionModel resolveAgentInteraction(final String requestId,
+                                                                         final AgentInteractionResponse response) {
+        return AppLauncher.getBean(AgentInteractionController.class).resolve(requestId, response);
     }
 
     public static List<ChatMessageResponseModel> getMessagesByThreadId(String chatThreadId) {

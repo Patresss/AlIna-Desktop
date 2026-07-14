@@ -1,6 +1,9 @@
 package com.patres.alina.uidesktop.ui.chat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.patres.alina.common.event.bus.DefaultEventBus;
+import com.patres.alina.common.interaction.AgentInteractionRequest;
 import com.patres.alina.common.message.ChatMessageRole;
 import com.patres.alina.common.message.ChatMessageStyleType;
 import com.patres.alina.common.message.ImageAttachment;
@@ -28,6 +31,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.patres.alina.uidesktop.util.MarkdownToHtmlConverter.convertMarkdownToHtml;
@@ -39,6 +43,7 @@ public class Browser extends StackPane {
     private static final String CHAT_CSS = loadResource("browser-chat.css");
     private static final String CHAT_JS = loadResource("browser-chat.js");
     private static final String CHAT_HTML_TEMPLATE = loadResource("browser-chat.html");
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     final WebView webView;
     final WebEngine webEngine;
@@ -51,7 +56,7 @@ public class Browser extends StackPane {
             new FeatherIkonHandler(),
             new BootstrapIconsIkonHandler()
     );
-    private PermissionActionHandler permissionActionHandler;
+    private AgentInteractionActionHandler agentInteractionActionHandler;
     private SuggestionClickHandler suggestionClickHandler;
     private WelcomeActionHandler welcomeActionHandler;
     private BrowserBridge browserBridge;
@@ -90,8 +95,8 @@ public class Browser extends StackPane {
         DefaultEventBus.getInstance().subscribe(ThemeEvent.class, themeEventConsumer);
     }
 
-    public void setPermissionActionHandler(final PermissionActionHandler permissionActionHandler) {
-        this.permissionActionHandler = permissionActionHandler;
+    public void setAgentInteractionActionHandler(final AgentInteractionActionHandler agentInteractionActionHandler) {
+        this.agentInteractionActionHandler = agentInteractionActionHandler;
     }
 
     public void setSuggestionClickHandler(final SuggestionClickHandler suggestionClickHandler) {
@@ -442,29 +447,32 @@ public class Browser extends StackPane {
         );
     }
 
-    public void showAssistantPermissionRequest(final String requestId,
-                                               final String title,
-                                               final String message,
-                                               final String approveLabel,
-                                               final String approveAlwaysLabel,
-                                               final String denyLabel) {
-        safeJavaScriptCall(
-                "showAssistantPermissionRequest",
-                requestId,
-                title,
-                message,
-                approveLabel,
-                approveAlwaysLabel,
-                denyLabel
-        );
+    public void showAgentInteraction(final AgentInteractionRequest interaction,
+                                     final Map<String, String> labels) {
+        try {
+            final ObjectNode interactionJson = OBJECT_MAPPER.valueToTree(interaction);
+            interactionJson.remove("payloadJson");
+            interactionJson.set("payload", OBJECT_MAPPER.readTree(interaction.payloadJson()));
+            safeJavaScriptCall(
+                    "showAgentInteraction",
+                    OBJECT_MAPPER.writeValueAsString(interactionJson),
+                    OBJECT_MAPPER.writeValueAsString(labels)
+            );
+        } catch (Exception e) {
+            logger.warn("Cannot serialize agent interaction {}", interaction.requestId(), e);
+        }
     }
 
-    public void markAssistantPermissionRequestPending(final String requestId, final String statusLabel) {
-        safeJavaScriptCall("markAssistantPermissionRequestPending", requestId, statusLabel);
+    public void markAgentInteractionPending(final String requestId, final String statusLabel) {
+        safeJavaScriptCall("markAgentInteractionPending", requestId, statusLabel);
     }
 
-    public void resolveAssistantPermissionRequest(final String requestId, final String statusLabel) {
-        safeJavaScriptCall("resolveAssistantPermissionRequest", requestId, statusLabel);
+    public void resolveAgentInteraction(final String requestId, final String statusLabel) {
+        safeJavaScriptCall("resolveAgentInteraction", requestId, statusLabel);
+    }
+
+    public void failAgentInteraction(final String requestId, final String statusLabel) {
+        safeJavaScriptCall("failAgentInteraction", requestId, statusLabel);
     }
 
     public boolean prepareRegenerationTarget() {
@@ -532,18 +540,18 @@ public class Browser extends StackPane {
             openWebpage(url);
             return;
         }
-        if (!data.startsWith("__ALINA_PERMISSION__|")) {
+        if (!data.startsWith("__ALINA_INTERACTION__|")) {
             return;
         }
-        final String payload = data.substring("__ALINA_PERMISSION__|".length());
-        final String[] parts = payload.split("\\|", 2);
-        if (parts.length != 2) {
+        final String payload = data.substring("__ALINA_INTERACTION__|".length());
+        final String[] parts = payload.split("\\|", 3);
+        if (parts.length != 3) {
             return;
         }
-        if (permissionActionHandler == null) {
+        if (agentInteractionActionHandler == null) {
             return;
         }
-        permissionActionHandler.onPermissionAction(parts[0], parts[1]);
+        agentInteractionActionHandler.onAgentInteractionAction(parts[0], parts[1], parts[2]);
     }
 
     private String getCssStyles() {
@@ -630,16 +638,18 @@ public class Browser extends StackPane {
         executeJavaScript(script);
     }
 
-    public interface PermissionActionHandler {
-        void onPermissionAction(String requestId, String actionName);
+    public interface AgentInteractionActionHandler {
+        void onAgentInteractionAction(String requestId, String actionName, String valuesJson);
     }
 
     public final class BrowserBridge {
-        public void handlePermissionAction(final String requestId, final String actionName) {
-            if (permissionActionHandler == null) {
+        public void handleAgentInteractionAction(final String requestId,
+                                                 final String actionName,
+                                                 final String valuesJson) {
+            if (agentInteractionActionHandler == null) {
                 return;
             }
-            permissionActionHandler.onPermissionAction(requestId, actionName);
+            agentInteractionActionHandler.onAgentInteractionAction(requestId, actionName, valuesJson);
         }
 
         public void handleOpenUrl(final String url) {
