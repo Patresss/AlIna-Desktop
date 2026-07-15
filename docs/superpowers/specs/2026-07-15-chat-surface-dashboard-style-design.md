@@ -2,7 +2,7 @@
 
 ## Summary
 
-Restyle every dashboard widget so it belongs to the same visual family as the current Browser Web chat while preserving the existing JavaFX dashboard structure and behavior. The approved direction is **A. Shared surface family**: overlay surfaces, 16 px rounded cards, restrained elevation, accent icons, compact pills, and subtle row hover states.
+Restyle every dashboard widget so it belongs to the same visual family as the current Browser Web chat while preserving the existing JavaFX dashboard structure and behavior. The approved direction is **A. Shared surface family**, refined with the **B. White cards with a clear border** contrast treatment: overlay surfaces, 16 px rounded cards, a visible theme-provided outline, restrained elevation, accent icons, compact pills, and subtle row hover states.
 
 The dashboard keeps its current bento layout, configured card widths and ordering, collapse behavior, data refresh, and split-mode behavior. No animations are added.
 
@@ -27,15 +27,16 @@ The dashboard keeps its current bento layout, configured card widths and orderin
 
 ### Shared surface language
 
-Dashboard cards mirror ordinary assistant-message surfaces:
+Dashboard cards mirror ordinary assistant-message surfaces while remaining visibly separate from the application background:
 
 - `-color-bg-overlay` provides the primary card surface;
 - 16 px rounded geometry matches `.chat-message`;
-- a soft theme-derived drop shadow provides restrained elevation;
-- hover increases elevation without translating or resizing the card;
+- a 1 px `-color-border-default` outline remains visible when the overlay and application backgrounds are identical in a light theme;
+- a short, tight, theme-derived drop shadow provides restrained elevation without producing broad grey bands between cards;
+- hover changes the outline to `-color-accent-muted` and increases elevation modestly without translating or resizing the card;
 - component styles contain no literal palette colors.
 
-The dashboard remains denser than a conversation message. It reuses the visual language rather than copying the chat card's content padding or reading width literally.
+The dashboard remains denser than a conversation message. It reuses the visual language rather than copying the chat card's content padding or reading width literally. A grey persistent card fill and a colored accent rail were considered and rejected: the selected treatment keeps the light surface used by chat and the composer while creating a clearer boundary.
 
 ### Card anatomy
 
@@ -121,6 +122,7 @@ The JavaScript in `browser-chat.js` is a design reference only. Its DOM construc
 - Jira status badges remain legible in every semantic state.
 - Cards remain usable in one-column, two-column, narrow, and split layouts.
 - Hover elevation must not alter card size or grid placement.
+- Card boundaries remain clear when `-color-bg-overlay` visually matches the surrounding light-theme background.
 - Keyboard focus remains visible on buttons, checkboxes, and links.
 - The design must remain legible in at least one light and one dark built-in theme.
 
@@ -141,6 +143,7 @@ Check in a freshly started application:
 - Music, Tasks, Calendar, GitHub, Jira, and Obsidian cards;
 - populated, empty, loading, and integration-error states where available;
 - default and hover appearance for cards and rows;
+- card separation against the application background in light and dark themes;
 - buttons, checkboxes, links, pills, and visible keyboard focus;
 - expanded and collapsed widget states;
 - expanded and collapsed overall dashboard states;
@@ -150,6 +153,7 @@ Check in a freshly started application:
 ## Success Criteria
 
 - Dashboard cards and WebView chat messages visibly belong to one surface family.
+- White dashboard cards remain clearly separated from the surrounding light-theme background without broad shadow bands.
 - Dashboard information density and layout remain unchanged.
 - All widgets use consistent card, header, badge, row, and hover styling.
 - There are no dashboard animations.
