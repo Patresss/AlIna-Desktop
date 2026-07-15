@@ -141,7 +141,6 @@ public class ApplicationWindow extends BorderPane {
         dashboardScrollPane.setMinWidth(0);
         dashboardScrollPane.getStyleClass().add("dashboard-scroll");
         chatContentPane.setMaxWidth(Double.MAX_VALUE);
-        chatContentPane.getStyleClass().add("chat-workspace-container");
         splitContainer.setMinWidth(0);
         VBox.setVgrow(splitContainer, Priority.ALWAYS);
         splitContainer.setSpacing(8);

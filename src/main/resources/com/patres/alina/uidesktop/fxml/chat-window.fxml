@@ -18,68 +18,71 @@
                    styleClass="chat-conversation-surface" />
     </center>
     <bottom>
-        <VBox fx:id="footerPane" maxWidth="1.7976931348623157E308" styleClass="chat-footer">
+        <StackPane maxWidth="1.7976931348623157E308" styleClass="chat-footer-dock">
             <children>
-                <FlowPane fx:id="imageAttachmentPane" hgap="8.0" managed="false" vgap="8.0"
-                          visible="false" styleClass="image-attachment-pane" />
-                <StackPane fx:id="composerPane" maxWidth="1.7976931348623157E308" styleClass="chat-composer">
+                <VBox fx:id="footerPane" maxWidth="1.7976931348623157E308" styleClass="chat-footer">
                     <children>
-                        <HBox alignment="CENTER" maxWidth="1.7976931348623157E308">
+                        <FlowPane fx:id="imageAttachmentPane" hgap="8.0" managed="false" vgap="8.0"
+                                  visible="false" styleClass="image-attachment-pane" />
+                        <StackPane fx:id="composerPane" maxWidth="1.7976931348623157E308" styleClass="chat-composer">
                             <children>
-                                <TextArea fx:id="chatTextArea" maxWidth="1.7976931348623157E308"
-                                          onKeyPressed="#chatTextAreaOnKeyPressed" prefWidth="10000.0"
-                                          styleClass="chat-composer-input" wrapText="true" />
-                                <VBox fx:id="inputButtonsBox" styleClass="chat-composer-actions">
+                                <HBox alignment="CENTER" maxWidth="1.7976931348623157E308">
                                     <children>
-                                        <Button fx:id="attachImageButton" accessibleText="%chat.button.attachImage"
-                                                mnemonicParsing="false" onAction="#chooseImageAttachments">
-                                            <graphic><FontIcon iconLiteral="fth-paperclip" /></graphic>
-                                            <styleClass>
-                                                <String fx:value="button-circle" />
-                                                <String fx:value="flat" />
-                                                <String fx:value="chat-attachment-action" />
-                                            </styleClass>
-                                        </Button>
-                                        <Button fx:id="sendButton" accessibleText="%chat.button.send" alignment="CENTER"
-                                                mnemonicParsing="false" onAction="#sendMessageFromUi">
-                                            <graphic><FontIcon iconLiteral="fth-send" /></graphic>
-                                            <styleClass>
-                                                <String fx:value="button-circle" />
-                                                <String fx:value="chat-primary-action" />
-                                            </styleClass>
-                                        </Button>
-                                        <Button fx:id="streamControlButton" alignment="CENTER" mnemonicParsing="false"
-                                                onAction="#streamControlFromUi">
-                                            <styleClass>
-                                                <String fx:value="button-circle" />
-                                                <String fx:value="flat" />
-                                                <String fx:value="chat-secondary-action" />
-                                            </styleClass>
-                                        </Button>
-                                        <Button fx:id="clearChatButton" accessibleText="%chat.button.clearChat"
-                                                alignment="CENTER" mnemonicParsing="false" onAction="#clearChatFromUi">
-                                            <graphic><FontIcon iconLiteral="mdal-cleaning_services" /></graphic>
-                                            <styleClass>
-                                                <String fx:value="button-circle" />
-                                                <String fx:value="flat" />
-                                                <String fx:value="chat-clear-action" />
-                                            </styleClass>
-                                        </Button>
+                                        <TextArea fx:id="chatTextArea" maxWidth="1.7976931348623157E308"
+                                                  onKeyPressed="#chatTextAreaOnKeyPressed" prefWidth="10000.0"
+                                                  styleClass="chat-composer-input" wrapText="true" />
+                                        <VBox fx:id="inputButtonsBox" styleClass="chat-composer-actions">
+                                            <children>
+                                                <Button fx:id="sendButton" accessibleText="%chat.button.send" alignment="CENTER"
+                                                        mnemonicParsing="false" onAction="#sendMessageFromUi">
+                                                    <graphic><FontIcon iconLiteral="fth-send" /></graphic>
+                                                    <styleClass>
+                                                        <String fx:value="button-circle" />
+                                                        <String fx:value="chat-primary-action" />
+                                                    </styleClass>
+                                                </Button>
+                                                <Button fx:id="attachImageButton" accessibleText="%chat.button.attachImage"
+                                                        mnemonicParsing="false" onAction="#chooseImageAttachments">
+                                                    <graphic><FontIcon iconLiteral="fth-paperclip" /></graphic>
+                                                    <styleClass>
+                                                        <String fx:value="button-circle" />
+                                                        <String fx:value="flat" />
+                                                        <String fx:value="chat-attachment-action" />
+                                                    </styleClass>
+                                                </Button>
+                                                <Button fx:id="streamControlButton" alignment="CENTER" mnemonicParsing="false"
+                                                        onAction="#streamControlFromUi">
+                                                    <styleClass>
+                                                        <String fx:value="button-circle" />
+                                                        <String fx:value="flat" />
+                                                        <String fx:value="chat-secondary-action" />
+                                                    </styleClass>
+                                                </Button>
+                                                <Button fx:id="clearChatButton" accessibleText="%chat.button.clearChat"
+                                                        alignment="CENTER" mnemonicParsing="false" onAction="#clearChatFromUi">
+                                                    <graphic><FontIcon iconLiteral="mdal-cleaning_services" /></graphic>
+                                                    <styleClass>
+                                                        <String fx:value="button-circle" />
+                                                        <String fx:value="flat" />
+                                                        <String fx:value="chat-clear-action" />
+                                                    </styleClass>
+                                                </Button>
+                                            </children>
+                                        </VBox>
                                     </children>
-                                </VBox>
+                                </HBox>
+                            </children>
+                        </StackPane>
+                        <HBox fx:id="statusBar" alignment="CENTER_LEFT" spacing="8.0" styleClass="chat-composer-status">
+                            <children>
+                                <Label fx:id="commandLabel" maxWidth="1.7976931348623157E308"
+                                       styleClass="chat-command-status" HBox.hgrow="ALWAYS" />
+                                <Label fx:id="modelLabel" alignment="CENTER_RIGHT" styleClass="model-selector-label" />
                             </children>
                         </HBox>
                     </children>
-                </StackPane>
-                <HBox fx:id="statusBar" alignment="CENTER_LEFT" spacing="8.0" styleClass="chat-composer-status">
-                    <children>
-                        <Label fx:id="commandLabel" maxWidth="1.7976931348623157E308"
-                               styleClass="chat-command-status" HBox.hgrow="ALWAYS" />
-                        <Label text="%chat.composer.shortcut" styleClass="chat-shortcut-hint" />
-                        <Label fx:id="modelLabel" alignment="CENTER_RIGHT" styleClass="model-selector-label" />
-                    </children>
-                </HBox>
+                </VBox>
             </children>
-        </VBox>
+        </StackPane>
     </bottom>
 </fx:root>

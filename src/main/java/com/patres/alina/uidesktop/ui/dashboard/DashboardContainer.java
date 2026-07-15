@@ -10,8 +10,8 @@ import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleExpression;
-import javafx.geometry.VPos;
 import javafx.geometry.Pos;
+import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -111,11 +111,12 @@ public final class DashboardContainer extends VBox {
     private void configureCard(Node card) {
         GridPane.setHgrow(card, Priority.ALWAYS);
         GridPane.setVgrow(card, Priority.NEVER);
-        GridPane.setFillHeight(card, false);
+        GridPane.setFillHeight(card, true);
         GridPane.setValignment(card, VPos.TOP);
         if (card instanceof javafx.scene.layout.Region region) {
             region.setMinWidth(0);
             region.setMaxWidth(Double.MAX_VALUE);
+            region.setMaxHeight(Double.MAX_VALUE);
         }
     }
 

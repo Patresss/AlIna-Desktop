@@ -421,7 +421,7 @@ public class ChatWindow extends BorderPane {
 
         if (statusBar != null) {
             inputButtonsBox.widthProperty().addListener((_, _, newVal) ->
-                    statusBar.setPadding(new Insets(0, newVal.doubleValue(), 0, 0))
+                    statusBar.setPadding(new Insets(4, newVal.doubleValue(), 0, 0))
             );
         }
     }

@@ -97,7 +97,7 @@ class DashboardLayoutModeTest {
     }
 
     @Test
-    void keepsShortCardAtNaturalHeightBesideTallCard() {
+    void stretchesShortCardToTallCardHeightInSharedRow() {
         final var grid = new GridPane();
         grid.setHgap(10);
         grid.getColumnConstraints().addAll(
@@ -109,8 +109,8 @@ class DashboardLayoutModeTest {
         tall.setPrefHeight(300);
         final var shortCard = new Pane();
         shortCard.setPrefHeight(100);
-        configureNaturalHeight(tall);
-        configureNaturalHeight(shortCard);
+        configureEqualRowHeight(tall);
+        configureEqualRowHeight(shortCard);
 
         grid.add(tall, 0, 0);
         grid.add(shortCard, 1, 0);
@@ -118,16 +118,31 @@ class DashboardLayoutModeTest {
         grid.layout();
 
         assertThat(tall.getHeight()).isEqualTo(300);
-        assertThat(shortCard.getHeight()).isEqualTo(100);
+        assertThat(shortCard.getHeight()).isEqualTo(300);
         assertThat(shortCard.getLayoutY()).isZero();
     }
 
-    private static void configureNaturalHeight(Pane card) {
+    @Test
+    void keepsNaturalHeightForCardInItsOwnRow() {
+        final var grid = new GridPane();
+        final var card = new Pane();
+        card.setPrefHeight(100);
+        configureEqualRowHeight(card);
+
+        grid.add(card, 0, 0);
+        grid.resize(500, 300);
+        grid.layout();
+
+        assertThat(card.getHeight()).isEqualTo(100);
+    }
+
+    private static void configureEqualRowHeight(Pane card) {
         card.setMinWidth(0);
         card.setMaxWidth(Double.MAX_VALUE);
+        card.setMaxHeight(Double.MAX_VALUE);
         GridPane.setHgrow(card, Priority.ALWAYS);
         GridPane.setVgrow(card, Priority.NEVER);
-        GridPane.setFillHeight(card, false);
+        GridPane.setFillHeight(card, true);
         GridPane.setValignment(card, VPos.TOP);
     }
 }
