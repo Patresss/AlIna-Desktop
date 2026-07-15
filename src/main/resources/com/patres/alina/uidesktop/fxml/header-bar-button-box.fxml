@@ -69,6 +69,7 @@
                         <String fx:value="no-arrow" />
                         <String fx:value="flat" />
                         <String fx:value="button-circle" />
+                        <String fx:value="header-settings-action" />
                     </styleClass>
                 </MenuButton>
             </children>

@@ -10,8 +10,12 @@ import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.util.Duration;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -29,12 +33,15 @@ public class HeaderEventCountdown extends HBox {
 
     private static final int MAX_SUMMARY_CHARS = 48;
     private static final int URGENT_THRESHOLD_MINUTES = 5;
+    private static final double MAX_COMPONENT_WIDTH = 320;
 
     private static final String STYLE_CONTAINER = "header-event-countdown";
+    private static final String STYLE_ICON = "header-event-countdown-icon";
     private static final String STYLE_SUMMARY = "header-event-countdown-summary";
     private static final String STYLE_TIME = "header-event-countdown-time";
     private static final String STYLE_URGENT = "header-event-countdown-urgent";
 
+    private final FontIcon calendarIcon = new FontIcon("mdal-calendar_today");
     private final Label summaryLabel = new Label();
     private final Label timeLabel = new Label();
 
@@ -47,15 +54,22 @@ public class HeaderEventCountdown extends HBox {
     public HeaderEventCountdown() {
         setAlignment(Pos.CENTER_LEFT);
         setSpacing(6);
+        setMinWidth(0);
+        setMaxWidth(MAX_COMPONENT_WIDTH);
         getStyleClass().add(STYLE_CONTAINER);
+
+        calendarIcon.getStyleClass().add(STYLE_ICON);
 
         summaryLabel.getStyleClass().add(STYLE_SUMMARY);
         summaryLabel.setMinWidth(0);
+        summaryLabel.setMaxWidth(Double.MAX_VALUE);
+        summaryLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
+        HBox.setHgrow(summaryLabel, Priority.ALWAYS);
 
         timeLabel.getStyleClass().add(STYLE_TIME);
-        timeLabel.setMinWidth(0);
+        timeLabel.setMinWidth(Region.USE_PREF_SIZE);
 
-        getChildren().addAll(summaryLabel, timeLabel);
+        getChildren().addAll(calendarIcon, summaryLabel, timeLabel);
 
         // Start invisible until we have data
         setVisible(false);

@@ -13,25 +13,28 @@
 }
 
 .app-header {
-    -fx-background-color: -color-bg-overlay;
-    -fx-border-color: transparent transparent -color-border-subtle transparent;
-    -fx-border-width: 0 0 1px 0;
-    -fx-padding: 5px 10px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 8px 12px 6px 12px;
+    -fx-effect: null;
 }
 
 .header-bar-button-box {
     -fx-padding: 0;
-    -fx-spacing: 7px;
+    -fx-spacing: 6px;
 }
 
 .header-action-group {
     -fx-alignment: center;
     -fx-spacing: 2px;
-    -fx-padding: 3px;
-    -fx-background-color: -color-bg-subtle;
-    -fx-background-radius: 12px;
+    -fx-padding: 2px;
+    -fx-background-color: -color-bg-overlay;
+    -fx-background-radius: 11px;
     -fx-border-color: -color-border-subtle;
-    -fx-border-radius: 12px;
+    -fx-border-radius: 11px;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, -color-border-subtle, 8, 0.04, 0, 2);
 }
 
 .header-action-group .button,
@@ -43,13 +46,31 @@
     -fx-pref-height: 30px;
     -fx-max-width: 30px;
     -fx-max-height: 30px;
+    -fx-background-color: transparent;
     -fx-background-radius: 9px;
+    -fx-border-color: transparent;
+    -fx-border-radius: 9px;
+    -fx-border-width: 1px;
 }
 
 .header-action-group .button:hover,
 .header-action-group .toggle-button:hover,
 .header-action-group .menu-button:hover {
-    -fx-background-color: -color-bg-overlay;
+    -fx-background-color: -color-bg-subtle;
+}
+
+.header-action-group .button:focused,
+.header-action-group .toggle-button:focused,
+.header-action-group .menu-button:focused {
+    -fx-border-color: -color-accent-muted;
+}
+
+.header-action-group .header-settings-action {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.header-action-group .header-settings-action:hover {
+    -fx-background-color: -color-accent-muted;
 }
 
 .header-action-group .toggle-button:selected {
@@ -64,21 +85,45 @@
 .header-action-group .ikonli-font-icon {
     -fx-icon-size: 16px;
     -fx-icon-color: -color-fg-muted;
+    -fx-fill: -color-fg-muted;
+}
+
+.header-action-group .button:hover .ikonli-font-icon,
+.header-action-group .toggle-button:hover .ikonli-font-icon,
+.header-action-group .menu-button:hover .ikonli-font-icon {
+    -fx-icon-color: -color-fg-default;
+    -fx-fill: -color-fg-default;
+}
+
+.header-action-group .header-settings-action .ikonli-font-icon,
+.header-action-group .header-settings-action:hover .ikonli-font-icon {
+    -fx-icon-color: -color-accent-fg;
+    -fx-fill: -color-accent-fg;
+}
+
+.header-action-group .toggle-button:selected:hover .ikonli-font-icon {
+    -fx-icon-color: -color-fg-emphasis;
+    -fx-fill: -color-fg-emphasis;
 }
 
 .header-event-countdown {
-    -fx-padding: 6px 11px;
+    -fx-alignment: center-left;
+    -fx-padding: 5px 8px;
     -fx-spacing: 6px;
-    -fx-background-color: -color-bg-subtle;
-    -fx-background-radius: 11px;
-    -fx-border-color: -color-border-subtle;
-    -fx-border-radius: 11px;
+    -fx-background-color: transparent;
+}
+
+.header-event-countdown-icon {
+    -fx-icon-size: 15px;
+    -fx-icon-color: -color-accent-fg;
+    -fx-fill: -color-accent-fg;
 }
 
 .header-event-countdown-summary {
     -fx-font-size: 11px;
-    -fx-font-weight: 700;
+    -fx-font-weight: 600;
     -fx-text-fill: -color-fg-default;
+    -fx-text-overrun: ellipsis;
 }
 
 .header-event-countdown-time {
