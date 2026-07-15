@@ -1,15 +1,15 @@
-# Unified Header Surface Design
+# Integrated Transparent Header Design
 
 ## Context
 
 The conversation view, welcome screen, and floating composer now use a shared visual language: soft theme-provided surfaces, rounded geometry, restrained elevation, and semantic accent colors. The native JavaFX application header still reads as a separate toolbar made of several compact panels. Its calendar countdown and action controls should become part of the same surface family without changing their behavior.
 
-The approved direction is **A. Unified surface**: one floating header surface containing a quiet calendar summary and three compact action groups.
+An initial floating-card treatment was implemented and visually reviewed. Its external spacing, large radius, and full-surface shadow made the header look like a detached white island. The revised approved direction is **B. Transparent header**: the header itself merges with the application background while the calendar summary remains quiet and the three compact action groups provide structure.
 
 ## Goals
 
 - Make the native application header visually consistent with the refreshed chat and composer.
-- Present the header as one calm, rounded, lightly elevated surface.
+- Integrate the header directly into the application background without a card-like outer surface.
 - Improve the visual hierarchy of the next-event countdown and action icons.
 - Preserve all existing actions, menus, tooltips, accessibility text, toggle state, and calendar refresh behavior.
 - Remain usable at the default application width, in narrower windows, and with both light and dark themes.
@@ -24,15 +24,15 @@ The approved direction is **A. Unified surface**: one floating header surface co
 
 ## Approved Visual Direction
 
-### Floating unified surface
+### Transparent integrated header
 
-The `HeaderBar` sits inside a small padded dock so the application background remains visible around it. The bar uses the theme overlay surface, a 16 px radius, a subtle theme-derived shadow, and no full-width bottom divider. This makes it visually related to the floating composer and assistant message surfaces while retaining its role as the top-level application header.
+The `HeaderBar` sits directly at the top of the application shell. It has no filled outer background, border, radius, shadow, or external dock spacing. A small amount of internal padding keeps the window controls, event summary, and action groups away from the window edges.
 
-The dock owns external spacing. The header owns its background, radius, elevation, and compact internal padding. Neither component introduces literal palette colors.
+The transparent header reveals the existing application background and therefore adapts automatically to light and dark themes. It has no bottom divider; the transition into application content remains continuous. Neither the header nor its child surfaces introduce literal palette colors.
 
 ### Next-event presentation
 
-The existing event countdown becomes the quiet leading area of the shared surface rather than a separate filled card. It contains:
+The existing event countdown becomes the quiet leading area of the transparent header rather than a separate filled card. It contains:
 
 - a small calendar icon using the accent foreground token;
 - the event summary in the default foreground color and semibold weight;
@@ -40,7 +40,7 @@ The existing event countdown becomes the quiet leading area of the shared surfac
 
 The event summary and countdown retain their current text and behavior. Long summaries truncate with an ellipsis within a bounded leading area so they cannot crowd out header actions. The urgent state continues to use the semantic danger foreground token for the event text and countdown.
 
-When no current or upcoming event is available, the countdown remains unmanaged and invisible as it does today. The trailing action area stays aligned correctly inside the unified surface.
+When no current or upcoming event is available, the countdown remains unmanaged and invisible as it does today. The trailing action area stays aligned correctly within the header.
 
 ### Action groups and controls
 
@@ -50,7 +50,7 @@ The current action order and grouping remain unchanged:
 2. about, OpenCode session, and settings;
 3. split mode and always-on-top.
 
-Each group becomes a quiet inset segment using the subtle background and border tokens. Controls retain a 30 px square target, a 9 px inner radius, and the current icons and tooltips. Neutral controls use the muted foreground token. Hover uses the overlay surface and default foreground token without moving surrounding content.
+Each group becomes a small independent surface using the overlay background, subtle border, rounded geometry, and a restrained theme-derived shadow. The groups provide the visual structure that the transparent parent intentionally omits. Controls retain a 30 px square target, a 9 px inner radius, and the current icons and tooltips. Neutral controls use the muted foreground token. Hover uses the subtle background and default foreground token without moving surrounding content.
 
 The settings menu button receives a restrained accent treatment using the subtle accent background and accent foreground. This gives the frequently referenced configuration menu a stable visual anchor without making it look selected.
 
@@ -68,14 +68,14 @@ The layout must remain balanced in these states:
 - calendar event present and absent;
 - split-mode action visible and hidden.
 
-No action wraps onto a second row. The header dock and internal padding may become compact enough to preserve the single-row composition, but control targets must not shrink below their specified dimensions.
+No action wraps onto a second row. Internal padding may become compact enough to preserve the single-row composition, but control targets must not shrink below their specified dimensions.
 
 ## Components and Implementation Boundary
 
 The implementation is limited to the native application shell:
 
-- `AssistantAppLauncher` wraps the `HeaderBar` in a styled dock that provides external spacing.
-- `chat-shell.css` defines the dock, unified surface, event presentation, action segments, hover, selected, and accent states.
+- `AssistantAppLauncher` places the `HeaderBar` directly at the top of `ApplicationWindow`, without a dock wrapper.
+- `chat-shell.css` defines the transparent header, surfaced action groups, event presentation, hover, selected, and accent states.
 - `HeaderEventCountdown` adds the decorative calendar icon and explicit shrink/truncation constraints while preserving data refresh and countdown logic.
 - `header-bar-button-box.fxml` adds a dedicated style class to the settings action if needed for its accent treatment. Existing handlers, grouping, order, and accessibility metadata remain unchanged.
 
@@ -120,13 +120,13 @@ Inspect the running application with:
 - split-mode button visible and hidden;
 - hover, keyboard focus, selected pin, selected split mode, and the settings menu open.
 
-Confirm that the header surface, message surfaces, and composer read as one interface family and that no control shifts, clips, or becomes unreachable.
+Confirm that the transparent header, surfaced action groups, message surfaces, and composer read as one interface family and that no control shifts, clips, or becomes unreachable.
 
 ## Acceptance Criteria
 
-- The header appears as one padded, rounded, lightly elevated surface.
-- The event countdown reads as the leading content of that surface, with an accent calendar icon and safe ellipsis behavior.
-- Existing action groups remain recognizable but visually quieter inside the shared surface.
+- The header blends into the application background with no outer fill, border, radius, shadow, or dock spacing.
+- The event countdown reads as quiet leading content, with an accent calendar icon and safe ellipsis behavior.
+- Existing action groups remain recognizable as three light independent surfaces inside the transparent header.
 - Settings has a restrained accent treatment, while selected toggles have an unambiguous active state.
 - Header behavior and action wiring are unchanged.
 - The layout remains usable in narrow and default-width windows with and without an event.
