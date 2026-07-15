@@ -63,12 +63,12 @@ The room row begins with a map-pin icon and `Sale` / `Rooms` label. Its collapse
 Room chips use a focused `CalendarRoomDisplayName` formatter. It preserves the full resource label for a tooltip and accessible text while producing a compact visible label by applying these rules in order:
 
 1. remove a trailing equipment block enclosed in square brackets;
-2. when the remaining value contains a colon, keep the suffix after the final colon;
-3. otherwise remove the prefix through the final comma;
-4. when that remaining suffix contains at least two hyphens, keep the segment after the final hyphen;
-5. trim whitespace and fall back to the full label if the result is blank.
+2. preserve the city prefix before the first comma;
+3. when the remaining value contains a colon, combine the city with the suffix after the final colon;
+4. otherwise, when the remaining value contains a room code shaped like `number-number-name`, combine the city with that code and its capacity suffix;
+5. trim whitespace and, when neither structured rule matches, fall back to the complete label after equipment removal.
 
-For the reported examples this yields `Galwan-4-91-Dekiel (2)` and `Świnnica (6)`. The formatter is deterministic and UI-independent so it can be tested without JavaFX.
+For the reported examples this yields `Warszawa, Galwan-4-91-Dekiel (2)` and `Kraków, 05-40-Świnnica (6)`. The formatter never discards an unrecognized room name; it only removes the trailing equipment block in that fallback case. It is deterministic and UI-independent so it can be tested without JavaFX.
 
 ### Description
 
@@ -76,7 +76,9 @@ The full Calendar description is retained in the model and rendered as plain tex
 
 ### Location, conference link, and attachments
 
-Only a physical location is rendered in the compact metadata row. A location value that consists solely of a valid HTTP(S) URL is treated as an online meeting target and omitted from the map-pin row. If a leading URL is followed by comma-separated physical text, the URL is removed and the remaining text is shown. Other non-URL location text continues to wrap at narrow widths.
+Booked room resources are the authoritative physical-location presentation. When at least one `attendees[].resource=true` entry exists, the generic Calendar `location` row is omitted because Google Calendar may repeat the same rooms there as one long, comma-separated value. The separate `Sale` / `Rooms` row is shown instead. When no room resource exists, a physical location is rendered in the compact metadata row as before.
+
+A location value that consists solely of a valid HTTP(S) URL is treated as an online meeting target and omitted from the map-pin row. If a leading URL is followed by comma-separated physical text and no room resource exists, the URL is removed and the remaining text is shown. Other non-URL location text continues to wrap at narrow widths.
 
 A subdued flat/ghost `Dołącz` / `Join` action appears when the existing conference-link resolver finds a Hangout/Meet link, a video `conferenceData` entry point, a supported conferencing URL in the description, or an HTTP(S) location. It intentionally does not use the main accent-button styling, so it remains discoverable without visually dominating the meeting card. An HTTP(S) location therefore remains actionable without being duplicated as a misleading room label.
 
@@ -90,7 +92,7 @@ The footer contains a compact outlined `Przygotuj mnie` / `Prepare me` action. I
 
 Activating the button resolves the existing `$ARGUMENTS` placeholder with the selected event context and publishes the existing `CalendarAiPromptEvent`. The active chat receives that event, sends the resulting message immediately, and starts generating the answer without opening a dialog or requiring a second confirmation.
 
-Prompt arguments are built by one shared calendar-event formatter used by both the existing Calendar event action and the new card. The context includes the event title, start/end time, physical location, conferencing link, non-resource participants, rooms, full description, and attachment titles/URLs when available. A URL-only location appears only as the meeting link, not as a duplicated `Location` line. Missing fields are omitted cleanly. Centralizing this formatter prevents the two Calendar entry points from drifting into different preparation behavior.
+Prompt arguments are built by one shared calendar-event formatter used by both the existing Calendar event action and the new card. The context includes the event title, start/end time, conferencing link, non-resource participants, rooms, full description, and attachment titles/URLs when available. Physical `Location` is included only when no room resource exists. A URL-only location appears only as the meeting link, not as a duplicated `Location` line. Missing fields are omitted cleanly. Centralizing this formatter prevents the two Calendar entry points from drifting into different preparation behavior.
 
 ### Expansion state
 
@@ -160,9 +162,9 @@ Automated coverage includes:
 - parser tests for description, participant and resource attendees, attachments, missing arrays and partial nested objects;
 - selector tests with a fixed `Clock` for running, upcoming, overlapping, ended, malformed, empty, mixed timed/all-day, and all-day-only inputs;
 - feed tests for initial loading, interval refresh, manual refresh, in-flight coalescing, last-success retention, settings rescheduling, and shutdown;
-- preview tests for word-boundary truncation, limits, Unicode text, empty values, and both reported room-name formats;
+- preview tests for word-boundary truncation, limits, Unicode text, empty values, both reported room-name formats, and the full-label-without-equipment fallback;
 - card behavior tests for independent expansion, reset on event change, empty/error/auth/stale states, and URL-scheme rejection;
-- preparation tests for separated participants and rooms, URL-only versus physical locations, missing optional fields, the disabled blank-prompt state, and immediate publication through the existing active-chat event;
+- preparation tests for separated participants and rooms, suppression of duplicated location when rooms exist, URL-only versus physical locations, missing optional fields, the disabled blank-prompt state, and immediate publication through the existing active-chat event;
 - settings tests for defaults, normalization, old JSON without the nested settings object, and the new dashboard layout identifier;
 - dashboard planner tests including the default `UPCOMING_EVENT` placement;
 - PL/EN resource and CSS style-contract tests.
