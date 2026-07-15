@@ -43,6 +43,7 @@ public final class DashboardContainer extends VBox {
     private final GitHubWidget gitHubWidget;
     private final JiraWidget jiraWidget;
     private final GoogleCalendarWidget googleCalendarWidget;
+    private final UpcomingCalendarEventWidget upcomingCalendarEventWidget;
     private final ObsidianWidget obsidianWidget;
     private final List<CardNode> cardNodes;
 
@@ -56,16 +57,19 @@ public final class DashboardContainer extends VBox {
                               GitHubWidget gitHubWidget,
                               JiraWidget jiraWidget,
                               GoogleCalendarWidget googleCalendarWidget,
+                              UpcomingCalendarEventWidget upcomingCalendarEventWidget,
                               ObsidianWidget obsidianWidget) {
         this.mediaControlWidget = mediaControlWidget;
         this.dashboardPane = dashboardPane;
         this.gitHubWidget = gitHubWidget;
         this.jiraWidget = jiraWidget;
         this.googleCalendarWidget = googleCalendarWidget;
+        this.upcomingCalendarEventWidget = upcomingCalendarEventWidget;
         this.obsidianWidget = obsidianWidget;
         this.cardNodes = List.of(
                 new CardNode(DashboardCardId.MUSIC, mediaControlWidget),
                 new CardNode(DashboardCardId.TASKS, dashboardPane),
+                new CardNode(DashboardCardId.UPCOMING_EVENT, upcomingCalendarEventWidget),
                 new CardNode(DashboardCardId.CALENDAR, googleCalendarWidget),
                 new CardNode(DashboardCardId.GITHUB, gitHubWidget),
                 new CardNode(DashboardCardId.JIRA, jiraWidget),
@@ -80,6 +84,7 @@ public final class DashboardContainer extends VBox {
 
         configureCard(mediaControlWidget);
         configureCard(dashboardPane);
+        configureCard(upcomingCalendarEventWidget);
         configureCard(googleCalendarWidget);
         configureCard(gitHubWidget);
         configureCard(jiraWidget);
@@ -258,6 +263,7 @@ public final class DashboardContainer extends VBox {
             updateWidgetVisibility(dashboardPane, settings.showDashboardTasks());
             updateWidgetVisibility(gitHubWidget, settings.showDashboardGithub());
             updateWidgetVisibility(jiraWidget, settings.showDashboardJira());
+            updateWidgetVisibility(upcomingCalendarEventWidget, settings.upcomingEventCard().visible());
             updateWidgetVisibility(googleCalendarWidget, settings.showDashboardCalendar());
             updateWidgetVisibility(obsidianWidget, settings.showDashboardObsidian());
             scheduleLayoutRefresh();

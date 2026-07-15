@@ -1,0 +1,68 @@
+@import "allegro-theme.css";
+
+/* Restrained Allegro light palette. Component styles consume semantic tokens. */
+.root {
+    -color-dark: #000000;
+    -color-light: #ffffff;
+    -color-base-0: #f7f7f8;
+    -color-base-1: #f2f2f3;
+    -color-base-2: #e6e6e6;
+    -color-base-3: #ceced1;
+    -color-base-4: #b3b3b7;
+    -color-base-5: #8b8b90;
+    -color-base-6: #66666a;
+    -color-base-7: #444447;
+    -color-base-8: #1f1f21;
+    -color-base-9: #000000;
+
+    -color-accent-0: #fff7f2;
+    -color-accent-1: #ffede3;
+    -color-accent-2: #ffdecc;
+    -color-accent-3: #ffbd99;
+    -color-accent-4: #ff9c66;
+    -color-accent-5: #ff5a00;
+    -color-accent-6: #d94b00;
+    -color-accent-7: #b33c00;
+    -color-accent-8: #8c2e00;
+    -color-accent-9: #661f00;
+
+    -color-fg-default: #1f1f21;
+    -color-fg-muted: #66666a;
+    -color-fg-subtle: #8b8b90;
+    -color-fg-emphasis: #ffffff;
+    -color-bg-default: #f7f7f8;
+    -color-bg-overlay: #ffffff;
+    -color-bg-subtle: #f2f2f3;
+    -color-bg-inset: #e6e6e6;
+    -color-border-default: #ceced1;
+    -color-border-muted: #d9d9db;
+    -color-border-subtle: #e6e6e6;
+    -color-neutral-emphasis-plus: #444447;
+    -color-neutral-emphasis: #66666a;
+    -color-neutral-muted: #b3b3b7;
+    -color-neutral-subtle: #f2f2f3;
+
+    -color-accent-fg: #ff5a00;
+    -color-accent-emphasis: #ff5a00;
+    -color-accent-muted: rgba(255, 90, 0, 0.38);
+    -color-accent-subtle: #ffede3;
+    -color-info-fg: #2563eb;
+    -color-info-emphasis: #2563eb;
+    -color-info-muted: rgba(37, 99, 235, 0.28);
+    -color-info-subtle: #dbeafe;
+    -color-success-fg: #15803d;
+    -color-success-emphasis: #16a34a;
+    -color-success-muted: rgba(22, 163, 74, 0.28);
+    -color-success-subtle: #dcfce7;
+    -color-warning-fg: #b45309;
+    -color-warning-emphasis: #d97706;
+    -color-warning-muted: rgba(217, 119, 6, 0.28);
+    -color-warning-subtle: #fef3c7;
+    -color-danger-fg: #be123c;
+    -color-danger-emphasis: #e11d48;
+    -color-danger-muted: rgba(225, 29, 72, 0.28);
+    -color-danger-subtle: #ffe4e6;
+
+    -fx-background-color: -color-bg-default;
+    -fx-font-family: "Inter";
+}

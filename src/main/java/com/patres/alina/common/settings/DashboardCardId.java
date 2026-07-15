@@ -4,6 +4,7 @@ package com.patres.alina.common.settings;
 public enum DashboardCardId {
     MUSIC("music", 10, false),
     TASKS("tasks", 20, false),
+    UPCOMING_EVENT("upcomingEvent", 25, true),
     CALENDAR("calendar", 30, true),
     GITHUB("github", 40, true),
     JIRA("jira", 50, true),

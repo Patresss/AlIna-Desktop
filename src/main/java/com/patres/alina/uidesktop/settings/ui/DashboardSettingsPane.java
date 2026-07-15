@@ -5,6 +5,7 @@ import atlantafx.base.theme.Styles;
 import com.patres.alina.common.settings.DashboardCardId;
 import com.patres.alina.common.settings.DashboardCardLayoutSettings;
 import com.patres.alina.common.settings.DashboardLayoutSettings;
+import com.patres.alina.common.settings.UpcomingEventCardSettings;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.scene.Node;
@@ -58,6 +59,13 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     private ToggleSwitch calendarChangeNotificationsToggle;
     private TextArea calendarAiPromptField;
     private CardLayoutControls calendarLayoutControls;
+
+    // Upcoming event
+    private ToggleSwitch showUpcomingEventToggle;
+    private Spinner<Integer> upcomingEventAttendeeLimitSpinner;
+    private Spinner<Integer> upcomingEventDescriptionLimitSpinner;
+    private ToggleSwitch upcomingEventShowAttachmentsToggle;
+    private CardLayoutControls upcomingEventLayoutControls;
 
     // Tasks
     private ToggleSwitch showDashboardTasksToggle;
@@ -129,6 +137,17 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         calendarChangeNotificationsToggle.setSelected(settings.calendarChangeNotificationsEnabled());
         calendarAiPromptField.setText(orEmpty(settings.calendarAiPrompt()));
         resetCardLayoutControls(calendarLayoutControls, DashboardCardId.CALENDAR);
+
+        // Upcoming event
+        showUpcomingEventToggle.setSelected(settings.upcomingEventCard().visible());
+        upcomingEventAttendeeLimitSpinner.getValueFactory().setValue(
+                settings.upcomingEventCard().attendeePreviewLimit()
+        );
+        upcomingEventDescriptionLimitSpinner.getValueFactory().setValue(
+                settings.upcomingEventCard().descriptionPreviewCharacters()
+        );
+        upcomingEventShowAttachmentsToggle.setSelected(settings.upcomingEventCard().showAttachments());
+        resetCardLayoutControls(upcomingEventLayoutControls, DashboardCardId.UPCOMING_EVENT);
 
         // Tasks
         showDashboardTasksToggle.setSelected(settings.showDashboardTasks());
@@ -219,6 +238,12 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 settings.agentBackend(),
                 settings.codexCommand(),
                 settings.codexWorkingDirectory(),
+                new UpcomingEventCardSettings(
+                        showUpcomingEventToggle.isSelected(),
+                        upcomingEventAttendeeLimitSpinner.getValue(),
+                        upcomingEventDescriptionLimitSpinner.getValue(),
+                        upcomingEventShowAttachmentsToggle.isSelected()
+                ),
                 createDashboardLayoutSettings()
         );
         BackendApi.updateWorkspaceSettings(updated);
@@ -265,6 +290,27 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         calendarNotificationMinutesTile.setAction(calendarNotificationMinutesSpinner);
         calendarChangeNotificationsToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         calendarAiPromptField = createAiPromptField();
+
+        // ── Upcoming event ──
+        final var upcomingEventHeader = createTextSeparator(
+                "settings.dashboard.upcomingEvent.section",
+                Styles.TITLE_4
+        );
+        showUpcomingEventToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        upcomingEventLayoutControls = createCardLayoutControls(DashboardCardId.UPCOMING_EVENT);
+        upcomingEventAttendeeLimitSpinner = createResizableEditableSpinner(
+                UpcomingEventCardSettings.MIN_ATTENDEE_PREVIEW_LIMIT,
+                UpcomingEventCardSettings.MAX_ATTENDEE_PREVIEW_LIMIT,
+                settings.upcomingEventCard().attendeePreviewLimit(),
+                settingsBox
+        );
+        upcomingEventDescriptionLimitSpinner = createResizableEditableSpinner(
+                UpcomingEventCardSettings.MIN_DESCRIPTION_PREVIEW_CHARACTERS,
+                UpcomingEventCardSettings.MAX_DESCRIPTION_PREVIEW_CHARACTERS,
+                settings.upcomingEventCard().descriptionPreviewCharacters(),
+                settingsBox
+        );
+        upcomingEventShowAttachmentsToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
 
         // ── Tasks ──
         final var tasksHeader = createTextSeparator("settings.dashboard.tasks.section", Styles.TITLE_4);
@@ -350,6 +396,14 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 calendarNotificationMinutesTile,
                 tileFor(calendarChangeNotificationsToggle, "settings.workspace.calendarChangeNotifications.title", "settings.workspace.calendarChangeNotifications.description"),
                 tileFor(calendarAiPromptField, "settings.workspace.calendarAiPrompt.title", "settings.workspace.calendarAiPrompt.description"),
+                // Upcoming event
+                upcomingEventHeader,
+                tileFor(showUpcomingEventToggle, "settings.workspace.showUpcomingEvent.title", "settings.workspace.showUpcomingEvent.description"),
+                halfWidthTile(upcomingEventLayoutControls),
+                orderTile(upcomingEventLayoutControls),
+                tileFor(upcomingEventAttendeeLimitSpinner, "settings.workspace.upcomingEventAttendeeLimit.title", "settings.workspace.upcomingEventAttendeeLimit.description"),
+                tileFor(upcomingEventDescriptionLimitSpinner, "settings.workspace.upcomingEventDescriptionLimit.title", "settings.workspace.upcomingEventDescriptionLimit.description"),
+                tileFor(upcomingEventShowAttachmentsToggle, "settings.workspace.upcomingEventAttachments.title", "settings.workspace.upcomingEventAttachments.description"),
                 // Tasks
                 tasksHeader,
                 tileFor(showDashboardTasksToggle, "settings.workspace.showTasks.title", "settings.workspace.showTasks.description"),
@@ -424,6 +478,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         final Map<String, DashboardCardLayoutSettings> cards = new LinkedHashMap<>();
         putCardLayout(cards, DashboardCardId.MUSIC, musicLayoutControls);
         putCardLayout(cards, DashboardCardId.TASKS, tasksLayoutControls);
+        putCardLayout(cards, DashboardCardId.UPCOMING_EVENT, upcomingEventLayoutControls);
         putCardLayout(cards, DashboardCardId.CALENDAR, calendarLayoutControls);
         putCardLayout(cards, DashboardCardId.GITHUB, githubLayoutControls);
         putCardLayout(cards, DashboardCardId.JIRA, jiraLayoutControls);

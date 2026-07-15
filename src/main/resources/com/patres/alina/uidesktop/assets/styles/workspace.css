@@ -363,6 +363,149 @@
     -fx-text-fill: -color-danger-fg;
 }
 
+/* Upcoming/current Calendar event */
+.workspace-upcoming-event {
+    -fx-padding: 9px 11px;
+    -fx-spacing: 3px;
+}
+
+.workspace-upcoming-event .workspace-dashboard-header {
+    -fx-padding: 0 0 2px 0;
+    -fx-min-height: 22px;
+}
+
+.workspace-upcoming-event-status {
+    -fx-background-color: -color-accent-subtle;
+    -fx-background-radius: 999px;
+    -fx-text-fill: -color-accent-fg;
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+    -fx-padding: 2px 7px;
+}
+
+.workspace-upcoming-event-status-urgent {
+    -fx-background-color: -color-danger-subtle;
+    -fx-text-fill: -color-danger-fg;
+}
+
+.workspace-upcoming-event-summary {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-line-spacing: 0;
+}
+
+.workspace-upcoming-event-metadata {
+    -fx-alignment: center-left;
+}
+
+.workspace-upcoming-event-meta {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+}
+
+.workspace-upcoming-event-meta .ikonli-font-icon {
+    -fx-icon-size: 12px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.workspace-upcoming-event-chips {
+    -fx-alignment: center-left;
+}
+
+.workspace-upcoming-event-chip {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 999px;
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 9px;
+    -fx-padding: 2px 6px;
+}
+
+.workspace-upcoming-event-description-section {
+    -fx-padding: 0;
+}
+
+.workspace-upcoming-event-description {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+    -fx-line-spacing: 1px;
+}
+
+.workspace-upcoming-event-more {
+    -fx-text-fill: -color-accent-fg;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-padding: 1px 4px;
+}
+
+.workspace-upcoming-event-more:hover {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.workspace-upcoming-event-attachment {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 10px;
+    -fx-padding: 3px 5px;
+}
+
+.workspace-upcoming-event-attachment .ikonli-font-icon {
+    -fx-icon-size: 12px;
+    -fx-icon-color: -color-accent-fg;
+}
+
+.workspace-upcoming-event-actions {
+    -fx-padding: 2px 0 0 0;
+}
+
+.workspace-upcoming-event-prepare {
+    -fx-background-color: transparent;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 7px;
+    -fx-background-radius: 7px;
+    -fx-text-fill: -color-accent-fg;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-padding: 4px 8px;
+}
+
+.workspace-upcoming-event-prepare:hover {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-muted;
+}
+
+.workspace-upcoming-event-prepare .ikonli-font-icon {
+    -fx-icon-size: 12px;
+    -fx-icon-color: -color-accent-fg;
+}
+
+.workspace-upcoming-event-join,
+.workspace-upcoming-event-attachments-toggle {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 10px;
+    -fx-font-weight: 600;
+    -fx-padding: 4px 7px;
+}
+
+.workspace-upcoming-event-join:hover,
+.workspace-upcoming-event-attachments-toggle:hover {
+    -fx-background-color: -color-bg-subtle;
+    -fx-text-fill: -color-fg-default;
+}
+
+.workspace-upcoming-event-join .ikonli-font-icon,
+.workspace-upcoming-event-attachments-toggle .ikonli-font-icon {
+    -fx-icon-size: 12px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.workspace-upcoming-event-stale {
+    -fx-text-fill: -color-warning-fg;
+    -fx-background-color: -color-warning-subtle;
+    -fx-background-radius: 8px;
+    -fx-font-size: 10px;
+    -fx-padding: 4px 6px;
+}
+
 .workspace-calendar-video-icon,
 .workspace-calendar-ai-icon {
     -fx-icon-size: 13px;

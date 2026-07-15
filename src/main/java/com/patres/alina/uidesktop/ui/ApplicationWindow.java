@@ -21,6 +21,7 @@ import com.patres.alina.uidesktop.ui.chat.Browser;
 import com.patres.alina.uidesktop.ui.chat.ChatTabBar;
 import com.patres.alina.uidesktop.ui.chat.ChatWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
+import com.patres.alina.uidesktop.ui.calendar.GoogleCalendarFeed;
 import com.patres.alina.uidesktop.ui.dashboard.DashboardPane;
 import com.patres.alina.uidesktop.ui.dashboard.DashboardContainer;
 import com.patres.alina.uidesktop.ui.dashboard.DashboardHeightPolicy;
@@ -29,6 +30,7 @@ import com.patres.alina.uidesktop.ui.dashboard.GoogleCalendarWidget;
 import com.patres.alina.uidesktop.ui.dashboard.JiraWidget;
 import com.patres.alina.uidesktop.ui.dashboard.MediaControlWidget;
 import com.patres.alina.uidesktop.ui.dashboard.ObsidianWidget;
+import com.patres.alina.uidesktop.ui.dashboard.UpcomingCalendarEventWidget;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -83,9 +85,11 @@ public class ApplicationWindow extends BorderPane {
     private final MediaControlWidget mediaControlWidget = new MediaControlWidget();
     private final GitHubWidget gitHubWidget = new GitHubWidget();
     private final JiraWidget jiraWidget = new JiraWidget();
-    private final GoogleCalendarWidget googleCalendarWidget = new GoogleCalendarWidget();
     private final ObsidianWidget obsidianWidget = new ObsidianWidget();
-    private final DashboardContainer dashboardContainer = new DashboardContainer(mediaControlWidget, dashboardPane, gitHubWidget, jiraWidget, googleCalendarWidget, obsidianWidget);
+    private final GoogleCalendarFeed calendarFeed;
+    private final GoogleCalendarWidget googleCalendarWidget;
+    private final UpcomingCalendarEventWidget upcomingCalendarEventWidget;
+    private final DashboardContainer dashboardContainer;
 
     // Split mode layout
     private final VBox chatContentPane = new VBox();
@@ -98,8 +102,20 @@ public class ApplicationWindow extends BorderPane {
     @SuppressWarnings("unused") // retained as field to keep event subscription alive
     private SchedulerTaskExecutor schedulerTaskExecutor;
 
-    public ApplicationWindow() {
+    public ApplicationWindow(final GoogleCalendarFeed calendarFeed) {
         super();
+        this.calendarFeed = calendarFeed;
+        googleCalendarWidget = new GoogleCalendarWidget(calendarFeed);
+        upcomingCalendarEventWidget = new UpcomingCalendarEventWidget(calendarFeed);
+        dashboardContainer = new DashboardContainer(
+                mediaControlWidget,
+                dashboardPane,
+                gitHubWidget,
+                jiraWidget,
+                googleCalendarWidget,
+                upcomingCalendarEventWidget,
+                obsidianWidget
+        );
         try {
             var loader = new FXMLLoader(
                     Resources.getResource("fxml/application-window.fxml").toURL()
@@ -208,7 +224,7 @@ public class ApplicationWindow extends BorderPane {
         var settings = BackendApi.getWorkspaceSettings();
         gitHubWidget.refresh(settings.githubToken());
         jiraWidget.refresh();
-        googleCalendarWidget.refresh();
+        calendarFeed.refreshNow();
         obsidianWidget.refresh();
         // Keep chat separator in sync with dashboard visibility (only in normal mode)
         if (!splitModeActive) {

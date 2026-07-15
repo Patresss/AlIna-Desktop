@@ -166,6 +166,7 @@ class OpenCodeConfigurationServiceTest {
                 WorkspaceSettings.DEFAULT_AGENT_BACKEND,
                 WorkspaceSettings.DEFAULT_CODEX_COMMAND,
                 workingDirectory.toString(),
+                new com.patres.alina.common.settings.UpcomingEventCardSettings(),
                 new com.patres.alina.common.settings.DashboardLayoutSettings()
         ));
 

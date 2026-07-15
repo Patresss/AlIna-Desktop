@@ -97,6 +97,8 @@ Displays a checklist loaded from a **markdown file** (e.g. an Obsidian vault). S
 
 Shows **today's events** from Google Calendar. Supports meeting join-link notifications and per-event AI prompts.
 
+The separate compact **Next meeting** card highlights the running or nearest event today. It can expand participants, the description, and attachment links inline, and immediately send the configurable **Prepare me** prompt to the active chat. Its visibility, layout, and preview limits are configurable in Dashboard Settings.
+
 ### GitHub
 
 Lists **pull requests** awaiting your review. Requires a personal access token.

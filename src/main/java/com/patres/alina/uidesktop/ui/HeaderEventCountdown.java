@@ -1,13 +1,11 @@
 package com.patres.alina.uidesktop.ui;
 
 import com.patres.alina.server.integration.GoogleCalendarEvent;
-import com.patres.alina.server.integration.GoogleCalendarResult;
-import com.patres.alina.server.integration.GoogleCalendarService;
-import com.patres.alina.uidesktop.backend.BackendApi;
+import com.patres.alina.uidesktop.ui.calendar.GoogleCalendarFeed;
+import com.patres.alina.uidesktop.ui.calendar.GoogleCalendarSnapshot;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.OverrunStyle;
@@ -48,10 +46,9 @@ public class HeaderEventCountdown extends HBox {
     /** Cached events list – refreshed every dashboardCalendarRefreshSeconds */
     private volatile List<GoogleCalendarEvent> cachedEvents = List.of();
 
-    private Timeline dataRefreshTimeline;
     private Timeline tickTimeline;
 
-    public HeaderEventCountdown() {
+    public HeaderEventCountdown(final GoogleCalendarFeed calendarFeed) {
         setAlignment(Pos.CENTER_LEFT);
         setSpacing(6);
         setMinWidth(0);
@@ -75,33 +72,21 @@ public class HeaderEventCountdown extends HBox {
         setVisible(false);
         setManaged(false);
 
-        startDataRefresh();
+        calendarFeed.subscribe(this::calendarSnapshotUpdated);
         startTickTimer();
     }
 
-    // ── Data refresh (same interval as calendar widget) ──────────
-
-    private void startDataRefresh() {
-        fetchAsync();
-
-        final int seconds = BackendApi.getWorkspaceSettings().dashboardCalendarRefreshSeconds();
-        dataRefreshTimeline = new Timeline(
-                new KeyFrame(Duration.seconds(seconds), e -> fetchAsync())
-        );
-        dataRefreshTimeline.setCycleCount(Animation.INDEFINITE);
-        dataRefreshTimeline.play();
-    }
-
-    private void fetchAsync() {
-        Thread.startVirtualThread(() -> {
-            final GoogleCalendarResult result = GoogleCalendarService.fetchTodayEvents();
-            if (!result.authError() && result.errorMessage().isEmpty()) {
-                cachedEvents = result.events();
-            } else {
-                cachedEvents = List.of();
-            }
-            Platform.runLater(this::tick);
-        });
+    private void calendarSnapshotUpdated(final GoogleCalendarSnapshot snapshot) {
+        if (snapshot.latestResult() != null
+                && !snapshot.latestResult().authError()
+                && snapshot.latestResult().errorMessage().isEmpty()) {
+            cachedEvents = snapshot.latestResult().events();
+        } else if (snapshot.hasSuccessfulSnapshot()) {
+            cachedEvents = snapshot.lastSuccessfulEvents();
+        } else {
+            cachedEvents = List.of();
+        }
+        tick();
     }
 
     // ── Tick every 30 seconds to update the countdown label ──────

@@ -8,6 +8,7 @@ import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.shortcuts.listener.ShortcutKeyListener;
 import com.patres.alina.uidesktop.ui.contextmenu.AppGlobalContextMenu;
+import com.patres.alina.uidesktop.ui.calendar.GoogleCalendarFeed;
 import com.patres.alina.uidesktop.shortcuts.listener.CommandShortcutListener;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.theme.ThemeManager;
@@ -40,7 +41,8 @@ public class AssistantAppLauncher {
         var screenBounds = Screen.getPrimary().getVisualBounds();
         var screenHeight = screenBounds.getHeight();
 
-        var root = new ApplicationWindow();
+        final var calendarFeed = new GoogleCalendarFeed();
+        var root = new ApplicationWindow(calendarFeed);
 
         var antialiasing = Platform.isSupported(ConditionalFeature.SCENE3D)
                 ? SceneAntialiasing.BALANCED
@@ -50,7 +52,7 @@ public class AssistantAppLauncher {
         headerBar.getStyleClass().add("app-header");
         var headerButtonBox = new ApplicationHeaderButtonBox(root);
         headerBar.setTrailing(headerButtonBox);
-        headerBar.setLeading(new HeaderEventCountdown());
+        headerBar.setLeading(new HeaderEventCountdown(calendarFeed));
         HeaderBar.setPrefButtonHeight(stage, 100d);
 
         root.setTop(headerBar);
@@ -69,13 +71,20 @@ public class AssistantAppLauncher {
         loadIcons(stage);
         stage.setResizable(true);
         stage.setAlwaysOnTop(BackendApi.getWorkspaceSettings().keepWindowAlwaysOnTop());
-        stage.setOnCloseRequest(t -> Platform.exit());
+        stage.setOnCloseRequest(t -> {
+            calendarFeed.close();
+            Platform.exit();
+        });
+
+        calendarFeed.start(BackendApi.getWorkspaceSettings().dashboardCalendarRefreshSeconds());
 
         DefaultEventBus.getInstance().subscribe(
                 WorkspaceSettingsUpdatedEvent.class,
-                event -> Platform.runLater(() ->
-                        stage.setAlwaysOnTop(BackendApi.getWorkspaceSettings().keepWindowAlwaysOnTop())
-                )
+                event -> Platform.runLater(() -> {
+                    final var settings = BackendApi.getWorkspaceSettings();
+                    stage.setAlwaysOnTop(settings.keepWindowAlwaysOnTop());
+                    calendarFeed.setRefreshIntervalSeconds(settings.dashboardCalendarRefreshSeconds());
+                })
         );
 
         // register event listeners

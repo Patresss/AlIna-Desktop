@@ -15,6 +15,7 @@ class DashboardGridPlannerTest {
                 List.of(
                         card(DashboardCardId.MUSIC, false, 10),
                         card(DashboardCardId.TASKS, false, 20),
+                        card(DashboardCardId.UPCOMING_EVENT, true, 25),
                         card(DashboardCardId.CALENDAR, true, 30),
                         card(DashboardCardId.GITHUB, true, 40),
                         card(DashboardCardId.JIRA, true, 50),
@@ -26,10 +27,11 @@ class DashboardGridPlannerTest {
         assertThat(placements).containsExactly(
                 placement(DashboardCardId.MUSIC, 0, 0, 2),
                 placement(DashboardCardId.TASKS, 1, 0, 2),
-                placement(DashboardCardId.CALENDAR, 2, 0, 1),
-                placement(DashboardCardId.GITHUB, 2, 1, 1),
-                placement(DashboardCardId.JIRA, 3, 0, 1),
-                placement(DashboardCardId.OBSIDIAN, 3, 1, 1)
+                placement(DashboardCardId.UPCOMING_EVENT, 2, 0, 1),
+                placement(DashboardCardId.CALENDAR, 2, 1, 1),
+                placement(DashboardCardId.GITHUB, 3, 0, 1),
+                placement(DashboardCardId.JIRA, 3, 1, 1),
+                placement(DashboardCardId.OBSIDIAN, 4, 0, 2)
         );
     }
 

@@ -11,13 +11,15 @@ import com.patres.alina.server.integration.GoogleCalendarEvent;
 import com.patres.alina.server.integration.GoogleCalendarResult;
 import com.patres.alina.server.integration.GoogleCalendarService;
 import com.patres.alina.uidesktop.backend.BackendApi;
+import com.patres.alina.uidesktop.ui.calendar.CalendarEventLinkResolver;
+import com.patres.alina.uidesktop.ui.calendar.CalendarEventPromptArguments;
+import com.patres.alina.uidesktop.ui.calendar.GoogleCalendarFeed;
+import com.patres.alina.uidesktop.ui.calendar.GoogleCalendarSnapshot;
 import com.patres.alina.uidesktop.ui.chat.Browser;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.util.EmojiLabelHelper;
-import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -81,12 +83,13 @@ public class GoogleCalendarWidget extends VBox {
     private final Button collapseButton = new Button();
     private final VBox contentBox = new VBox(2);
     private final VBox detailsBox = new VBox(2);
+    private final GoogleCalendarFeed calendarFeed;
 
     private boolean collapsed = false;
-    private Timeline refreshTimeline;
     private final Set<String> notifiedEventKeys = new HashSet<>();
 
-    public GoogleCalendarWidget() {
+    public GoogleCalendarWidget(final GoogleCalendarFeed calendarFeed) {
+        this.calendarFeed = calendarFeed;
         getStyleClass().add(STYLE_DASHBOARD);
 
         final FontIcon calendarIcon = new FontIcon(Feather.CALENDAR);
@@ -118,27 +121,23 @@ public class GoogleCalendarWidget extends VBox {
 
         updateCollapseButton();
         renderLoading();
+        calendarFeed.subscribe(this::calendarSnapshotUpdated);
     }
 
     public void refresh() {
-        if (refreshTimeline != null) {
-            refreshTimeline.stop();
-        }
-        final int refreshSeconds = BackendApi.getWorkspaceSettings().dashboardCalendarRefreshSeconds();
-        refreshTimeline = new Timeline(new KeyFrame(Duration.seconds(refreshSeconds), event -> refreshAsync()));
-        refreshTimeline.setCycleCount(Animation.INDEFINITE);
-        refreshTimeline.play();
-        refreshAsync();
+        calendarFeed.refreshNow();
     }
 
-    private void refreshAsync() {
-        Thread.startVirtualThread(() -> {
-            final GoogleCalendarResult result = GoogleCalendarService.fetchTodayEvents();
-            if (!result.authError() && result.errorMessage().isEmpty()) {
-                trackChanges(result.events());
-            }
-            Platform.runLater(() -> render(result));
-        });
+    private void calendarSnapshotUpdated(final GoogleCalendarSnapshot snapshot) {
+        if (snapshot.loading() || snapshot.latestResult() == null) {
+            renderLoading();
+            return;
+        }
+        final GoogleCalendarResult result = snapshot.latestResult();
+        if (!result.authError() && result.errorMessage().isEmpty()) {
+            trackChanges(result.events());
+        }
+        render(result);
     }
 
     // ── Rendering ────────────────────────────────────────────────
@@ -218,7 +217,7 @@ public class GoogleCalendarWidget extends VBox {
             new Timeline(new KeyFrame(Duration.seconds(RE_AUTH_DELAY_SECONDS), e -> {
                 reAuthButton.setText(LanguageManager.getLanguageString("dashboard.calendar.reAuth"));
                 reAuthButton.setDisable(false);
-                refreshAsync();
+                calendarFeed.refreshNow();
             })).play();
         });
 
@@ -351,25 +350,7 @@ public class GoogleCalendarWidget extends VBox {
 
     private Region createAiSlot(final GoogleCalendarEvent event) {
         final String aiPrompt = BackendApi.getWorkspaceSettings().calendarAiPrompt();
-        return DashboardAiButton.createSlot(aiPrompt, buildEventArguments(event));
-    }
-
-    private String buildEventArguments(final GoogleCalendarEvent event) {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("Event: ").append(event.summary());
-        if (!event.allDay()) {
-            sb.append("\nTime: ").append(event.startTime()).append(" - ").append(event.endTime());
-        } else {
-            sb.append("\nTime: All day");
-        }
-        if (event.location() != null && !event.location().isBlank()) {
-            sb.append("\nLocation: ").append(event.location());
-        }
-        final String meetUrl = resolveClickUrl(event);
-        if (!meetUrl.isEmpty()) {
-            sb.append("\nMeeting link: ").append(meetUrl);
-        }
-        return sb.toString();
+        return DashboardAiButton.createSlot(aiPrompt, CalendarEventPromptArguments.format(event));
     }
 
     private Label createSummaryLabel(final GoogleCalendarEvent event) {
@@ -544,22 +525,7 @@ public class GoogleCalendarWidget extends VBox {
     // ── URL resolution ───────────────────────────────────────────
 
     private static String resolveClickUrl(final GoogleCalendarEvent event) {
-        if (event.hangoutLink() != null && !event.hangoutLink().isBlank()) {
-            return event.hangoutLink();
-        }
-        if (event.conferenceUri() != null && !event.conferenceUri().isBlank()) {
-            return event.conferenceUri();
-        }
-        if (event.descriptionVideoUrl() != null && !event.descriptionVideoUrl().isBlank()) {
-            return event.descriptionVideoUrl();
-        }
-        if (event.location() != null && event.location().startsWith("http")) {
-            final String firstPart = event.location().split(",")[0].trim();
-            if (firstPart.startsWith("http")) {
-                return firstPart;
-            }
-        }
-        return "";
+        return CalendarEventLinkResolver.resolveJoinUrl(event).orElse("");
     }
 
     // ── Change tracking ─────────────────────────────────────────

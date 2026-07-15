@@ -15,6 +15,11 @@ public record GoogleCalendarResult(
         String errorMessage
 ) {
 
+    public GoogleCalendarResult {
+        events = events == null ? List.of() : List.copyOf(events);
+        errorMessage = errorMessage == null ? "" : errorMessage;
+    }
+
     public static GoogleCalendarResult success(final List<GoogleCalendarEvent> events) {
         return new GoogleCalendarResult(events, false, "");
     }

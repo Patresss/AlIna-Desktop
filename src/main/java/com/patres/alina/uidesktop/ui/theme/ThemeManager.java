@@ -39,6 +39,8 @@ public final class ThemeManager {
     static final Set<Class<? extends Theme>> PROJECT_THEMES = Set.of(
             CalmCommandCenterTheme.class,
             CalmCommandCenterDarkTheme.class,
+            AllegroCommandCenterTheme.class,
+            AllegroCommandCenterDarkTheme.class,
             PrimerLight.class,
             PrimerDark.class,
             NordLight.class,

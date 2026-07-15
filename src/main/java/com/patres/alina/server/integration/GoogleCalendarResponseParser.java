@@ -45,6 +45,13 @@ final class GoogleCalendarResponseParser {
     private static final String LOCATION_NODE = "location";
     private static final String HANGOUT_LINK_NODE = "hangoutLink";
     private static final String CONFERENCE_DATA_NODE = "conferenceData";
+    private static final String ATTENDEES_NODE = "attendees";
+    private static final String ATTACHMENTS_NODE = "attachments";
+    private static final String DISPLAY_NAME_NODE = "displayName";
+    private static final String EMAIL_NODE = "email";
+    private static final String FILE_URL_NODE = "fileUrl";
+    private static final String TITLE_NODE = "title";
+    private static final String MIME_TYPE_NODE = "mimeType";
     private static final String ENTRY_POINTS_NODE = "entryPoints";
     private static final String ENTRY_POINT_TYPE_NODE = "entryPointType";
     private static final String URI_NODE = "uri";
@@ -148,6 +155,8 @@ final class GoogleCalendarResponseParser {
         final String conferenceUri = extractConferenceVideoUri(item.path(CONFERENCE_DATA_NODE));
         final String description = item.path(DESCRIPTION_NODE).asText(EMPTY_VALUE);
         final String descriptionVideoUrl = extractVideoUrlFromDescription(description);
+        final List<GoogleCalendarAttendee> attendees = parseAttendees(item.path(ATTENDEES_NODE));
+        final List<GoogleCalendarAttachment> attachments = parseAttachments(item.path(ATTACHMENTS_NODE));
 
         final JsonNode start = item.path(START_NODE);
         final JsonNode end = item.path(END_NODE);
@@ -164,6 +173,9 @@ final class GoogleCalendarResponseParser {
                 timeDetails.startTime(),
                 timeDetails.endTime(),
                 location,
+                description,
+                attendees,
+                attachments,
                 allDay,
                 hangoutLink,
                 conferenceUri,
@@ -171,6 +183,35 @@ final class GoogleCalendarResponseParser {
                 timeDetails.rawStartDateTime(),
                 timeDetails.rawEndDateTime()
         );
+    }
+
+    private static List<GoogleCalendarAttendee> parseAttendees(final JsonNode attendeesNode) {
+        if (!attendeesNode.isArray()) {
+            return List.of();
+        }
+        final List<GoogleCalendarAttendee> attendees = new ArrayList<>();
+        for (final JsonNode attendee : attendeesNode) {
+            attendees.add(new GoogleCalendarAttendee(
+                    attendee.path(DISPLAY_NAME_NODE).asText(EMPTY_VALUE),
+                    attendee.path(EMAIL_NODE).asText(EMPTY_VALUE)
+            ));
+        }
+        return List.copyOf(attendees);
+    }
+
+    private static List<GoogleCalendarAttachment> parseAttachments(final JsonNode attachmentsNode) {
+        if (!attachmentsNode.isArray()) {
+            return List.of();
+        }
+        final List<GoogleCalendarAttachment> attachments = new ArrayList<>();
+        for (final JsonNode attachment : attachmentsNode) {
+            attachments.add(new GoogleCalendarAttachment(
+                    attachment.path(TITLE_NODE).asText(EMPTY_VALUE),
+                    attachment.path(FILE_URL_NODE).asText(EMPTY_VALUE),
+                    attachment.path(MIME_TYPE_NODE).asText(EMPTY_VALUE)
+            ));
+        }
+        return List.copyOf(attachments);
     }
 
     private static String formatDateTime(final String isoDateTime) {

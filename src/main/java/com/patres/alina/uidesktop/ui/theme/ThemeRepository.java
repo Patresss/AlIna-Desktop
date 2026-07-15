@@ -45,6 +45,8 @@ public final class ThemeRepository {
     private final List<SamplerTheme> internalThemes = Arrays.asList(
         new SamplerTheme(new CalmCommandCenterTheme()),
         new SamplerTheme(new CalmCommandCenterDarkTheme()),
+        new SamplerTheme(new AllegroCommandCenterTheme()),
+        new SamplerTheme(new AllegroCommandCenterDarkTheme()),
         new SamplerTheme(new PrimerLight()),
         new SamplerTheme(new PrimerDark()),
         new SamplerTheme(new NordLight()),

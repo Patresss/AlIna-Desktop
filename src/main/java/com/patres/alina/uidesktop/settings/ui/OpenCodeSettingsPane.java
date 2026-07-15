@@ -116,6 +116,7 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
                 Optional.ofNullable(backendSelector.getValue()).orElse(AgentBackend.OPENCODE).id(),
                 codexCommandField.getText(),
                 codexWorkingDirectoryField.getText(),
+                settings.upcomingEventCard(),
                 settings.dashboardLayout()
         );
         BackendApi.updateWorkspaceSettings(updated);

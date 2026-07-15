@@ -146,6 +146,7 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 settings.agentBackend(),
                 settings.codexCommand(),
                 settings.codexWorkingDirectory(),
+                settings.upcomingEventCard(),
                 settings.dashboardLayout()
         );
         BackendApi.updateWorkspaceSettings(updated);

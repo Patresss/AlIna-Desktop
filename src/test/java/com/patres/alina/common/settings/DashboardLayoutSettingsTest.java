@@ -19,6 +19,7 @@ class DashboardLayoutSettingsTest {
         assertThat(layout.twoColumnBreakpoint()).isEqualTo(680);
         assertCard(layout, DashboardCardId.MUSIC, 10, false);
         assertCard(layout, DashboardCardId.TASKS, 20, false);
+        assertCard(layout, DashboardCardId.UPCOMING_EVENT, 25, true);
         assertCard(layout, DashboardCardId.CALENDAR, 30, true);
         assertCard(layout, DashboardCardId.GITHUB, 40, true);
         assertCard(layout, DashboardCardId.JIRA, 50, true);
@@ -31,6 +32,8 @@ class DashboardLayoutSettingsTest {
 
         assertThat(settings.dashboardLayout()).isNotNull();
         assertThat(settings.dashboardLayout().twoColumnBreakpoint()).isEqualTo(680);
+        assertThat(settings.upcomingEventCard()).isEqualTo(new UpcomingEventCardSettings());
+        assertCard(settings.dashboardLayout(), DashboardCardId.UPCOMING_EVENT, 25, true);
         assertCard(settings.dashboardLayout(), DashboardCardId.CALENDAR, 30, true);
     }
 
@@ -150,6 +153,7 @@ class DashboardLayoutSettingsTest {
                 defaults.agentBackend(),
                 defaults.codexCommand(),
                 defaults.codexWorkingDirectory(),
+                defaults.upcomingEventCard(),
                 dashboardLayout
         );
     }

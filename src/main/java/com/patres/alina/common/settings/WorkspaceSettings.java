@@ -50,6 +50,7 @@ public record WorkspaceSettings(
         String agentBackend,
         String codexCommand,
         String codexWorkingDirectory,
+        UpcomingEventCardSettings upcomingEventCard,
         DashboardLayoutSettings dashboardLayout
 ) {
 
@@ -121,6 +122,7 @@ public record WorkspaceSettings(
                 DEFAULT_AGENT_BACKEND,
                 DEFAULT_CODEX_COMMAND,
                 DEFAULT_OPENCODE_WORKING_DIRECTORY,
+                new UpcomingEventCardSettings(),
                 new DashboardLayoutSettings()
         );
     }
@@ -156,6 +158,7 @@ public record WorkspaceSettings(
         agentBackend = defaultIfBlank(agentBackend, DEFAULT_AGENT_BACKEND);
         codexCommand = defaultIfBlank(codexCommand, DEFAULT_CODEX_COMMAND);
         codexWorkingDirectory = defaultIfBlank(codexWorkingDirectory, openCodeWorkingDirectory);
+        upcomingEventCard = upcomingEventCard == null ? new UpcomingEventCardSettings() : upcomingEventCard;
         dashboardLayout = dashboardLayout == null ? new DashboardLayoutSettings() : dashboardLayout;
     }
 
@@ -178,7 +181,7 @@ public record WorkspaceSettings(
                 showDashboardObsidian, obsidianCliPath,
                 dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
                 obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns,
-                agentBackend, codexCommand, codexWorkingDirectory, dashboardLayout
+                agentBackend, codexCommand, codexWorkingDirectory, upcomingEventCard, dashboardLayout
         );
     }
 
@@ -197,7 +200,7 @@ public record WorkspaceSettings(
                 showDashboardObsidian, obsidianCliPath,
                 dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
                 obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns,
-                agentBackend, codexCommand, codexWorkingDirectory, dashboardLayout
+                agentBackend, codexCommand, codexWorkingDirectory, upcomingEventCard, dashboardLayout
         );
     }
 
@@ -216,7 +219,7 @@ public record WorkspaceSettings(
                 showDashboardObsidian, obsidianCliPath,
                 dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
                 obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns,
-                agentBackend, codexCommand, codexWorkingDirectory, dashboardLayout
+                agentBackend, codexCommand, codexWorkingDirectory, upcomingEventCard, dashboardLayout
         );
     }
 

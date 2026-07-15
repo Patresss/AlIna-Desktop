@@ -31,7 +31,7 @@ public final class DashboardAiButton {
      * @return a {@link Region} – either a clickable AI label or a fixed-width placeholder
      */
     public static Region createSlot(final String promptTemplate, final String arguments) {
-        if (promptTemplate == null || promptTemplate.isEmpty()) {
+        if (promptTemplate == null || promptTemplate.isBlank()) {
             return createPlaceholder();
         }
         final FontIcon aiIcon = new FontIcon(Feather.CPU);
@@ -39,11 +39,15 @@ public final class DashboardAiButton {
         final Label aiButton = new Label();
         aiButton.setGraphic(aiIcon);
         aiButton.getStyleClass().add(STYLE_AI_BUTTON);
-        aiButton.setOnMouseClicked(e -> {
-            final String resolved = resolvePrompt(promptTemplate, arguments);
-            Event.publish(new CalendarAiPromptEvent(resolved));
-        });
+        aiButton.setOnMouseClicked(e -> publishPrompt(promptTemplate, arguments));
         return aiButton;
+    }
+
+    static void publishPrompt(final String promptTemplate, final String arguments) {
+        if (promptTemplate == null || promptTemplate.isBlank()) {
+            return;
+        }
+        Event.publish(new CalendarAiPromptEvent(resolvePrompt(promptTemplate, arguments)));
     }
 
     /**
