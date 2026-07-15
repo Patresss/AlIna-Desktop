@@ -41,7 +41,7 @@ The themes retain the calm workstation character of the existing Command Center.
 
 Semantic success, warning, danger, and information colors remain visually distinct. They must not be collapsed into the brand accent. Filled accent controls, focus rings, and small brand accents use the official `#ff5a00` directly. Their foreground remains white, matching Allegro's official button specification.
 
-White on `#ff5a00` has a contrast ratio of approximately 3.13:1. It clears the 3:1 non-text threshold used by the icon-only chat primary action, but not the 4.5:1 threshold for normal text. Exact Allegro button fidelity is the explicitly approved exception; ordinary accent text continues to use accessible foreground variants.
+White on `#ff5a00` has a contrast ratio of approximately 3.13:1. It clears the 3:1 non-text threshold used by the icon-only chat primary action, but not the 4.5:1 threshold for normal text. The same ratio applies to `#ff5a00` accent text on white. Exact Allegro fidelity is the explicitly approved exception for both primary controls and compact foreground accents such as dashboard icons, calendar times, Jira keys, links, and badges. Ordinary body text retains the accessible neutral foreground roles.
 
 ## Theme Architecture
 
@@ -94,7 +94,7 @@ The implementation uses the exact surface, foreground, border, and accent roles 
 | `-color-border-muted` | `#d9d9db` | Standard boundary |
 | `-color-border-subtle` | `#e6e6e6` | Quiet boundary |
 | `-color-accent-5` | `#ff5a00` | Official orange anchor and focus/selection signal |
-| `-color-accent-fg` | `#b33c00` | Readable accent text on light surfaces |
+| `-color-accent-fg` | `#ff5a00` | Official orange for foreground accents |
 | `-color-accent-emphasis` | `#ff5a00` | Official primary-action fill with white foreground |
 | `-color-accent-subtle` | `#ffede3` | Quiet selected/active surface |
 
@@ -103,7 +103,7 @@ Light scales:
 - `-color-base-0..9`: `#f7f7f8`, `#f2f2f3`, `#e6e6e6`, `#ceced1`, `#b3b3b7`, `#8b8b90`, `#66666a`, `#444447`, `#1f1f21`, `#000000`;
 - `-color-accent-0..9`: `#fff7f2`, `#ffede3`, `#ffdecc`, `#ffbd99`, `#ff9c66`, `#ff5a00`, `#d94b00`, `#b33c00`, `#8c2e00`, `#661f00`;
 - neutral semantic roles: emphasis-plus `#444447`, emphasis `#66666a`, muted `#b3b3b7`, subtle `#f2f2f3`;
-- `-color-accent-muted`: `rgba(255, 90, 0, 0.28)`.
+- `-color-accent-muted`: `rgba(255, 90, 0, 0.38)` for visible active-card, hover, and focus boundaries.
 
 ### Dark
 
@@ -122,7 +122,7 @@ Light scales:
 | `-color-border-muted` | `#303033` | Standard boundary |
 | `-color-border-subtle` | `#29292b` | Quiet boundary |
 | `-color-accent-5` | `#ff5a00` | Official orange anchor and focus/selection signal |
-| `-color-accent-fg` | `#ff9c66` | Readable accent text on dark surfaces |
+| `-color-accent-fg` | `#ff5a00` | Official orange for foreground accents |
 | `-color-accent-emphasis` | `#ff5a00` | Official primary-action fill with white foreground |
 | `-color-accent-subtle` | `#301a0e` | Quiet selected/active surface |
 
@@ -131,7 +131,7 @@ Dark scales:
 - `-color-base-0..9`: `#f7f7f8`, `#e6e6e6`, `#c4c4c7`, `#a0a0a4`, `#737377`, `#56565a`, `#3b3b3e`, `#29292b`, `#1b1b1c`, `#000000`;
 - `-color-accent-0..9`: `#ff9c66`, `#301a0e`, `#45200c`, `#612700`, `#8c3600`, `#ff5a00`, `#ff7b33`, `#ff9c66`, `#ffbd99`, `#ffdecc`;
 - neutral semantic roles: emphasis-plus `#c4c4c7`, emphasis `#a0a0a4`, muted `#56565a`, subtle `#202022`;
-- `-color-accent-muted`: `rgba(255, 90, 0, 0.32)`.
+- `-color-accent-muted`: `rgba(255, 90, 0, 0.42)` for visible active-card, hover, and focus boundaries.
 
 The semantic info, success, warning, and danger families reuse the accessible values already established by the corresponding Calm Command Center light or dark theme. Their values belong in the new concrete theme stylesheets, keeping component CSS palette-free.
 
@@ -142,7 +142,8 @@ Alpha-based muted status tokens use the same values as the corresponding Calm Co
 No component-specific rules are added. Existing semantic styling yields the intended behavior:
 
 - primary actions and active states receive accent emphasis;
-- focus rings, links, selection indicators, and compact markers receive brand orange or its accessible foreground variant;
+- focus rings, links, selection indicators, and compact markers receive the official brand orange directly;
+- dashboard icons, calendar times, Jira keys, compact links, badge text, and active markers use `#ff5a00` directly;
 - cards, chat surfaces, modal surfaces, and dashboard backgrounds remain neutral;
 - status states retain their existing semantic hues;
 - the JavaFX WebView receives parsed theme tokens through the existing theme-change event path.
@@ -191,6 +192,7 @@ For both themes, verify:
 - The legacy Allegro classes and stylesheets remain unchanged as non-selectable implementation foundations.
 - The official orange, silver, and black anchors are represented exactly in the concrete palettes.
 - Primary accent controls use the official `#ff5a00` with a white foreground in both themes.
+- Foreground accent elements use the official `#ff5a00`, while muted accent boundaries use the approved `0.38` light and `0.42` dark opacity values.
 - Orange remains restrained and interaction-focused rather than becoming a large surface fill.
 - JavaFX and WebView use the same active theme tokens.
 - Inter and all existing Command Center layout and behavior remain unchanged.
