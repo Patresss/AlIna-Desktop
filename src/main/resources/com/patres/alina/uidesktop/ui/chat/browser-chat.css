@@ -81,21 +81,21 @@ tr:last-child td {
 }
 
 /* ══════════════════════════════════════════════════
-   Chat Messages — Glassmorphism Cards
+   Chat Messages — Surface Family
    ══════════════════════════════════════════════════ */
 
 .chat-message {
-    background-color: var(--color-bg-subtle);
-    border-left: 3px solid var(--color-accent-fg);
+    background-color: var(--color-bg-overlay, var(--color-bg-default));
+    border: none;
     color: var(--color-fg-default);
-    box-shadow: 0 1px 3px var(--color-border-default);
-    border-radius: 12px;
-    padding: 7px 14px;
-    margin: 9px 0;
-    max-width: 95%;
+    box-shadow: 0 4px 14px var(--color-border-default);
+    border-radius: 16px;
+    padding: 12px 48px 12px 16px;
+    margin: 10px 0;
+    max-width: 94%;
     word-wrap: break-word;
-    align-items: center;
-    overflow-y: auto;
+    overflow-wrap: anywhere;
+    overflow: visible;
     position: relative;
     box-sizing: border-box;
     -webkit-transform: translateZ(0);
@@ -105,7 +105,7 @@ tr:last-child td {
 }
 
 .chat-message:hover {
-    box-shadow: 0 4px 12px var(--color-border-default);
+    box-shadow: 0 7px 20px var(--color-border-default);
 }
 
 @keyframes messageSlideIn {
@@ -121,37 +121,44 @@ tr:last-child td {
 
 .chat-message.user {
     margin-left: auto;
-    border-left: 3px solid var(--color-accent-fg);
-    border-right: none;
-    background: linear-gradient(135deg, var(--color-bg-subtle) 0%, var(--color-bg-default) 100%);
+    margin-right: 0;
+    width: fit-content;
+    max-width: 78%;
+    background-color: var(--color-accent-subtle);
+    box-shadow: 0 3px 11px var(--color-border-default);
 }
 
 .chat-message.assistant {
-    border-left: 3px solid var(--color-accent-0);
+    margin-left: 0;
+    margin-right: auto;
+    width: fit-content;
+    max-width: 94%;
+    background-color: var(--color-bg-overlay, var(--color-bg-default));
 }
 
 .chat-message.accent {
-    box-shadow: 0 0 0 1px var(--color-accent-fg), 0 4px 16px var(--color-border-default);
+    background-color: var(--color-accent-subtle);
+    border: 1px solid var(--color-accent-muted);
 }
 
 .chat-message.info {
-    border-left: 3px solid var(--color-info-fg);
-    background: linear-gradient(135deg, var(--color-bg-subtle) 0%, var(--color-bg-default) 100%);
+    background-color: var(--color-info-subtle, var(--color-bg-subtle));
+    border: 1px solid var(--color-info-muted, var(--color-info-fg));
 }
 
 .chat-message.warning {
-    border-left: 3px solid var(--color-warning-fg);
-    box-shadow: 0 0 0 1px var(--color-warning-fg), 0 2px 8px var(--color-border-default);
+    background-color: var(--color-warning-subtle, var(--color-bg-subtle));
+    border: 1px solid var(--color-warning-muted, var(--color-warning-fg));
 }
 
 .chat-message.success {
-    border-left: 3px solid var(--color-success-fg);
-    box-shadow: 0 0 0 1px var(--color-success-fg), 0 2px 8px var(--color-border-default);
+    background-color: var(--color-success-subtle, var(--color-bg-subtle));
+    border: 1px solid var(--color-success-muted, var(--color-success-fg));
 }
 
 .chat-message.danger {
-    border-left: 3px solid var(--color-danger-fg);
-    box-shadow: 0 0 0 1px var(--color-danger-fg), 0 2px 8px var(--color-border-default);
+    background-color: var(--color-danger-subtle, var(--color-bg-subtle));
+    border: 1px solid var(--color-danger-muted, var(--color-danger-fg));
 }
 
 /* ── Message hover actions ───────────────────────── */
@@ -166,7 +173,8 @@ tr:last-child td {
     z-index: 5;
 }
 
-.chat-message:hover .message-actions {
+.chat-message:hover .message-actions,
+.chat-message:focus-within .message-actions {
     opacity: 1;
 }
 
@@ -175,7 +183,7 @@ tr:last-child td {
     height: 28px;
     border: 1px solid var(--color-border-default);
     border-radius: 8px;
-    background-color: var(--color-bg-default);
+    background-color: var(--color-bg-overlay, var(--color-bg-default));
     color: var(--color-fg-muted);
     cursor: pointer;
     display: inline-flex;
@@ -307,6 +315,9 @@ code:not(pre code) {
     gap: 6px;
     width: 70px;
     height: 40px;
+    padding: 0;
+    background-color: transparent;
+    box-shadow: none;
 }
 
 .loader.active {
@@ -351,12 +362,19 @@ code:not(pre code) {
    ══════════════════════════════════════════════════ */
 
 .chat-message.activity-message {
-    border-left: 3px solid var(--color-warning-fg);
-    background-color: var(--color-bg-default);
+    width: 88%;
+    max-width: 88%;
+    border: none;
+    border-radius: 11px;
+    background-color: var(--color-bg-subtle);
     color: var(--color-fg-muted);
     box-shadow: none;
-    padding-top: 6px;
-    padding-bottom: 6px;
+    padding: 7px 10px;
+    margin: 6px 0;
+}
+
+.chat-message.activity-message:hover {
+    box-shadow: none;
 }
 
 .activity-shell {
@@ -508,17 +526,18 @@ code:not(pre code) {
     color: var(--color-fg-default);
     box-shadow: none;
     padding: 0;
-    max-width: 100%;
+    width: 92%;
+    max-width: 92%;
 }
 
 .permission-shell {
     width: 100%;
-    border: 1px solid var(--color-accent-fg);
-    border-radius: 8px;
-    background-color: var(--color-bg-default);
+    border: 1px solid var(--color-accent-muted);
+    border-radius: 14px;
+    background-color: var(--color-bg-overlay, var(--color-bg-default));
     padding: 14px 16px;
     box-sizing: border-box;
-    box-shadow: 0 4px 16px var(--color-border-default);
+    box-shadow: 0 5px 15px var(--color-border-default);
 }
 
 .permission-header {
@@ -567,7 +586,7 @@ code:not(pre code) {
     border: 1px solid var(--color-accent-fg);
     background-color: transparent;
     color: var(--color-fg-default);
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 8px 12px;
     cursor: pointer;
     font: inherit;
@@ -733,6 +752,20 @@ code:not(pre code) {
 }
 
 @media (max-width: 720px) {
+    .chat-message.user {
+        max-width: 88%;
+    }
+
+    .chat-message.activity-message {
+        width: 94%;
+        max-width: 94%;
+    }
+
+    .chat-message.permission-message {
+        width: 96%;
+        max-width: 96%;
+    }
+
     .permission-actions {
         grid-template-columns: 1fr;
     }
@@ -751,21 +784,40 @@ code:not(pre code) {
    ══════════════════════════════════════════════════ */
 
 .chat-message.reasoning-message {
-    border-left: 3px solid var(--color-attention-fg);
-    background-color: var(--color-bg-default);
+    width: 88%;
+    max-width: 88%;
+    border: none;
+    border-radius: 11px;
+    background-color: var(--color-warning-subtle, var(--color-bg-subtle));
     color: var(--color-fg-muted);
     box-shadow: none;
-    padding-top: 8px;
-    padding-bottom: 8px;
+    padding: 8px 10px;
+    margin: 6px 0;
 }
 
 .chat-message.commentary-message {
-    border-left: 3px solid var(--color-accent-0);
-    background-color: var(--color-bg-default);
+    width: 88%;
+    max-width: 88%;
+    border: none;
+    border-radius: 11px;
+    background-color: var(--color-accent-subtle);
     color: var(--color-fg-muted);
     box-shadow: none;
-    padding-top: 8px;
-    padding-bottom: 8px;
+    padding: 8px 10px;
+    margin: 6px 0;
+}
+
+.chat-message.reasoning-message:hover,
+.chat-message.commentary-message:hover {
+    box-shadow: none;
+}
+
+@media (max-width: 720px) {
+    .chat-message.reasoning-message,
+    .chat-message.commentary-message {
+        width: 94%;
+        max-width: 94%;
+    }
 }
 
 .reasoning-details,
@@ -806,8 +858,10 @@ code:not(pre code) {
 
 .assistant-process {
     margin-top: 12px;
-    border-top: 1px solid var(--color-border-default);
-    padding-top: 10px;
+    border: none;
+    border-radius: 11px;
+    background-color: var(--color-bg-subtle);
+    padding: 10px 12px;
 }
 
 .assistant-process-toggle {
@@ -900,7 +954,8 @@ code:not(pre code) {
     gap: 6px;
 }
 
-.chat-message:hover .message-footer {
+.chat-message:hover .message-footer,
+.chat-message:focus-within .message-footer {
     opacity: 1;
 }
 
@@ -916,20 +971,22 @@ code:not(pre code) {
 }
 
 .todo-sticky {
-    background-color: var(--color-bg-subtle);
+    background-color: var(--color-bg-overlay, var(--color-bg-default));
     color: var(--color-fg-default);
-    box-shadow: 0 -4px 24px var(--color-border-default);
-    padding: 14px 16px;
+    box-shadow: 0 6px 18px var(--color-border-default);
+    padding: 12px 14px;
     margin: 8px 0 0 0;
-    border-radius: 12px;
+    border-radius: 14px;
     backdrop-filter: blur(8px);
 }
 
 /* Finalized collapsible panel inside the last assistant message */
 .todo-finalized {
-    margin-top: 14px;
-    border-top: 1px solid var(--color-border-default);
-    padding-top: 12px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 11px;
+    background-color: var(--color-bg-subtle);
+    padding: 10px 12px;
 }
 
 .todo-finalized-toggle {
