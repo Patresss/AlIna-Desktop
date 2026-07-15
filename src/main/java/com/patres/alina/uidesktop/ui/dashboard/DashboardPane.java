@@ -181,18 +181,19 @@ public class DashboardPane extends VBox {
         EmojiLabelHelper.applyEmojiText(taskLabel, task.title());
         taskLabel.getStyleClass().add("workspace-task-label");
         taskLabel.setWrapText(false);
+        taskLabel.setMinWidth(0);
+        taskLabel.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(taskLabel, Priority.ALWAYS);
 
         taskLabel.setOnMouseClicked(event -> EmojiLabelHelper.toggleWrap(taskLabel));
-
-        final Region rowSpacer = new Region();
-        HBox.setHgrow(rowSpacer, Priority.ALWAYS);
 
         final String aiPrompt = BackendApi.getWorkspaceSettings().tasksAiPrompt();
         final String arguments = buildTaskArguments(task);
         final Region aiSlot = DashboardAiButton.createSlot(aiPrompt, arguments);
 
-        final HBox row = new HBox(8, checkBox, taskLabel, rowSpacer, aiSlot);
+        final HBox row = new HBox(8, checkBox, taskLabel, aiSlot);
         row.getStyleClass().add("workspace-task-item");
+        row.setMinWidth(0);
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
         return row;

@@ -151,32 +151,34 @@ public class GitHubWidget extends VBox {
         final String repoName = extractRepoName(pr.repository());
         final Label repoLabel = new Label(repoName);
         repoLabel.getStyleClass().add("workspace-pr-repo");
-        repoLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        repoLabel.setMinWidth(0);
+        repoLabel.setMaxWidth(140);
 
         final Label prTitleLabel = new Label();
         EmojiLabelHelper.applyEmojiText(prTitleLabel, pr.title());
         prTitleLabel.getStyleClass().add("workspace-pr-title");
         prTitleLabel.setWrapText(false);
+        prTitleLabel.setMinWidth(0);
+        prTitleLabel.setMaxWidth(Double.MAX_VALUE);
         prTitleLabel.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
         prTitleLabel.setOnMouseClicked(event -> EmojiLabelHelper.toggleWrap(prTitleLabel));
-
-        final Region rowSpacer = new Region();
-        HBox.setHgrow(rowSpacer, Priority.ALWAYS);
+        HBox.setHgrow(prTitleLabel, Priority.ALWAYS);
 
         final String aiPrompt = BackendApi.getWorkspaceSettings().githubAiPrompt();
         final String arguments = buildPrArguments(pr);
         final Region aiSlot = DashboardAiButton.createSlot(aiPrompt, arguments);
 
-        final HBox row = new HBox(6, numberLabel, repoLabel, prTitleLabel, rowSpacer, aiSlot);
+        final HBox row = new HBox(6, numberLabel, repoLabel, prTitleLabel, aiSlot);
 
         if (pr.draft()) {
             final Label draftLabel = new Label("draft");
             draftLabel.getStyleClass().add("workspace-pr-draft");
-            // Insert draft label before spacer
+            // Insert draft label before the trailing action slot.
             row.getChildren().add(3, draftLabel);
         }
 
         row.getStyleClass().add("workspace-pr-item");
+        row.setMinWidth(0);
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
         return row;

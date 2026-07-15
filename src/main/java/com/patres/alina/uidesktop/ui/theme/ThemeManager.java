@@ -31,9 +31,14 @@ public final class ThemeManager {
 
 
     static final String[] APP_STYLESHEETS = new String[]{
-            Resources.resolve("assets/styles/index.css")
+            Resources.resolve("assets/styles/index.css"),
+            Resources.resolve("assets/styles/workspace.css"),
+            Resources.resolve("assets/styles/chat-shell.css"),
+            Resources.resolve("assets/styles/settings.css")
     };
     static final Set<Class<? extends Theme>> PROJECT_THEMES = Set.of(
+            CalmCommandCenterTheme.class,
+            CalmCommandCenterDarkTheme.class,
             PrimerLight.class,
             PrimerDark.class,
             NordLight.class,

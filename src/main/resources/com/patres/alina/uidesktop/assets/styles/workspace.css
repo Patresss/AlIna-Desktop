@@ -1,0 +1,367 @@
+/* ================================================================
+   Calm Command Center — dashboard composition and widgets
+   All colors come from the active Atlantafx/user theme.
+   ================================================================ */
+
+.dashboard-scroll,
+.dashboard-scroll > .viewport,
+.dashboard-scroll > .corner {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.dashboard-scroll {
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.dashboard-scroll .scroll-bar:vertical {
+    -fx-pref-width: 7px;
+    -fx-padding: 2px 0 2px 2px;
+    -fx-background-color: transparent;
+}
+
+.dashboard-scroll .scroll-bar:vertical .track,
+.dashboard-scroll .scroll-bar:vertical .track-background {
+    -fx-background-color: transparent;
+}
+
+.dashboard-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: -color-border-default;
+    -fx-background-radius: 999px;
+}
+
+.dashboard-area {
+    -fx-padding: 4px 6px 6px 6px;
+}
+
+.workspace-dashboard-container {
+    -fx-padding: 0;
+    -fx-spacing: 6px;
+    -fx-background-color: transparent;
+}
+
+.workspace-dashboard-grid {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.workspace-dashboard {
+    -fx-background-color: -color-bg-overlay;
+    -fx-background-radius: 16px;
+    -fx-background-insets: 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 16px;
+    -fx-padding: 12px 14px;
+    -fx-spacing: 5px;
+    -fx-effect: dropshadow(gaussian, -color-border-subtle, 8, 0.08, 0, 2);
+}
+
+.workspace-dashboard:hover {
+    -fx-background-color: -color-bg-overlay;
+    -fx-border-color: -color-accent-muted;
+}
+
+.workspace-dashboard-collapsed {
+    -fx-padding: 10px 14px;
+    -fx-min-height: 46px;
+    -fx-pref-height: 46px;
+}
+
+.workspace-dashboard-header {
+    -fx-alignment: center-left;
+    -fx-padding: 0 0 5px 0;
+    -fx-min-height: 24px;
+}
+
+.workspace-dashboard-collapsed .workspace-dashboard-header {
+    -fx-padding: 0;
+}
+
+.workspace-dashboard-title {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.workspace-dashboard-title .ikonli-font-icon {
+    -fx-icon-size: 15px;
+    -fx-icon-color: -color-accent-fg;
+    -fx-fill: -color-accent-fg;
+}
+
+.workspace-dashboard-count {
+    -fx-background-color: -color-accent-subtle;
+    -fx-background-radius: 999px;
+    -fx-text-fill: -color-accent-fg;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-padding: 2px 8px;
+}
+
+.workspace-collapse-button {
+    -fx-min-width: 24px;
+    -fx-min-height: 24px;
+    -fx-pref-width: 24px;
+    -fx-pref-height: 24px;
+    -fx-max-width: 24px;
+    -fx-max-height: 24px;
+    -fx-background-radius: 8px;
+}
+
+.workspace-collapse-button:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.workspace-collapse-button .ikonli-font-icon {
+    -fx-icon-size: 14px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.workspace-dashboard-content,
+.workspace-task-list {
+    -fx-padding: 0;
+}
+
+.workspace-collapse-bar {
+    -fx-min-height: 26px;
+    -fx-pref-height: 26px;
+    -fx-max-height: 26px;
+    -fx-background-color: -color-bg-overlay;
+    -fx-background-radius: 12px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 12px;
+    -fx-border-width: 1px;
+    -fx-cursor: hand;
+}
+
+.workspace-collapse-bar:hover {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-accent-muted;
+}
+
+.workspace-collapse-bar-icon {
+    -fx-icon-size: 14px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.workspace-collapse-bar:hover .workspace-collapse-bar-icon {
+    -fx-icon-color: -color-accent-fg;
+}
+
+.workspace-dashboard-container:collapsed {
+    -fx-padding: 0 6px;
+}
+
+.workspace-dashboard-container:collapsed .workspace-collapse-bar {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.workspace-dashboard-container:collapsed .workspace-collapse-bar-icon {
+    -fx-icon-color: -color-accent-fg;
+}
+
+.dashboard-chat-separator {
+    -fx-min-height: 8px;
+    -fx-pref-height: 8px;
+    -fx-max-height: 8px;
+    -fx-background-color: transparent;
+}
+
+/* Shared list rows */
+.workspace-item-row,
+.workspace-task-item,
+.workspace-pr-item,
+.workspace-jira-item,
+.workspace-calendar-item,
+.workspace-obsidian-item {
+    -fx-alignment: center-left;
+    -fx-min-height: 32px;
+    -fx-padding: 6px 8px;
+    -fx-background-color: transparent;
+    -fx-background-radius: 10px;
+}
+
+.workspace-item-row:hover,
+.workspace-task-item:hover,
+.workspace-pr-item:hover,
+.workspace-jira-item:hover,
+.workspace-calendar-item:hover,
+.workspace-obsidian-item:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.workspace-task-item {
+    -fx-alignment: top-left;
+}
+
+.workspace-task-checkbox > .box {
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+}
+
+.workspace-task-label,
+.workspace-pr-title,
+.workspace-jira-summary,
+.workspace-calendar-summary,
+.workspace-obsidian-name {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 12px;
+    -fx-text-overrun: ellipsis;
+}
+
+.workspace-task-label,
+.workspace-obsidian-name,
+.workspace-pr-number,
+.workspace-jira-key,
+.workspace-calendar-clickable {
+    -fx-cursor: hand;
+}
+
+.workspace-task-label:selected {
+    -fx-opacity: 0.45;
+    -fx-strikethrough: true;
+}
+
+.workspace-task-group-label {
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -color-fg-muted;
+    -fx-padding: 9px 8px 3px 8px;
+}
+
+.workspace-dashboard-empty,
+.workspace-calendar-error {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+    -fx-padding: 9px 8px;
+}
+
+.workspace-media-track-info {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+    -fx-text-overrun: ellipsis;
+}
+
+.workspace-item-badge,
+.workspace-pr-repo,
+.workspace-pr-draft,
+.workspace-obsidian-folder,
+.workspace-jira-status {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 999px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+    -fx-padding: 2px 8px;
+}
+
+.workspace-pr-number,
+.workspace-jira-key,
+.workspace-calendar-time {
+    -fx-text-fill: -color-accent-fg;
+    -fx-font-family: "SF Mono", "JetBrains Mono", monospace;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+.workspace-pr-number:hover,
+.workspace-jira-key:hover,
+.workspace-obsidian-name:hover,
+.workspace-calendar-clickable:hover {
+    -fx-text-fill: -color-accent-fg;
+    -fx-underline: true;
+}
+
+.workspace-jira-status {
+    -fx-text-fill: -color-info-fg;
+    -fx-background-color: -color-info-subtle;
+    -fx-min-width: 62px;
+    -fx-pref-width: 62px;
+    -fx-alignment: center;
+}
+
+.workspace-jira-status-progress {
+    -fx-text-fill: -color-warning-fg;
+    -fx-background-color: -color-warning-subtle;
+}
+
+.workspace-jira-status-blocked {
+    -fx-text-fill: -color-danger-fg;
+    -fx-background-color: -color-danger-subtle;
+}
+
+.workspace-jira-status-done {
+    -fx-text-fill: -color-success-fg;
+    -fx-background-color: -color-success-subtle;
+}
+
+.workspace-calendar-item-current {
+    -fx-alignment: center-left;
+    -fx-padding: 6px 8px 6px 10px;
+    -fx-background-color: transparent;
+    -fx-background-radius: 10px;
+    -fx-border-color: transparent transparent transparent -color-accent-fg;
+    -fx-border-width: 0 0 0 3px;
+    -fx-border-radius: 10px 0 0 10px;
+}
+
+.workspace-calendar-item-current:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.workspace-calendar-remaining {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 10px;
+}
+
+.workspace-calendar-upcoming {
+    -fx-text-fill: -color-accent-fg;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+.workspace-calendar-time-urgent {
+    -fx-text-fill: -color-danger-fg;
+}
+
+.workspace-calendar-video-icon,
+.workspace-calendar-ai-icon {
+    -fx-icon-size: 13px;
+    -fx-icon-color: -color-accent-fg;
+}
+
+.workspace-calendar-ai-button {
+    -fx-opacity: 0;
+}
+
+.workspace-calendar-item:hover .workspace-calendar-ai-button,
+.workspace-calendar-item-current:hover .workspace-calendar-ai-button,
+.workspace-task-item:hover .workspace-calendar-ai-button,
+.workspace-pr-item:hover .workspace-calendar-ai-button,
+.workspace-jira-item:hover .workspace-calendar-ai-button,
+.workspace-obsidian-item:hover .workspace-calendar-ai-button,
+.workspace-calendar-ai-button:focused {
+    -fx-opacity: 1;
+}
+
+.workspace-pr-link-icon,
+.workspace-jira-type-icon {
+    -fx-icon-size: 12px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.workspace-obsidian-date {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 10px;
+}
+
+.workspace-widget-divider {
+    -fx-min-height: 1px;
+    -fx-pref-height: 1px;
+    -fx-max-height: 1px;
+    -fx-background-color: -color-border-subtle;
+}

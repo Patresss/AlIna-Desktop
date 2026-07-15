@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
-<fx:root prefWidth="550.0" type="BorderPane" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<fx:root prefWidth="550.0" styleClass="settings-surface" type="BorderPane" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
    <left>
       <HBox styleClass="pane-button-bar" BorderPane.alignment="CENTER" />
    </left>
@@ -27,16 +27,16 @@
             <Insets bottom="15.0" />
          </BorderPane.margin>
          <children>
-            <ScrollPane fitToHeight="true" fitToWidth="true">
+            <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="settings-scroll">
               <content>
-                  <VBox fx:id="settingsBox" />
+                  <VBox fx:id="settingsBox" styleClass="settings-content" />
               </content>
             </ScrollPane>
          </children>
       </StackPane>
    </center>
    <top>
-      <GridPane BorderPane.alignment="CENTER">
+      <GridPane styleClass="settings-toolbar" BorderPane.alignment="CENTER">
          <columnConstraints>
             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" />
             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />

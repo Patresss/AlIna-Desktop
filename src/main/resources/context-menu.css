@@ -8,7 +8,7 @@
     -fx-border-color: -color-border-default;
     -fx-border-width: 1px;
     -fx-border-radius: 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 20, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, -color-border-default, 20, 0, 0, 4);
     -fx-min-width: 260px;
     -fx-max-width: 340px;
 }
@@ -19,7 +19,7 @@
     -fx-border-color: -color-border-default;
     -fx-border-width: 1px;
     -fx-border-radius: 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 20, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, -color-border-default, 20, 0, 0, 4);
 }
 
 .context-menu-title {
@@ -73,7 +73,7 @@
     -fx-border-color: -color-border-default;
     -fx-border-width: 1px;
     -fx-border-radius: 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 20, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, -color-border-default, 20, 0, 0, 4);
     -fx-min-width: 320px;
     -fx-pref-width: 420px;
 }

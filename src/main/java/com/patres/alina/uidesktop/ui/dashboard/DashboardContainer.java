@@ -5,26 +5,32 @@ import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.DoubleExpression;
 import javafx.geometry.Pos;
-import javafx.scene.control.Label;
+import javafx.scene.Node;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 /**
- * Container for all dashboard widgets with global collapse control.
- * Acts as a transparent wrapper — each widget is its own card.
+ * Responsive command-center composition for all dashboard widgets.
+ *
+ * <p>At the normal application width it renders an aligned bento grid. In a
+ * narrow split pane it falls back to one semantic column. Individual widgets
+ * remain responsible only for their own content and collapse state.</p>
  */
-public class DashboardContainer extends VBox {
+public final class DashboardContainer extends VBox {
 
-    private final Label titleLabel = new Label("WORKSPACE");
-    private final VBox widgetsBox = new VBox(6);
+    private static final double GRID_GAP = 10;
+
+    private final GridPane widgetGrid = new GridPane();
     private final FontIcon collapseIcon = new FontIcon(Feather.CHEVRON_UP);
-    private final HBox collapseBar = new HBox();
+    private final HBox collapseBar = new HBox(collapseIcon);
 
     private final MediaControlWidget mediaControlWidget;
     private final DashboardPane dashboardPane;
@@ -33,10 +39,16 @@ public class DashboardContainer extends VBox {
     private final GoogleCalendarWidget googleCalendarWidget;
     private final ObsidianWidget obsidianWidget;
 
-    private boolean collapsed = false;
+    private DashboardLayoutMode layoutMode;
+    private boolean collapsed;
     private Runnable onCollapsedStateChanged;
 
-    public DashboardContainer(MediaControlWidget mediaControlWidget, DashboardPane dashboardPane, GitHubWidget gitHubWidget, JiraWidget jiraWidget, GoogleCalendarWidget googleCalendarWidget, ObsidianWidget obsidianWidget) {
+    public DashboardContainer(MediaControlWidget mediaControlWidget,
+                              DashboardPane dashboardPane,
+                              GitHubWidget gitHubWidget,
+                              JiraWidget jiraWidget,
+                              GoogleCalendarWidget googleCalendarWidget,
+                              ObsidianWidget obsidianWidget) {
         this.mediaControlWidget = mediaControlWidget;
         this.dashboardPane = dashboardPane;
         this.gitHubWidget = gitHubWidget;
@@ -45,65 +57,143 @@ public class DashboardContainer extends VBox {
         this.obsidianWidget = obsidianWidget;
 
         getStyleClass().add("workspace-dashboard-container");
+        widgetGrid.getStyleClass().add("workspace-dashboard-grid");
+        widgetGrid.setHgap(GRID_GAP);
+        widgetGrid.setVgap(GRID_GAP);
+        widgetGrid.setMaxWidth(Double.MAX_VALUE);
 
-        titleLabel.getStyleClass().add("workspace-container-title");
+        configureCard(mediaControlWidget);
+        configureCard(dashboardPane);
+        configureCard(googleCalendarWidget);
+        configureCard(gitHubWidget);
+        configureCard(jiraWidget);
+        configureCard(obsidianWidget);
 
-        final HBox header = new HBox(6, titleLabel);
-        header.getStyleClass().add("workspace-dashboard-header");
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.setPadding(new Insets(2, 4, 4, 4));
-
-        widgetsBox.getChildren().addAll(
-                mediaControlWidget,
-                googleCalendarWidget,
-                dashboardPane,
-                gitHubWidget,
-                jiraWidget,
-                obsidianWidget
-        );
-
-        // Bottom collapse bar
         collapseIcon.getStyleClass().add("workspace-collapse-bar-icon");
         collapseBar.getStyleClass().add("workspace-collapse-bar");
         collapseBar.setAlignment(Pos.CENTER);
-        collapseBar.getChildren().add(collapseIcon);
         collapseBar.setOnMouseClicked(event -> toggleCollapsed());
 
-        setSpacing(4);
         setMinWidth(0);
-        getChildren().addAll(header, widgetsBox, collapseBar);
+        getChildren().addAll(widgetGrid, collapseBar);
+        widthProperty().addListener((observable, oldWidth, newWidth) ->
+                applyLayout(DashboardLayoutMode.forWidth(newWidth.doubleValue()), false)
+        );
+        applyLayout(DashboardLayoutMode.SINGLE_COLUMN, false);
+        updateCollapsedState();
 
-        updateCollapseBar();
-
-        DefaultEventBus.getInstance().subscribe(WorkspaceSettingsUpdatedEvent.class, event -> refreshVisibility());
+        DefaultEventBus.getInstance().subscribe(
+                WorkspaceSettingsUpdatedEvent.class,
+                event -> refreshVisibility()
+        );
         refreshVisibility();
+    }
+
+    private void configureCard(Node card) {
+        GridPane.setHgrow(card, Priority.ALWAYS);
+        GridPane.setVgrow(card, Priority.ALWAYS);
+        if (card instanceof javafx.scene.layout.Region region) {
+            region.setMinWidth(0);
+            region.setMaxWidth(Double.MAX_VALUE);
+            region.setMaxHeight(Double.MAX_VALUE);
+        }
+    }
+
+    private void applyLayout(DashboardLayoutMode newMode, boolean force) {
+        if (!force && layoutMode == newMode) {
+            return;
+        }
+        layoutMode = newMode;
+        widgetGrid.getChildren().clear();
+        widgetGrid.getColumnConstraints().clear();
+
+        if (newMode == DashboardLayoutMode.TWO_COLUMNS) {
+            widgetGrid.getStyleClass().remove("workspace-dashboard-grid-single");
+            if (!widgetGrid.getStyleClass().contains("workspace-dashboard-grid-wide")) {
+                widgetGrid.getStyleClass().add("workspace-dashboard-grid-wide");
+            }
+            widgetGrid.getColumnConstraints().addAll(equalColumn(2), equalColumn(2));
+            widgetGrid.add(mediaControlWidget, 0, 0, 2, 1);
+            widgetGrid.add(dashboardPane, 0, 1, 2, 1);
+            addPair(googleCalendarWidget, gitHubWidget, 2);
+            addPair(jiraWidget, obsidianWidget, 3);
+        } else {
+            widgetGrid.getStyleClass().remove("workspace-dashboard-grid-wide");
+            if (!widgetGrid.getStyleClass().contains("workspace-dashboard-grid-single")) {
+                widgetGrid.getStyleClass().add("workspace-dashboard-grid-single");
+            }
+            widgetGrid.getColumnConstraints().add(equalColumn(1));
+            widgetGrid.add(mediaControlWidget, 0, 0);
+            widgetGrid.add(dashboardPane, 0, 1);
+            widgetGrid.add(googleCalendarWidget, 0, 2);
+            widgetGrid.add(gitHubWidget, 0, 3);
+            widgetGrid.add(jiraWidget, 0, 4);
+            widgetGrid.add(obsidianWidget, 0, 5);
+        }
+    }
+
+    private void addPair(Node left, Node right, int row) {
+        if (left.isManaged() && right.isManaged()) {
+            widgetGrid.add(left, 0, row);
+            widgetGrid.add(right, 1, row);
+        } else if (left.isManaged()) {
+            widgetGrid.add(left, 0, row, 2, 1);
+        } else if (right.isManaged()) {
+            widgetGrid.add(right, 0, row, 2, 1);
+        } else {
+            // Keep nodes attached to the scene graph so later settings changes can restore them.
+            widgetGrid.add(left, 0, row);
+            widgetGrid.add(right, 1, row);
+        }
+    }
+
+    private ColumnConstraints equalColumn(int columnCount) {
+        return equalColumn(widgetGrid.widthProperty(), GRID_GAP, columnCount);
+    }
+
+    static ColumnConstraints equalColumn(DoubleExpression gridWidth, double gap, int columnCount) {
+        final ColumnConstraints column = new ColumnConstraints();
+        final var availableWidth = gridWidth.subtract(gap * (columnCount - 1));
+        final var columnWidth = Bindings.max(0.0, availableWidth.divide(columnCount));
+
+        // Bind both preferred and maximum width to the exact track size. HGrow
+        // alone distributes space after child preferences, allowing a long
+        // calendar or Jira row to make its column wider than its neighbour.
+        column.setMinWidth(0);
+        column.prefWidthProperty().bind(columnWidth);
+        column.maxWidthProperty().bind(columnWidth);
+        column.setHgrow(Priority.NEVER);
+        column.setFillWidth(true);
+        return column;
     }
 
     private void toggleCollapsed() {
         collapsed = !collapsed;
-        applyCollapsedState();
+        updateCollapsedState();
     }
 
     public void collapse() {
         if (!collapsed) {
             collapsed = true;
-            applyCollapsedState();
+            updateCollapsedState();
         }
     }
 
     public void expand() {
         if (collapsed) {
             collapsed = false;
-            applyCollapsedState();
+            updateCollapsedState();
         }
     }
 
-    private void applyCollapsedState() {
-        updateCollapseBar();
-        widgetsBox.setManaged(!collapsed);
-        widgetsBox.setVisible(!collapsed);
-        titleLabel.setManaged(!collapsed);
-        titleLabel.setVisible(!collapsed);
+    private void updateCollapsedState() {
+        widgetGrid.setManaged(!collapsed);
+        widgetGrid.setVisible(!collapsed);
+        collapseIcon.setIconCode(collapsed ? Feather.CHEVRON_DOWN : Feather.CHEVRON_UP);
+        pseudoClassStateChanged(
+                javafx.css.PseudoClass.getPseudoClass("collapsed"),
+                collapsed
+        );
         if (onCollapsedStateChanged != null) {
             onCollapsedStateChanged.run();
         }
@@ -114,11 +204,7 @@ public class DashboardContainer extends VBox {
     }
 
     public void setOnCollapsedStateChanged(Runnable callback) {
-        this.onCollapsedStateChanged = callback;
-    }
-
-    private void updateCollapseBar() {
-        collapseIcon.setIconCode(collapsed ? Feather.CHEVRON_DOWN : Feather.CHEVRON_UP);
+        onCollapsedStateChanged = callback;
     }
 
     private void refreshVisibility() {
@@ -128,17 +214,17 @@ public class DashboardContainer extends VBox {
             setManaged(show);
             setVisible(show);
 
-            // Update individual widget visibility
             updateWidgetVisibility(mediaControlWidget, settings.showDashboardMusic());
             updateWidgetVisibility(dashboardPane, settings.showDashboardTasks());
             updateWidgetVisibility(gitHubWidget, settings.showDashboardGithub());
             updateWidgetVisibility(jiraWidget, settings.showDashboardJira());
             updateWidgetVisibility(googleCalendarWidget, settings.showDashboardCalendar());
             updateWidgetVisibility(obsidianWidget, settings.showDashboardObsidian());
+            applyLayout(layoutMode, true);
         });
     }
 
-    private void updateWidgetVisibility(javafx.scene.Node widget, boolean visible) {
+    private void updateWidgetVisibility(Node widget, boolean visible) {
         widget.setManaged(visible);
         widget.setVisible(visible);
     }

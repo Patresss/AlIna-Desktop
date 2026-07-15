@@ -230,11 +230,9 @@ public class GoogleCalendarWidget extends VBox {
         final Region aiSlot = createAiSlot(event);
         final Label summaryLabel = createSummaryLabel(event);
 
-        final Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        final HBox row = new HBox(8, timeColumn, videoSlot, summaryLabel, spacer, aiSlot);
+        final HBox row = new HBox(8, timeColumn, videoSlot, summaryLabel, aiSlot);
         row.setAlignment(Pos.CENTER_LEFT);
+        row.setMinWidth(0);
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
 
@@ -337,6 +335,9 @@ public class GoogleCalendarWidget extends VBox {
         EmojiLabelHelper.applyEmojiText(summaryLabel, event.summary());
         summaryLabel.getStyleClass().add(STYLE_CALENDAR_SUMMARY);
         summaryLabel.setWrapText(false);
+        summaryLabel.setMinWidth(0);
+        summaryLabel.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(summaryLabel, Priority.ALWAYS);
         return summaryLabel;
     }
 

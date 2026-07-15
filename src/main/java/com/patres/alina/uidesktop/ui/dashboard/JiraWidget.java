@@ -173,16 +173,17 @@ public class JiraWidget extends VBox {
         EmojiLabelHelper.applyEmojiText(summaryLabel, issue.summary());
         summaryLabel.getStyleClass().add("workspace-jira-summary");
         summaryLabel.setWrapText(false);
-
-        final Region rowSpacer = new Region();
-        HBox.setHgrow(rowSpacer, Priority.ALWAYS);
+        summaryLabel.setMinWidth(0);
+        summaryLabel.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(summaryLabel, Priority.ALWAYS);
 
         final String aiPrompt = BackendApi.getWorkspaceSettings().jiraAiPrompt();
         final String arguments = buildIssueArguments(issue);
         final Region aiSlot = DashboardAiButton.createSlot(aiPrompt, arguments);
 
-        final HBox row = new HBox(6, keyLabel, statusLabel, summaryLabel, rowSpacer, aiSlot);
+        final HBox row = new HBox(6, keyLabel, statusLabel, summaryLabel, aiSlot);
         row.getStyleClass().add("workspace-jira-item");
+        row.setMinWidth(0);
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
         return row;

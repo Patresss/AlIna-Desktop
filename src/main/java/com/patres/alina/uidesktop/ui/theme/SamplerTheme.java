@@ -72,7 +72,12 @@ public final class SamplerTheme implements Theme {
     }
 
     public Set<String> getAllStylesheets() {
-        return IS_DEV_MODE ? merge(getResource().toURI().toString(), APP_STYLESHEETS) : Set.of(APP_STYLESHEETS);
+        if (IS_DEV_MODE) {
+            return merge(getResource().toURI().toString(), APP_STYLESHEETS);
+        }
+        var stylesheets = new LinkedHashSet<String>();
+        Collections.addAll(stylesheets, APP_STYLESHEETS);
+        return Collections.unmodifiableSet(stylesheets);
     }
 
     // Checks whether wrapped theme is a project theme or user external theme.

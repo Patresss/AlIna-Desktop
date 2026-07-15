@@ -5,6 +5,7 @@ import com.patres.alina.uidesktop.common.event.UiSettingsUpdateEvent;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -23,16 +24,6 @@ public class SideExpandButton {
     private static final double BUTTON_WIDTH = 28;
     private static final double BUTTON_HEIGHT = 64;
 
-    private static final String STYLE_BASE =
-            "-fx-background-color: -color-accent-emphasis;" +
-            "-fx-background-radius: 0 8 8 0;" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 22px;" +
-            "-fx-font-weight: bold;" +
-            "-fx-cursor: hand;" +
-            "-fx-padding: 0;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0, -4, 0);";
-
     private boolean expanded = false;
     private Button button;
     private Stage mainStage;
@@ -50,14 +41,18 @@ public class SideExpandButton {
         button.setPrefSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         button.setMinSize(BUTTON_WIDTH, BUTTON_HEIGHT);
         button.setMaxSize(BUTTON_WIDTH, BUTTON_HEIGHT);
-        button.setStyle(STYLE_BASE);
+        button.getStyleClass().add("side-expand-button");
+        button.setAccessibleText(com.patres.alina.uidesktop.ui.language.LanguageManager.getLanguageString("window.expand"));
+        Tooltip.install(button, new Tooltip(
+                com.patres.alina.uidesktop.ui.language.LanguageManager.getLanguageString("window.expand")
+        ));
         button.setFocusTraversable(false);
         button.setPickOnBounds(false);
 
-        // Nearly invisible by default — fully visible on hover
-        button.setOpacity(0.1);
+        // Quiet by default, but still discoverable and fully visible on hover.
+        button.setOpacity(0.38);
         button.setOnMouseEntered(e -> button.setOpacity(1.0));
-        button.setOnMouseExited(e -> button.setOpacity(0.1));
+        button.setOnMouseExited(e -> button.setOpacity(0.38));
 
         button.setOnAction(e -> {
             if (!expanded) {
@@ -91,11 +86,13 @@ public class SideExpandButton {
         mainStage.setWidth(mainStage.getWidth() + actualExpand);
         if (button != null) {
             button.setText("›");
+            updateTooltip("window.shrink");
         }
         expanded = true;
         if (settings.isAutoSplitOnExpand()) {
             Platform.runLater(() -> applicationWindow.setSplitMode(true));
         }
+        applicationWindow.refreshDashboardLayoutAfterWindowResize();
     }
 
     public void shrink() {
@@ -111,15 +108,25 @@ public class SideExpandButton {
         }
         if (button != null) {
             button.setText("‹");
+            updateTooltip("window.expand");
         }
         expanded = false;
         if (settings.isAutoSplitOnExpand()) {
             Platform.runLater(() -> applicationWindow.setSplitMode(false));
         }
+        applicationWindow.refreshDashboardLayoutAfterWindowResize();
     }
 
     private void updateVisibility() {
         boolean show = UI_SETTINGS.getSettings().isShowExpandButton();
         button.setVisible(show);
+    }
+
+    private void updateTooltip(String key) {
+        final String text = com.patres.alina.uidesktop.ui.language.LanguageManager.getLanguageString(key);
+        button.setAccessibleText(text);
+        if (button.getTooltip() != null) {
+            button.getTooltip().setText(text);
+        }
     }
 }

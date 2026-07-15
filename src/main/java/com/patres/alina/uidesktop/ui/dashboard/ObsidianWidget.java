@@ -182,10 +182,10 @@ public class ObsidianWidget extends VBox {
         EmojiLabelHelper.applyEmojiText(nameLabel, note.name());
         nameLabel.getStyleClass().add(STYLE_OBSIDIAN_NAME);
         nameLabel.setWrapText(false);
+        nameLabel.setMinWidth(0);
+        nameLabel.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(nameLabel, Priority.ALWAYS);
         nameLabel.setOnMouseClicked(e -> openNoteInObsidian(note));
-
-        final Region rowSpacer = new Region();
-        HBox.setHgrow(rowSpacer, Priority.ALWAYS);
 
         final String aiPrompt = BackendApi.getWorkspaceSettings().obsidianAiPrompt();
         final Region aiSlot = DashboardAiButton.createSlot(aiPrompt, buildNoteArguments(note));
@@ -200,14 +200,16 @@ public class ObsidianWidget extends VBox {
             final Label folderLabel = new Label(note.folder());
             folderLabel.getStyleClass().add(STYLE_OBSIDIAN_FOLDER);
             folderLabel.setWrapText(false);
-            folderLabel.setMinWidth(Region.USE_PREF_SIZE);
-            row = new HBox(6, nameLabel, folderLabel, rowSpacer, dateLabel, aiSlot);
+            folderLabel.setMinWidth(0);
+            folderLabel.setMaxWidth(180);
+            row = new HBox(6, nameLabel, folderLabel, dateLabel, aiSlot);
         } else {
-            row = new HBox(6, nameLabel, rowSpacer, dateLabel, aiSlot);
+            row = new HBox(6, nameLabel, dateLabel, aiSlot);
         }
 
         row.setAlignment(Pos.CENTER_LEFT);
         row.getStyleClass().add(STYLE_OBSIDIAN_ITEM);
+        row.setMinWidth(0);
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(row, Priority.ALWAYS);
         return row;

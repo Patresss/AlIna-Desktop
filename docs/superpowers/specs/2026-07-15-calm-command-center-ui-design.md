@@ -44,7 +44,7 @@ The header presents application/workspace context on the leading side and groups
 - a responsive card grid;
 - a single collapse control and clearer expanded/collapsed states.
 
-At the default 760 px application width, the expanded dashboard uses two columns. The tasks card spans both columns; calendar, GitHub, Jira, Obsidian, and media form the supporting two-column layer below it. When the available dashboard width falls below 680 px, the supporting layer switches to one column. The same rule applies when the application enters split mode.
+At the default 760 px application width, the expanded dashboard uses two equal-width columns. The exact track width is `(available grid width - gap) / 2`, independent of child preferred widths. Long row titles shrink with an ellipsis while stable metadata such as calendar time, Jira key/status, note date, and action controls remains visible. The tasks card spans both columns; calendar, GitHub, Jira, Obsidian, and media form the supporting two-column layer below it. When the available dashboard width falls below 680 px, the supporting layer switches to one column. The same rule applies when the application enters split mode.
 
 In the normal vertical layout, the expanded dashboard receives at most 52% of the available content height and scrolls internally when required. This guarantees that the chat composer and a useful portion of the conversation remain available. In split mode, dashboard and chat use the full available height side by side. A collapsed dashboard yields its content space to chat.
 

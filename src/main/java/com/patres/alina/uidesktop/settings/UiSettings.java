@@ -13,7 +13,7 @@ public record UiSettings(
         Boolean autoSplitOnExpand
 ) {
 
-    private static final String DEFAULT_THEME = "Primer Light";
+    private static final String DEFAULT_THEME = "Calm Command Center";
     private static final String DEFAULT_LANGUAGE = "en";
     private static final boolean DEFAULT_SOUND_NOTIFICATION_ENABLED = true;
     private static final NotificationSound DEFAULT_NOTIFICATION_SOUND = NotificationSound.CHIME;

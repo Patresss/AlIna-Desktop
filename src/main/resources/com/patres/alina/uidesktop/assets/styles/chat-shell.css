@@ -1,0 +1,324 @@
+/* ================================================================
+   Calm Command Center — native shell, chat workbench and composer
+   ================================================================ */
+
+.body,
+.application-root-center,
+.application-content {
+    -fx-background-color: -color-bg-default;
+}
+
+.application-content {
+    -fx-padding: 8px 14px 14px 14px;
+}
+
+.app-header {
+    -fx-background-color: -color-bg-overlay;
+    -fx-border-color: transparent transparent -color-border-subtle transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 5px 10px;
+}
+
+.header-bar-button-box {
+    -fx-padding: 0;
+    -fx-spacing: 7px;
+}
+
+.header-action-group {
+    -fx-alignment: center;
+    -fx-spacing: 2px;
+    -fx-padding: 3px;
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 12px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 12px;
+}
+
+.header-action-group .button,
+.header-action-group .toggle-button,
+.header-action-group .menu-button {
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-pref-width: 30px;
+    -fx-pref-height: 30px;
+    -fx-max-width: 30px;
+    -fx-max-height: 30px;
+    -fx-background-radius: 9px;
+}
+
+.header-action-group .button:hover,
+.header-action-group .toggle-button:hover,
+.header-action-group .menu-button:hover {
+    -fx-background-color: -color-bg-overlay;
+}
+
+.header-action-group .toggle-button:selected {
+    -fx-background-color: -color-accent-emphasis;
+}
+
+.header-action-group .toggle-button:selected .ikonli-font-icon {
+    -fx-icon-color: -color-fg-emphasis;
+    -fx-fill: -color-fg-emphasis;
+}
+
+.header-action-group .ikonli-font-icon {
+    -fx-icon-size: 16px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.header-event-countdown {
+    -fx-padding: 6px 11px;
+    -fx-spacing: 6px;
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 11px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 11px;
+}
+
+.header-event-countdown-summary {
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -color-fg-default;
+}
+
+.header-event-countdown-time {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.header-event-countdown-urgent {
+    -fx-text-fill: -color-danger-fg;
+}
+
+.chat-workspace-container {
+    -fx-background-color: -color-bg-overlay;
+    -fx-background-radius: 16px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 16px;
+    -fx-border-width: 1px;
+    -fx-padding: 0;
+    -fx-effect: dropshadow(gaussian, -color-border-subtle, 10, 0.05, 0, 2);
+}
+
+.chat-window {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.chat-conversation-surface {
+    -fx-background-color: -color-bg-overlay;
+    -fx-background-radius: 16px 16px 0 0;
+}
+
+.chat-footer {
+    -fx-padding: 10px;
+    -fx-spacing: 0;
+    -fx-background-color: -color-bg-overlay;
+    -fx-background-radius: 0 0 16px 16px;
+}
+
+.chat-composer {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 14px;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 14px;
+    -fx-border-width: 1px;
+    -fx-padding: 7px 7px 7px 12px;
+}
+
+.chat-composer-input {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 3px 6px 3px 0;
+    -fx-font-size: 13px;
+    -fx-prompt-text-fill: -color-fg-muted;
+}
+
+.chat-composer-input .scroll-pane,
+.chat-composer-input .scroll-pane .viewport,
+.chat-composer-input .content {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.chat-composer-input:focused {
+    -fx-background-color: -color-bg-overlay;
+    -fx-background-radius: 10px;
+    -fx-border-color: transparent;
+}
+
+.chat-composer-input:focused .content {
+    -fx-background-color: -color-bg-overlay;
+    -fx-background-radius: 10px;
+}
+
+.chat-composer-actions {
+    -fx-alignment: center;
+    -fx-spacing: 2px;
+    -fx-padding: 0;
+}
+
+.chat-composer-actions .button {
+    -fx-min-width: 28px;
+    -fx-min-height: 28px;
+    -fx-pref-width: 28px;
+    -fx-pref-height: 28px;
+    -fx-max-width: 28px;
+    -fx-max-height: 28px;
+    -fx-background-radius: 9px;
+}
+
+.chat-primary-action {
+    -fx-background-color: -color-accent-emphasis;
+}
+
+.chat-primary-action:hover {
+    -fx-background-color: -color-accent-fg;
+}
+
+.chat-primary-action .ikonli-font-icon {
+    -fx-icon-color: -color-fg-emphasis;
+    -fx-fill: -color-fg-emphasis;
+    -fx-icon-size: 14px;
+}
+
+.chat-secondary-action:hover,
+.chat-attachment-action:hover,
+.chat-clear-action:hover {
+    -fx-background-color: -color-bg-overlay;
+}
+
+.chat-secondary-action .ikonli-font-icon,
+.chat-attachment-action .ikonli-font-icon,
+.chat-clear-action .ikonli-font-icon {
+    -fx-icon-color: -color-fg-muted;
+    -fx-fill: -color-fg-muted;
+    -fx-icon-size: 14px;
+}
+
+.chat-clear-action:hover .ikonli-font-icon {
+    -fx-icon-color: -color-danger-fg;
+    -fx-fill: -color-danger-fg;
+}
+
+.chat-composer-status {
+    -fx-padding: 6px 4px 0 4px;
+    -fx-spacing: 8px;
+    -fx-min-height: 22px;
+}
+
+.chat-command-status {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 10px;
+}
+
+.chat-shortcut-hint {
+    -fx-text-fill: -color-fg-subtle;
+    -fx-font-size: 9px;
+}
+
+.model-selector-label {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 999px;
+    -fx-padding: 2px 8px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 9px;
+    -fx-cursor: hand;
+}
+
+.model-selector-label:hover {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-accent-fg;
+    -fx-underline: false;
+}
+
+.image-attachment-pane {
+    -fx-padding: 0 2px 8px 2px;
+}
+
+.image-attachment-container {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 12px;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 12px;
+    -fx-padding: 5px;
+}
+
+.image-attachment-remove-button {
+    -fx-background-color: -color-danger-emphasis;
+    -fx-background-radius: 999px;
+    -fx-padding: 0;
+}
+
+.image-attachment-remove-button .ikonli-font-icon {
+    -fx-icon-color: -color-fg-emphasis;
+    -fx-icon-size: 10px;
+}
+
+/* Conversation tabs */
+.chat-tab-bar {
+    -fx-padding: 0 6px 7px 6px;
+    -fx-spacing: 4px;
+}
+
+.chat-tab-item {
+    -fx-padding: 6px 11px;
+    -fx-background-radius: 10px;
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+}
+
+.chat-tab-active {
+    -fx-background-color: -color-bg-overlay;
+    -fx-border-color: -color-border-default;
+    -fx-effect: none;
+}
+
+.chat-tab-inactive:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.chat-tab-active .chat-tab-name {
+    -fx-font-weight: 700;
+    -fx-text-fill: -color-fg-default;
+}
+
+.chat-tab-inactive .chat-tab-name {
+    -fx-text-fill: -color-fg-muted;
+}
+
+.chat-tab-add-button,
+.chat-tab-scroll-button,
+.chat-tab-close-button {
+    -fx-background-radius: 8px;
+}
+
+.side-expand-button {
+    -fx-background-color: -color-bg-overlay;
+    -fx-background-radius: 0 12px 12px 0;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1px 1px 1px 0;
+    -fx-border-radius: 0 12px 12px 0;
+    -fx-text-fill: -color-accent-fg;
+    -fx-font-size: 18px;
+    -fx-font-weight: 700;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+    -fx-effect: dropshadow(gaussian, -color-border-default, 8, 0.08, 2, 0);
+}
+
+.side-expand-button:hover {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-muted;
+}
+
+.toast-notification {
+    -fx-background-color: -color-bg-overlay;
+    -fx-background-radius: 12px;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 12px;
+    -fx-padding: 10px 16px;
+    -fx-effect: dropshadow(gaussian, -color-border-default, 12, 0.08, 0, 3);
+}

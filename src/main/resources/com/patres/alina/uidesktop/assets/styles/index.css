@@ -1,24 +1,11 @@
 .root {
-    -color-info-fg: #58a6ff;
-    -color-info-emphasis: #58a6ff;
-    -color-info-muted: rgba(88, 166, 255, 0.3);
-    -color-info-subtle: rgba(88, 166, 255, 0.12);
-    -color-shadow-default: rgba(0, 0, 0, 0.22);
-
-    /* Glass card variables — light theme defaults */
-    -color-glass-bg: rgba(0, 0, 0, 0.025);
-    -color-glass-bg-hover: rgba(0, 0, 0, 0.055);
-    -color-glass-border: rgba(0, 0, 0, 0.09);
-    -color-glass-border-hover: rgba(0, 0, 0, 0.16);
-}
-
-/* Glass card variables — dark theme overrides */
-.root:dark {
-    -color-glass-bg: rgba(255, 255, 255, 0.025);
-    -color-glass-bg-hover: rgba(255, 255, 255, 0.055);
-    -color-glass-border: rgba(255, 255, 255, 0.07);
-    -color-glass-border-hover: rgba(255, 255, 255, 0.14);
-    -color-shadow-default: rgba(0, 0, 0, 0.65);
+    -fx-font-family: "Inter";
+    -fx-font-size: 13px;
+    -color-shadow-default: -color-border-default;
+    -color-glass-bg: -color-bg-subtle;
+    -color-glass-bg-hover: -color-bg-inset;
+    -color-glass-border: -color-border-subtle;
+    -color-glass-border-hover: -color-border-default;
 }
 
 /* ══════════════════════════════════════════════════
@@ -122,7 +109,7 @@
 .image-attachment-remove-button {
   -fx-background-color: -color-danger-fg;
   -fx-background-radius: 10px;
-  -fx-text-fill: white;
+  -fx-text-fill: -color-fg-emphasis;
   -fx-padding: 0;
   -fx-font-size: 10px;
   -fx-cursor: hand;
@@ -925,4 +912,3 @@ ChatThreadHistoryCard {
     -fx-font-size: 12px;
     -fx-font-weight: 600;
 }
-

@@ -49,20 +49,24 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.Clipboard;
+import javafx.scene.input.Dragboard;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -116,6 +120,9 @@ public class ChatWindow extends BorderPane {
     private Button sendButton;
 
     @FXML
+    private Button attachImageButton;
+
+    @FXML
     private Button streamControlButton;
 
     @FXML
@@ -160,6 +167,7 @@ public class ChatWindow extends BorderPane {
             );
             loader.setController(ChatWindow.this);
             loader.setRoot(this);
+            loader.setResources(LanguageManager.getBundle());
             loader.load();
             setMaxWidth(Double.MAX_VALUE);
         } catch (IOException e) {
@@ -332,6 +340,7 @@ public class ChatWindow extends BorderPane {
         });
 
         initializeInputHandler();
+        initializeAttachmentDropTarget();
         initModelSelector();
         setCurrentCommand(null);
         bindInputHeightToButtonsBox();
@@ -428,6 +437,7 @@ public class ChatWindow extends BorderPane {
 
     private void installButtonTooltips() {
         Tooltip.install(sendButton, new Tooltip(LanguageManager.getLanguageString("chat.button.send")));
+        Tooltip.install(attachImageButton, new Tooltip(LanguageManager.getLanguageString("chat.button.attachImage")));
         Tooltip.install(clearChatButton, new Tooltip(LanguageManager.getLanguageString("chat.button.clearChat")));
         streamingController.refreshStreamControlTooltip();
     }
@@ -792,6 +802,59 @@ public class ChatWindow extends BorderPane {
     // ═══════════════════════════════════════════
     // Image paste support
     // ═══════════════════════════════════════════
+
+    @FXML
+    public void chooseImageAttachments() {
+        final FileChooser chooser = new FileChooser();
+        chooser.setTitle(LanguageManager.getLanguageString("chat.attachment.dialogTitle"));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                LanguageManager.getLanguageString("chat.attachment.imageFiles"),
+                "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp", "*.webp"
+        ));
+        final List<File> files = chooser.showOpenMultipleDialog(getScene().getWindow());
+        attachImageFiles(files);
+    }
+
+    private void initializeAttachmentDropTarget() {
+        composerPane.setOnDragOver(event -> {
+            final Dragboard dragboard = event.getDragboard();
+            if (dragboard.hasFiles() && dragboard.getFiles().stream().anyMatch(this::isImageFile)) {
+                event.acceptTransferModes(TransferMode.COPY);
+            }
+            event.consume();
+        });
+        composerPane.setOnDragDropped(event -> {
+            final List<File> imageFiles = event.getDragboard().getFiles().stream()
+                    .filter(this::isImageFile)
+                    .toList();
+            attachImageFiles(imageFiles);
+            event.setDropCompleted(!imageFiles.isEmpty());
+            event.consume();
+        });
+    }
+
+    private void attachImageFiles(final List<File> files) {
+        if (files == null || files.isEmpty()) {
+            return;
+        }
+        files.stream()
+                .filter(this::isImageFile)
+                .forEach(file -> {
+                    final Image image = new Image(file.toURI().toString(), false);
+                    if (!image.isError()) {
+                        handleClipboardImagePaste(image);
+                    }
+                });
+    }
+
+    private boolean isImageFile(final File file) {
+        if (file == null || !file.isFile()) {
+            return false;
+        }
+        final String name = file.getName().toLowerCase(java.util.Locale.ROOT);
+        return name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg")
+                || name.endsWith(".gif") || name.endsWith(".bmp") || name.endsWith(".webp");
+    }
 
     private void handleClipboardImagePaste(final Image fxImage) {
         if (fxImage == null) {

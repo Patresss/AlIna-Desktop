@@ -23,6 +23,7 @@ import com.patres.alina.uidesktop.ui.chat.ChatWindow;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.dashboard.DashboardPane;
 import com.patres.alina.uidesktop.ui.dashboard.DashboardContainer;
+import com.patres.alina.uidesktop.ui.dashboard.DashboardHeightPolicy;
 import com.patres.alina.uidesktop.ui.dashboard.GitHubWidget;
 import com.patres.alina.uidesktop.ui.dashboard.GoogleCalendarWidget;
 import com.patres.alina.uidesktop.ui.dashboard.JiraWidget;
@@ -92,6 +93,7 @@ public class ApplicationWindow extends BorderPane {
     private final ScrollPane dashboardScrollPane = new ScrollPane();
     private final Region dashboardChatSeparator = new Region();
     private boolean splitModeActive = false;
+    private boolean dashboardHeightRefreshPending = false;
 
     @SuppressWarnings("unused") // retained as field to keep event subscription alive
     private SchedulerTaskExecutor schedulerTaskExecutor;
@@ -115,6 +117,8 @@ public class ApplicationWindow extends BorderPane {
     public void initialize() {
         centerPane.setSpacing(0);
         centerPane.setMinWidth(0);
+        centerPane.getStyleClass().add("application-content");
+        rootCenterContainer.getStyleClass().add("application-root-center");
 
         // Initialize tab bar
         chatTabBar = new ChatTabBar();
@@ -130,10 +134,14 @@ public class ApplicationWindow extends BorderPane {
         dashboardScrollPane.setFitToWidth(true);
         dashboardScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         dashboardScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        dashboardScrollPane.setHmin(0);
+        dashboardScrollPane.setHmax(0);
+        dashboardScrollPane.setHvalue(0);
         dashboardScrollPane.setMaxWidth(Double.MAX_VALUE);
         dashboardScrollPane.setMinWidth(0);
-        dashboardScrollPane.getStyleClass().add("split-dashboard-scroll");
+        dashboardScrollPane.getStyleClass().add("dashboard-scroll");
         chatContentPane.setMaxWidth(Double.MAX_VALUE);
+        chatContentPane.getStyleClass().add("chat-workspace-container");
         splitContainer.setMinWidth(0);
         VBox.setVgrow(splitContainer, Priority.ALWAYS);
         splitContainer.setSpacing(8);
@@ -142,12 +150,20 @@ public class ApplicationWindow extends BorderPane {
         dashboardChatSeparator.getStyleClass().add("dashboard-chat-separator");
         dashboardChatSeparator.setMaxWidth(Double.MAX_VALUE);
 
-        // Build normal layout: chatTabBar, dashboardContainer, separator, chatContentPane
+        // Build normal layout: chatTabBar, scrollable dashboard, separator, chatContentPane
         centerPane.getChildren().add(chatTabBar);
         dashboardContainer.getStyleClass().add("dashboard-area");
-        centerPane.getChildren().add(dashboardContainer);
+        dashboardScrollPane.setContent(dashboardContainer);
+        centerPane.getChildren().add(dashboardScrollPane);
         centerPane.getChildren().add(dashboardChatSeparator);
         centerPane.getChildren().add(chatContentPane);
+
+        centerPane.heightProperty().addListener((observable, oldValue, newValue) -> scheduleDashboardHeightRefresh());
+        centerPane.widthProperty().addListener((observable, oldValue, newValue) -> scheduleDashboardHeightRefresh());
+        dashboardContainer.layoutBoundsProperty().addListener((observable, oldValue, newValue) -> scheduleDashboardHeightRefresh());
+        dashboardScrollPane.viewportBoundsProperty().addListener((observable, oldBounds, newBounds) ->
+                synchronizeDashboardViewportWidth(newBounds.getWidth())
+        );
 
         refreshIntegrationWidgets();
         createAndOpenInitialChatThread();
@@ -155,7 +171,8 @@ public class ApplicationWindow extends BorderPane {
                 .add(appModalPane);
 
         // Listen for dashboard collapse/expand to adjust split layout
-        dashboardContainer.setOnCollapsedStateChanged(this::updateSplitLayoutForDashboardState);
+        dashboardContainer.setOnCollapsedStateChanged(this::dashboardCollapsedStateChanged);
+        scheduleDashboardHeightRefresh();
 
         // Apply persisted split mode
         final boolean persistedSplitMode = BackendApi.getWorkspaceSettings().splitMode();
@@ -197,8 +214,13 @@ public class ApplicationWindow extends BorderPane {
         // Keep chat separator in sync with dashboard visibility (only in normal mode)
         if (!splitModeActive) {
             final boolean showDashboard = settings.showDashboard();
+            dashboardScrollPane.setManaged(showDashboard);
+            dashboardScrollPane.setVisible(showDashboard);
             dashboardChatSeparator.setManaged(showDashboard);
             dashboardChatSeparator.setVisible(showDashboard);
+            scheduleDashboardHeightRefresh();
+        } else {
+            updateSplitLayoutForDashboardState();
         }
     }
 
@@ -328,41 +350,48 @@ public class ApplicationWindow extends BorderPane {
         splitModeActive = split;
 
         if (split) {
-            // Normal -> Split: move dashboardContainer into scrollPane on the left, chatContentPane on the right
-            centerPane.getChildren().remove(dashboardContainer);
+            // Normal -> Split: move the dashboard viewport to the right of the chat.
+            centerPane.getChildren().remove(dashboardScrollPane);
             centerPane.getChildren().remove(dashboardChatSeparator);
             centerPane.getChildren().remove(chatContentPane);
 
-            dashboardScrollPane.setContent(dashboardContainer);
-            VBox.setMargin(dashboardContainer, Insets.EMPTY);
+            if (!dashboardScrollPane.getStyleClass().contains("split-dashboard-scroll")) {
+                dashboardScrollPane.getStyleClass().add("split-dashboard-scroll");
+            }
+            dashboardScrollPane.setMinHeight(0);
+            dashboardScrollPane.setPrefHeight(Region.USE_COMPUTED_SIZE);
+            dashboardScrollPane.setMaxHeight(Double.MAX_VALUE);
 
             splitContainer.getChildren().setAll(chatContentPane, dashboardScrollPane);
+            HBox.setHgrow(chatContentPane, Priority.ALWAYS);
+            HBox.setHgrow(dashboardScrollPane, Priority.ALWAYS);
             centerPane.getChildren().add(splitContainer);
 
             // Apply correct widths based on dashboard collapsed state
             updateSplitLayoutForDashboardState();
         } else {
-            // Unbind size constraints before moving back
-            dashboardScrollPane.prefWidthProperty().unbind();
-            dashboardScrollPane.minWidthProperty().unbind();
-            chatContentPane.prefWidthProperty().unbind();
-            chatContentPane.minWidthProperty().unbind();
-            chatContentPane.setPrefWidth(-1);
-            chatContentPane.setMinWidth(0);
+            // Binding removal alone retains the last split width in JavaFX.
+            // Restore the normal layout's flexible constraints before moving
+            // the nodes back into the vertically stacked workspace.
+            SplitModeWidthConstraints.reset(dashboardScrollPane, chatContentPane);
 
             // Restore dashboard scroll pane visibility in case it was hidden
             dashboardScrollPane.setManaged(true);
             dashboardScrollPane.setVisible(true);
 
-            // Split -> Normal: move dashboard and chatContentPane back into centerPane vertically
+            // Split -> Normal: restore the vertical command-center/workbench composition.
             centerPane.getChildren().remove(splitContainer);
             splitContainer.getChildren().clear();
-            dashboardScrollPane.setContent(null);
+            dashboardScrollPane.getStyleClass().remove("split-dashboard-scroll");
 
-            centerPane.getChildren().add(dashboardContainer);
+            centerPane.getChildren().add(dashboardScrollPane);
             centerPane.getChildren().add(dashboardChatSeparator);
             centerPane.getChildren().add(chatContentPane);
+            refreshIntegrationWidgets();
+            scheduleDashboardHeightRefresh();
         }
+
+        refreshDashboardLayoutAfterWindowResize();
     }
 
     /**
@@ -374,18 +403,27 @@ public class ApplicationWindow extends BorderPane {
             return;
         }
 
-        // Unbind existing constraints
-        dashboardScrollPane.prefWidthProperty().unbind();
-        dashboardScrollPane.minWidthProperty().unbind();
-        chatContentPane.prefWidthProperty().unbind();
-        chatContentPane.minWidthProperty().unbind();
+        // Start every split-state calculation from neutral constraints. This
+        // prevents the previous collapsed/expanded state from leaking into the
+        // next one when a property is unbound.
+        SplitModeWidthConstraints.reset(dashboardScrollPane, chatContentPane);
 
-        if (dashboardContainer.isCollapsed()) {
-            // Dashboard collapsed: chat takes full width, hide dashboard pane
+        if (!BackendApi.getWorkspaceSettings().showDashboard()) {
             dashboardScrollPane.setManaged(false);
             dashboardScrollPane.setVisible(false);
             chatContentPane.prefWidthProperty().bind(splitContainer.widthProperty());
             chatContentPane.minWidthProperty().bind(splitContainer.widthProperty());
+            return;
+        }
+
+        if (dashboardContainer.isCollapsed()) {
+            // Retain a slim, clickable rail so the dashboard can be restored without a shortcut.
+            dashboardScrollPane.setManaged(true);
+            dashboardScrollPane.setVisible(true);
+            dashboardScrollPane.setPrefWidth(44);
+            dashboardScrollPane.setMinWidth(44);
+            chatContentPane.prefWidthProperty().bind(splitContainer.widthProperty().subtract(52));
+            chatContentPane.minWidthProperty().bind(splitContainer.widthProperty().subtract(52));
         } else {
             // Dashboard expanded: 50/50 split
             dashboardScrollPane.setManaged(true);
@@ -396,6 +434,76 @@ public class ApplicationWindow extends BorderPane {
             chatContentPane.prefWidthProperty().bind(halfWidth);
             chatContentPane.minWidthProperty().bind(halfWidth);
         }
+    }
+
+    private void dashboardCollapsedStateChanged() {
+        updateSplitLayoutForDashboardState();
+        scheduleDashboardHeightRefresh();
+    }
+
+    /**
+     * Re-synchronizes the dashboard after the Stage has been resized by the
+     * floating expand control. The deferred pulse runs after the new Stage
+     * bounds are visible to the scene graph, preventing the ScrollPane skin
+     * from retaining an offset or content width from the previous window size.
+     */
+    public void refreshDashboardLayoutAfterWindowResize() {
+        Platform.runLater(() -> {
+            rootCenterContainer.applyCss();
+            rootCenterContainer.layout();
+            dashboardScrollPane.applyCss();
+            dashboardScrollPane.layout();
+            synchronizeDashboardViewportWidth(dashboardScrollPane.getViewportBounds().getWidth());
+            dashboardContainer.applyCss();
+            dashboardContainer.layout();
+            dashboardScrollPane.requestLayout();
+            centerPane.requestLayout();
+            scheduleDashboardHeightRefresh();
+        });
+    }
+
+    private void synchronizeDashboardViewportWidth(double viewportWidth) {
+        if (viewportWidth <= 0) {
+            return;
+        }
+        dashboardScrollPane.setHmin(0);
+        dashboardScrollPane.setHmax(0);
+        dashboardScrollPane.setHvalue(0);
+        dashboardContainer.setMinWidth(0);
+        dashboardContainer.setPrefWidth(viewportWidth);
+        dashboardContainer.setMaxWidth(viewportWidth);
+        dashboardContainer.requestLayout();
+        scheduleDashboardHeightRefresh();
+    }
+
+    private void scheduleDashboardHeightRefresh() {
+        if (dashboardHeightRefreshPending) {
+            return;
+        }
+        dashboardHeightRefreshPending = true;
+        Platform.runLater(() -> {
+            dashboardHeightRefreshPending = false;
+            refreshDashboardHeight();
+        });
+    }
+
+    private void refreshDashboardHeight() {
+        if (splitModeActive || !dashboardScrollPane.isManaged()) {
+            return;
+        }
+        dashboardContainer.applyCss();
+        dashboardContainer.layout();
+        final double viewportWidth = dashboardScrollPane.getViewportBounds().getWidth();
+        final double contentWidth = Math.max(0, viewportWidth > 0 ? viewportWidth : centerPane.getWidth());
+        final double preferredContentHeight = dashboardContainer.prefHeight(contentWidth);
+        final double targetHeight = DashboardHeightPolicy.resolve(
+                centerPane.getHeight(),
+                preferredContentHeight,
+                dashboardContainer.isCollapsed()
+        );
+        dashboardScrollPane.setMinHeight(targetHeight);
+        dashboardScrollPane.setPrefHeight(targetHeight);
+        dashboardScrollPane.setMaxHeight(targetHeight);
     }
 
     // ═══════════════════════════════════════════

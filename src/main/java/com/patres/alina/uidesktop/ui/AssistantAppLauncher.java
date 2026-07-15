@@ -19,6 +19,7 @@ import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
+import javafx.scene.text.Font;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -34,6 +35,7 @@ public class AssistantAppLauncher {
         Thread.currentThread().setUncaughtExceptionHandler(new DefaultExceptionHandler(stage));
 
         LanguageManager.setLanguage(UI_SETTINGS.getSettings().language());
+        loadApplicationFonts();
 
         var screenBounds = Screen.getPrimary().getVisualBounds();
         var screenHeight = screenBounds.getHeight();
@@ -45,6 +47,7 @@ public class AssistantAppLauncher {
                 : SceneAntialiasing.DISABLED;
 
         var headerBar = new HeaderBar();
+        headerBar.getStyleClass().add("app-header");
         var headerButtonBox = new ApplicationHeaderButtonBox(root);
         headerBar.setTrailing(headerButtonBox);
         headerBar.setLeading(new HeaderEventCountdown());
@@ -60,8 +63,6 @@ public class AssistantAppLauncher {
         var tm = ThemeManager.getInstance();
         tm.setScene(scene);
         tm.setTheme(UI_SETTINGS.getSettings().theme());
-
-        scene.getStylesheets().addAll(Resources.resolve("assets/styles/index.css"));
 
         stage.setScene(scene);
         stage.setTitle("AlIna");
@@ -124,6 +125,16 @@ public class AssistantAppLauncher {
             // we could use the square icons for Windows here
             stage.getIcons().add(new Image(Resources.getResourceAsStream("assets/icon-rounded-" + iconSize + ".png")));
             iconSize *= 2;
+        }
+    }
+
+    private void loadApplicationFonts() {
+        for (String weight : new String[]{"Regular", "Medium", "SemiBold", "Bold"}) {
+            try (var stream = Resources.getResourceAsStream("assets/fonts/Inter/Inter-" + weight + ".otf")) {
+                Font.loadFont(stream, 13);
+            } catch (Exception ignored) {
+                // The platform font remains a safe fallback if a packaged weight cannot be loaded.
+            }
         }
     }
 }
