@@ -32,6 +32,10 @@
     -fx-background-radius: 999px;
 }
 
+.dashboard-scroll .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: -color-fg-muted;
+}
+
 .dashboard-area {
     -fx-padding: 4px 6px 6px 6px;
 }
@@ -51,17 +55,18 @@
     -fx-background-color: -color-bg-overlay;
     -fx-background-radius: 16px;
     -fx-background-insets: 0;
-    -fx-border-color: -color-border-subtle;
+    -fx-border-color: -color-border-default;
     -fx-border-width: 1px;
     -fx-border-radius: 16px;
     -fx-padding: 12px 14px;
     -fx-spacing: 5px;
-    -fx-effect: dropshadow(gaussian, -color-border-subtle, 8, 0.08, 0, 2);
+    -fx-effect: dropshadow(gaussian, -color-border-default, 8, 0, 0, 2);
 }
 
 .workspace-dashboard:hover {
     -fx-background-color: -color-bg-overlay;
     -fx-border-color: -color-accent-muted;
+    -fx-effect: dropshadow(gaussian, -color-border-default, 12, 0, 0, 3);
 }
 
 .workspace-dashboard-collapsed {
@@ -129,17 +134,17 @@
     -fx-min-height: 26px;
     -fx-pref-height: 26px;
     -fx-max-height: 26px;
-    -fx-background-color: -color-bg-overlay;
+    -fx-background-color: -color-bg-subtle;
     -fx-background-radius: 12px;
-    -fx-border-color: -color-border-subtle;
+    -fx-border-color: transparent;
     -fx-border-radius: 12px;
-    -fx-border-width: 1px;
+    -fx-border-width: 0;
     -fx-cursor: hand;
 }
 
 .workspace-collapse-bar:hover {
     -fx-background-color: -color-bg-subtle;
-    -fx-border-color: -color-accent-muted;
+    -fx-border-color: transparent;
 }
 
 .workspace-collapse-bar-icon {
@@ -156,7 +161,7 @@
 }
 
 .workspace-dashboard-container:collapsed .workspace-collapse-bar {
-    -fx-background-color: transparent;
+    -fx-background-color: -color-bg-subtle;
     -fx-border-color: transparent;
 }
 
@@ -233,9 +238,14 @@
     -fx-padding: 9px 8px 3px 8px;
 }
 
-.workspace-dashboard-empty,
-.workspace-calendar-error {
+.workspace-dashboard-empty {
     -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+    -fx-padding: 9px 8px;
+}
+
+.workspace-calendar-error {
+    -fx-text-fill: -color-danger-fg;
     -fx-font-size: 11px;
     -fx-padding: 9px 8px;
 }
@@ -277,8 +287,8 @@
 }
 
 .workspace-jira-status {
-    -fx-text-fill: -color-info-fg;
-    -fx-background-color: -color-info-subtle;
+    -fx-text-fill: -color-fg-muted;
+    -fx-background-color: -color-bg-subtle;
     -fx-min-width: 62px;
     -fx-pref-width: 62px;
     -fx-alignment: center;
