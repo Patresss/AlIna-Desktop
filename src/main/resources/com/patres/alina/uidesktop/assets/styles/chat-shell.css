@@ -118,7 +118,7 @@
 }
 
 .chat-composer-input {
-    -fx-background-color: transparent;
+    -fx-background-color: -color-bg-overlay;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
     -fx-border-width: 0;
@@ -136,7 +136,7 @@
 .chat-composer-input:focused .scroll-pane,
 .chat-composer-input:focused .scroll-pane .viewport,
 .chat-composer-input:focused .content {
-    -fx-background-color: transparent;
+    -fx-background-color: -color-bg-overlay;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
 }
