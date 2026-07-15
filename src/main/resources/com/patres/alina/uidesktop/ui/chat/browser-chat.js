@@ -574,6 +574,11 @@
     function showLoader() {
         removeWelcomeScreen();
         const loader = $('loader');
+
+        // JavaFX WebView can expose a stale CSS animation after display:none.
+        // Commit the inactive state before activating so every show starts a new wave.
+        loader.classList.remove('active');
+        void loader.offsetWidth;
         loader.classList.add('active');
         loader.classList.remove('user-message');
         scrollToBottomIfNeeded();

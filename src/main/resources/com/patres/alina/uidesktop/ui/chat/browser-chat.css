@@ -308,51 +308,67 @@ code:not(pre code) {
    Loader — Modern wave animation
    ══════════════════════════════════════════════════ */
 
-.loader {
+.chat-message.loader {
     display: none;
     justify-content: center;
     align-items: center;
-    gap: 6px;
-    width: 70px;
-    height: 40px;
-    padding: 0;
-    background-color: transparent;
-    box-shadow: none;
+    gap: 5px;
+    width: fit-content;
+    min-width: 0;
+    max-width: none;
+    height: 28px;
+    padding: 0 10px;
+    margin: 10px 0;
+    background-color: var(--color-bg-overlay, var(--color-bg-default));
+    border: 1px solid var(--color-border-subtle, var(--color-border-default));
+    border-radius: 14px;
+    box-shadow: 0 4px 12px var(--color-border-subtle, var(--color-border-default));
+    overflow: visible;
+    animation: none;
+    transition: none;
 }
 
-.loader.active {
+.chat-message.loader.active {
     display: flex;
 }
 
-.loader.user-message {
+.chat-message.loader.user-message {
     margin-left: auto;
+    margin-right: 0;
 }
 
-.loader div {
-    width: 8px;
-    height: 8px;
-    background-color: var(--color-accent-0);
+.chat-message.loader > div {
+    flex: 0 0 auto;
+    width: 5px;
+    height: 5px;
+    background-color: var(--color-accent-fg, var(--color-accent-0));
     border-radius: 50%;
-    animation: loaderWave 1.4s ease-in-out infinite;
+    opacity: 0.28;
+    transform: translateY(0) scale(0.78);
+    animation: none;
+    will-change: transform, opacity;
 }
 
-.loader div:nth-child(1) {
-    animation-delay: 0s;
+.chat-message.loader.active > div {
+    animation: loaderWave 900ms cubic-bezier(0.4, 0, 0.2, 1) infinite both;
 }
-.loader div:nth-child(2) {
-    animation-delay: 0.16s;
+
+.chat-message.loader.active > div:nth-child(2) {
+    animation-delay: 120ms;
 }
-.loader div:nth-child(3) {
-    animation-delay: 0.32s;
+
+.chat-message.loader.active > div:nth-child(3) {
+    animation-delay: 240ms;
 }
 
 @keyframes loaderWave {
-    0%, 80%, 100% {
-        transform: scale(0.35);
-        opacity: 0.3;
+    0%, 62%, 100% {
+        transform: translateY(0) scale(0.78);
+        opacity: 0.28;
     }
-    40% {
-        transform: scale(1.15);
+
+    31% {
+        transform: translateY(-4px) scale(1);
         opacity: 1;
     }
 }
