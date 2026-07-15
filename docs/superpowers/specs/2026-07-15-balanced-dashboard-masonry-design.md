@@ -27,9 +27,10 @@ The masonry algorithm is deterministic and widget-agnostic:
 
 1. Read managed cards in semantic order: Calendar, GitHub Reviews, Jira Issues, Notes.
 2. Measure each card's preferred height at the final column width.
-3. Place the first card in the left column.
-4. Place every subsequent card in the column with the smaller accumulated height, including the vertical gap between cards.
+3. Plan cards from tallest to shortest, retaining semantic order as the tie-breaker for equal heights.
+4. Assign each planned card to the column with the smaller accumulated height, including the vertical gap between cards.
 5. Resolve equal accumulated heights in favour of the left column.
+6. Lay out the assigned cards in their original semantic order within each column.
 
 Consequently, one tall Jira card may occupy one column while Calendar, GitHub, and Notes occupy the other. If Jira is shorter, another card can be placed beneath it. The algorithm balances total column height rather than card count.
 
@@ -77,7 +78,7 @@ Introduce a focused dashboard masonry region responsible only for measuring and 
 
 Remove vertical growth constraints that currently force dashboard cards to fill a shared grid row. Cards retain zero minimum width and an unbounded maximum width so their rows can truncate correctly within equal-width columns.
 
-Keep the height-balancing calculation independent from JavaFX nodes where practical: a small deterministic planner accepts measured heights and returns column assignments. The layout region then applies those assignments to nodes. This makes balancing behaviour directly unit-testable.
+Keep the height-balancing calculation independent from JavaFX nodes where practical: a small deterministic planner accepts measured heights and returns column assignments. The planner uses longest-processing-time-first balancing, which prevents a late tall card such as Jira from being stacked onto a column merely because both columns were equal before measuring it. The layout region then applies those assignments to nodes. This makes balancing behaviour directly unit-testable and scales to future widgets without exhaustive assignment searches.
 
 ## Failure and compatibility behaviour
 
