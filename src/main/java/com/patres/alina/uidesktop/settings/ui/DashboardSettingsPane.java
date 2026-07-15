@@ -2,6 +2,9 @@ package com.patres.alina.uidesktop.settings.ui;
 
 import atlantafx.base.controls.ToggleSwitch;
 import atlantafx.base.theme.Styles;
+import com.patres.alina.common.settings.DashboardCardId;
+import com.patres.alina.common.settings.DashboardCardLayoutSettings;
+import com.patres.alina.common.settings.DashboardLayoutSettings;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.scene.Node;
@@ -18,7 +21,9 @@ import org.kordamp.ikonli.feather.Feather;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.patres.alina.uidesktop.ui.util.TranslatedComponentUtils.createTextSeparator;
 import static com.patres.alina.uidesktop.ui.util.TranslatedComponentUtils.createTile;
@@ -36,10 +41,12 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     // General
     private ToggleSwitch showDashboardToggle;
     private ToggleSwitch alwaysOnTopToggle;
+    private Spinner<Integer> dashboardBreakpointSpinner;
 
     // Music
     private ToggleSwitch showDashboardMusicToggle;
     private Spinner<Integer> dashboardMediaRefreshSpinner;
+    private CardLayoutControls musicLayoutControls;
 
     // Calendar
     private ToggleSwitch showDashboardCalendarToggle;
@@ -50,6 +57,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     private Spinner<Integer> calendarNotificationMinutesSpinner;
     private ToggleSwitch calendarChangeNotificationsToggle;
     private TextArea calendarAiPromptField;
+    private CardLayoutControls calendarLayoutControls;
 
     // Tasks
     private ToggleSwitch showDashboardTasksToggle;
@@ -58,6 +66,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     private Spinner<Integer> dashboardTaskLimitSpinner;
     private Spinner<Integer> dashboardTasksRefreshSpinner;
     private TextArea tasksAiPromptField;
+    private CardLayoutControls tasksLayoutControls;
 
     // GitHub
     private ToggleSwitch showDashboardGithubToggle;
@@ -66,6 +75,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     private Spinner<Integer> dashboardGithubPrLimitSpinner;
     private ToggleSwitch githubChangeNotificationsToggle;
     private TextArea githubAiPromptField;
+    private CardLayoutControls githubLayoutControls;
 
     // Jira
     private ToggleSwitch showDashboardJiraToggle;
@@ -75,6 +85,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     private Spinner<Integer> dashboardJiraIssueLimitSpinner;
     private ToggleSwitch jiraChangeNotificationsToggle;
     private TextArea jiraAiPromptField;
+    private CardLayoutControls jiraLayoutControls;
 
     // Obsidian
     private ToggleSwitch showDashboardObsidianToggle;
@@ -84,6 +95,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
     private ToggleSwitch obsidianChangeNotificationsToggle;
     private TextArea obsidianAiPromptField;
     private TextField obsidianExcludePatternsField;
+    private CardLayoutControls obsidianLayoutControls;
 
     private WorkspaceSettings settings;
 
@@ -98,10 +110,14 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         // General
         showDashboardToggle.setSelected(settings.showDashboard());
         alwaysOnTopToggle.setSelected(settings.keepWindowAlwaysOnTop());
+        dashboardBreakpointSpinner.getValueFactory().setValue(
+                settings.dashboardLayout().twoColumnBreakpoint()
+        );
 
         // Music
         showDashboardMusicToggle.setSelected(settings.showDashboardMusic());
         dashboardMediaRefreshSpinner.getValueFactory().setValue(settings.dashboardMediaRefreshSeconds());
+        resetCardLayoutControls(musicLayoutControls, DashboardCardId.MUSIC);
 
         // Calendar
         showDashboardCalendarToggle.setSelected(settings.showDashboardCalendar());
@@ -112,6 +128,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         calendarNotificationMinutesSpinner.getValueFactory().setValue(settings.calendarNotificationMinutesBefore());
         calendarChangeNotificationsToggle.setSelected(settings.calendarChangeNotificationsEnabled());
         calendarAiPromptField.setText(orEmpty(settings.calendarAiPrompt()));
+        resetCardLayoutControls(calendarLayoutControls, DashboardCardId.CALENDAR);
 
         // Tasks
         showDashboardTasksToggle.setSelected(settings.showDashboardTasks());
@@ -120,6 +137,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         dashboardTaskLimitSpinner.getValueFactory().setValue(settings.dashboardTaskLimit());
         dashboardTasksRefreshSpinner.getValueFactory().setValue(settings.dashboardTasksRefreshSeconds());
         tasksAiPromptField.setText(orEmpty(settings.tasksAiPrompt()));
+        resetCardLayoutControls(tasksLayoutControls, DashboardCardId.TASKS);
 
         // GitHub
         showDashboardGithubToggle.setSelected(settings.showDashboardGithub());
@@ -128,6 +146,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         dashboardGithubPrLimitSpinner.getValueFactory().setValue(settings.dashboardGithubPrLimit());
         githubChangeNotificationsToggle.setSelected(settings.githubChangeNotificationsEnabled());
         githubAiPromptField.setText(orEmpty(settings.githubAiPrompt()));
+        resetCardLayoutControls(githubLayoutControls, DashboardCardId.GITHUB);
 
         // Jira
         showDashboardJiraToggle.setSelected(settings.showDashboardJira());
@@ -137,6 +156,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         dashboardJiraIssueLimitSpinner.getValueFactory().setValue(settings.dashboardJiraIssueLimit());
         jiraChangeNotificationsToggle.setSelected(settings.jiraChangeNotificationsEnabled());
         jiraAiPromptField.setText(orEmpty(settings.jiraAiPrompt()));
+        resetCardLayoutControls(jiraLayoutControls, DashboardCardId.JIRA);
 
         // Obsidian
         showDashboardObsidianToggle.setSelected(settings.showDashboardObsidian());
@@ -146,6 +166,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         obsidianChangeNotificationsToggle.setSelected(settings.obsidianChangeNotificationsEnabled());
         obsidianAiPromptField.setText(orEmpty(settings.obsidianAiPrompt()));
         obsidianExcludePatternsField.setText(orEmpty(settings.obsidianExcludePatterns()));
+        resetCardLayoutControls(obsidianLayoutControls, DashboardCardId.OBSIDIAN);
     }
 
     @Override
@@ -197,7 +218,8 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 obsidianExcludePatternsField.getText(),
                 settings.agentBackend(),
                 settings.codexCommand(),
-                settings.codexWorkingDirectory()
+                settings.codexWorkingDirectory(),
+                createDashboardLayoutSettings()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;
@@ -213,10 +235,17 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         final var generalHeader = createTextSeparator("settings.dashboard.general.section", Styles.TITLE_4);
         showDashboardToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         alwaysOnTopToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        dashboardBreakpointSpinner = createResizableEditableSpinner(
+                DashboardLayoutSettings.MIN_TWO_COLUMN_BREAKPOINT,
+                DashboardLayoutSettings.MAX_TWO_COLUMN_BREAKPOINT,
+                settings.dashboardLayout().twoColumnBreakpoint(),
+                settingsBox
+        );
 
         // ── Music ──
         final var musicHeader = createTextSeparator("settings.dashboard.music.section", Styles.TITLE_4);
         showDashboardMusicToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        musicLayoutControls = createCardLayoutControls(DashboardCardId.MUSIC);
         dashboardMediaRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardMediaRefreshSeconds(), settingsBox);
         final var mediaRefreshTile = createTile("settings.workspace.mediaRefresh.title", "settings.workspace.mediaRefresh.description");
         mediaRefreshTile.setAction(dashboardMediaRefreshSpinner);
@@ -224,6 +253,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         // ── Calendar ──
         final var calendarHeader = createTextSeparator("settings.dashboard.calendar.section", Styles.TITLE_4);
         showDashboardCalendarToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        calendarLayoutControls = createCardLayoutControls(DashboardCardId.CALENDAR);
         calendarHideAllDayToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         calendarShowOnlyCurrentAndFutureToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
         dashboardCalendarRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardCalendarRefreshSeconds(), settingsBox);
@@ -239,6 +269,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         // ── Tasks ──
         final var tasksHeader = createTextSeparator("settings.dashboard.tasks.section", Styles.TITLE_4);
         showDashboardTasksToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        tasksLayoutControls = createCardLayoutControls(DashboardCardId.TASKS);
         tasksFileField = createResizableTextField(settingsBox);
         final Node tasksFilePicker = createFilePickerField(tasksFileField, this::chooseTasksFile);
         taskGroupsField = createResizableTextField(settingsBox);
@@ -253,6 +284,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         // ── GitHub ──
         final var githubHeader = createTextSeparator("settings.dashboard.github.section", Styles.TITLE_4);
         showDashboardGithubToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        githubLayoutControls = createCardLayoutControls(DashboardCardId.GITHUB);
         githubTokenField = createResizablePasswordField(settingsBox);
         dashboardGithubRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardGithubRefreshSeconds(), settingsBox);
         final var githubRefreshTile = createTile("settings.workspace.githubRefresh.title", "settings.workspace.githubRefresh.description");
@@ -266,6 +298,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         // ── Jira ──
         final var jiraHeader = createTextSeparator("settings.dashboard.jira.section", Styles.TITLE_4);
         showDashboardJiraToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        jiraLayoutControls = createCardLayoutControls(DashboardCardId.JIRA);
         jiraEmailField = createResizableTextField(settingsBox);
         jiraApiTokenField = createResizablePasswordField(settingsBox);
         dashboardJiraRefreshSpinner = createResizableEditableSpinner(1, 3600, settings.dashboardJiraRefreshSeconds(), settingsBox);
@@ -280,6 +313,7 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         // ── Obsidian ──
         final var obsidianHeader = createTextSeparator("settings.dashboard.obsidian.section", Styles.TITLE_4);
         showDashboardObsidianToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        obsidianLayoutControls = createCardLayoutControls(DashboardCardId.OBSIDIAN);
         obsidianCliPathField = createResizableTextField(settingsBox);
         dashboardObsidianNoteLimitSpinner = createResizableEditableSpinner(1, 50, settings.dashboardObsidianNoteLimit(), settingsBox);
         final var obsidianNoteLimitTile = createTile("settings.workspace.obsidianNoteLimit.title", "settings.workspace.obsidianNoteLimit.description");
@@ -297,13 +331,18 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 generalHeader,
                 tileFor(showDashboardToggle, "settings.workspace.dashboard.title", "settings.workspace.dashboard.description"),
                 tileFor(alwaysOnTopToggle, "settings.workspace.ontop.title", "settings.workspace.ontop.description"),
+                tileFor(dashboardBreakpointSpinner, "settings.workspace.dashboardBreakpoint.title", "settings.workspace.dashboardBreakpoint.description"),
                 // Music
                 musicHeader,
                 tileFor(showDashboardMusicToggle, "settings.workspace.showMusic.title", "settings.workspace.showMusic.description"),
+                halfWidthTile(musicLayoutControls),
+                orderTile(musicLayoutControls),
                 mediaRefreshTile,
                 // Calendar
                 calendarHeader,
                 tileFor(showDashboardCalendarToggle, "settings.workspace.showCalendar.title", "settings.workspace.showCalendar.description"),
+                halfWidthTile(calendarLayoutControls),
+                orderTile(calendarLayoutControls),
                 tileFor(calendarHideAllDayToggle, "settings.workspace.calendarHideAllDay.title", "settings.workspace.calendarHideAllDay.description"),
                 tileFor(calendarShowOnlyCurrentAndFutureToggle, "settings.workspace.calendarOnlyFuture.title", "settings.workspace.calendarOnlyFuture.description"),
                 calendarRefreshTile,
@@ -314,6 +353,8 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 // Tasks
                 tasksHeader,
                 tileFor(showDashboardTasksToggle, "settings.workspace.showTasks.title", "settings.workspace.showTasks.description"),
+                halfWidthTile(tasksLayoutControls),
+                orderTile(tasksLayoutControls),
                 tileFor(tasksFilePicker, "settings.workspace.tasksFile.title", "settings.workspace.tasksFile.description"),
                 tileFor(taskGroupsField, "settings.workspace.taskGroups.title", "settings.workspace.taskGroups.description"),
                 taskLimitTile,
@@ -322,6 +363,8 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 // GitHub
                 githubHeader,
                 tileFor(showDashboardGithubToggle, "settings.workspace.showGithub.title", "settings.workspace.showGithub.description"),
+                halfWidthTile(githubLayoutControls),
+                orderTile(githubLayoutControls),
                 tileFor(githubTokenField, "settings.workspace.github.token.title", "settings.workspace.github.token.description"),
                 githubRefreshTile,
                 githubPrLimitTile,
@@ -330,6 +373,8 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 // Jira
                 jiraHeader,
                 tileFor(showDashboardJiraToggle, "settings.workspace.showJira.title", "settings.workspace.showJira.description"),
+                halfWidthTile(jiraLayoutControls),
+                orderTile(jiraLayoutControls),
                 tileFor(jiraEmailField, "settings.workspace.jira.email.title", "settings.workspace.jira.email.description"),
                 tileFor(jiraApiTokenField, "settings.workspace.jira.token.title", "settings.workspace.jira.token.description"),
                 jiraRefreshTile,
@@ -339,6 +384,8 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
                 // Obsidian
                 obsidianHeader,
                 tileFor(showDashboardObsidianToggle, "settings.workspace.showObsidian.title", "settings.workspace.showObsidian.description"),
+                halfWidthTile(obsidianLayoutControls),
+                orderTile(obsidianLayoutControls),
                 tileFor(obsidianCliPathField, "settings.workspace.obsidian.cliPath.title", "settings.workspace.obsidian.cliPath.description"),
                 obsidianNoteLimitTile,
                 obsidianRefreshTile,
@@ -352,6 +399,61 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         final var tile = createTile(titleKey, descriptionKey);
         tile.setAction(action);
         return tile;
+    }
+
+    private CardLayoutControls createCardLayoutControls(DashboardCardId cardId) {
+        final DashboardCardLayoutSettings layout = settings.dashboardLayout().card(cardId);
+        final ToggleSwitch halfWidthToggle = createResizableRegion(ToggleSwitch::new, settingsBox);
+        halfWidthToggle.setSelected(Boolean.TRUE.equals(layout.canUseHalfWidth()));
+        final Spinner<Integer> orderSpinner = createResizableEditableSpinner(
+                DashboardLayoutSettings.MIN_CARD_ORDER,
+                DashboardLayoutSettings.MAX_CARD_ORDER,
+                layout.order(),
+                settingsBox
+        );
+        return new CardLayoutControls(halfWidthToggle, orderSpinner);
+    }
+
+    private void resetCardLayoutControls(CardLayoutControls controls, DashboardCardId cardId) {
+        final DashboardCardLayoutSettings layout = settings.dashboardLayout().card(cardId);
+        controls.halfWidthToggle().setSelected(Boolean.TRUE.equals(layout.canUseHalfWidth()));
+        controls.orderSpinner().getValueFactory().setValue(layout.order());
+    }
+
+    private DashboardLayoutSettings createDashboardLayoutSettings() {
+        final Map<String, DashboardCardLayoutSettings> cards = new LinkedHashMap<>();
+        putCardLayout(cards, DashboardCardId.MUSIC, musicLayoutControls);
+        putCardLayout(cards, DashboardCardId.TASKS, tasksLayoutControls);
+        putCardLayout(cards, DashboardCardId.CALENDAR, calendarLayoutControls);
+        putCardLayout(cards, DashboardCardId.GITHUB, githubLayoutControls);
+        putCardLayout(cards, DashboardCardId.JIRA, jiraLayoutControls);
+        putCardLayout(cards, DashboardCardId.OBSIDIAN, obsidianLayoutControls);
+        return new DashboardLayoutSettings(dashboardBreakpointSpinner.getValue(), cards);
+    }
+
+    private void putCardLayout(Map<String, DashboardCardLayoutSettings> cards,
+                               DashboardCardId cardId,
+                               CardLayoutControls controls) {
+        cards.put(cardId.key(), new DashboardCardLayoutSettings(
+                controls.halfWidthToggle().isSelected(),
+                controls.orderSpinner().getValue()
+        ));
+    }
+
+    private Node halfWidthTile(CardLayoutControls controls) {
+        return tileFor(
+                controls.halfWidthToggle(),
+                "settings.workspace.cardHalfWidth.title",
+                "settings.workspace.cardHalfWidth.description"
+        );
+    }
+
+    private Node orderTile(CardLayoutControls controls) {
+        return tileFor(
+                controls.orderSpinner(),
+                "settings.workspace.cardOrder.title",
+                "settings.workspace.cardOrder.description"
+        );
     }
 
     private String orEmpty(final String value) {
@@ -407,5 +509,8 @@ public class DashboardSettingsPane extends SettingsModalPaneContent {
         field.setPrefRowCount(2);
         field.setWrapText(true);
         return field;
+    }
+
+    private record CardLayoutControls(ToggleSwitch halfWidthToggle, Spinner<Integer> orderSpinner) {
     }
 }

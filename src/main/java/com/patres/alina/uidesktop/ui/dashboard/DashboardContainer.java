@@ -2,11 +2,15 @@ package com.patres.alina.uidesktop.ui.dashboard;
 
 import com.patres.alina.common.event.WorkspaceSettingsUpdatedEvent;
 import com.patres.alina.common.event.bus.DefaultEventBus;
+import com.patres.alina.common.settings.DashboardCardId;
+import com.patres.alina.common.settings.DashboardCardLayoutSettings;
+import com.patres.alina.common.settings.DashboardLayoutSettings;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleExpression;
+import javafx.geometry.VPos;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.layout.ColumnConstraints;
@@ -16,6 +20,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
+
+import java.util.List;
 
 /**
  * Responsive command-center composition for all dashboard widgets.
@@ -38,9 +44,11 @@ public final class DashboardContainer extends VBox {
     private final JiraWidget jiraWidget;
     private final GoogleCalendarWidget googleCalendarWidget;
     private final ObsidianWidget obsidianWidget;
+    private final List<CardNode> cardNodes;
 
     private DashboardLayoutMode layoutMode;
     private boolean collapsed;
+    private boolean layoutRefreshScheduled;
     private Runnable onCollapsedStateChanged;
 
     public DashboardContainer(MediaControlWidget mediaControlWidget,
@@ -55,6 +63,14 @@ public final class DashboardContainer extends VBox {
         this.jiraWidget = jiraWidget;
         this.googleCalendarWidget = googleCalendarWidget;
         this.obsidianWidget = obsidianWidget;
+        this.cardNodes = List.of(
+                new CardNode(DashboardCardId.MUSIC, mediaControlWidget),
+                new CardNode(DashboardCardId.TASKS, dashboardPane),
+                new CardNode(DashboardCardId.CALENDAR, googleCalendarWidget),
+                new CardNode(DashboardCardId.GITHUB, gitHubWidget),
+                new CardNode(DashboardCardId.JIRA, jiraWidget),
+                new CardNode(DashboardCardId.OBSIDIAN, obsidianWidget)
+        );
 
         getStyleClass().add("workspace-dashboard-container");
         widgetGrid.getStyleClass().add("workspace-dashboard-grid");
@@ -68,6 +84,9 @@ public final class DashboardContainer extends VBox {
         configureCard(gitHubWidget);
         configureCard(jiraWidget);
         configureCard(obsidianWidget);
+        cardNodes.forEach(cardNode -> cardNode.node().managedProperty().addListener(
+                (observable, oldValue, newValue) -> scheduleLayoutRefresh()
+        ));
 
         collapseIcon.getStyleClass().add("workspace-collapse-bar-icon");
         collapseBar.getStyleClass().add("workspace-collapse-bar");
@@ -77,9 +96,9 @@ public final class DashboardContainer extends VBox {
         setMinWidth(0);
         getChildren().addAll(widgetGrid, collapseBar);
         widthProperty().addListener((observable, oldWidth, newWidth) ->
-                applyLayout(DashboardLayoutMode.forWidth(newWidth.doubleValue()), false)
+                applyResponsiveLayout(false)
         );
-        applyLayout(DashboardLayoutMode.SINGLE_COLUMN, false);
+        applyResponsiveLayout(false);
         updateCollapsedState();
 
         DefaultEventBus.getInstance().subscribe(
@@ -91,15 +110,27 @@ public final class DashboardContainer extends VBox {
 
     private void configureCard(Node card) {
         GridPane.setHgrow(card, Priority.ALWAYS);
-        GridPane.setVgrow(card, Priority.ALWAYS);
+        GridPane.setVgrow(card, Priority.NEVER);
+        GridPane.setFillHeight(card, false);
+        GridPane.setValignment(card, VPos.TOP);
         if (card instanceof javafx.scene.layout.Region region) {
             region.setMinWidth(0);
             region.setMaxWidth(Double.MAX_VALUE);
-            region.setMaxHeight(Double.MAX_VALUE);
         }
     }
 
-    private void applyLayout(DashboardLayoutMode newMode, boolean force) {
+    private void applyResponsiveLayout(boolean force) {
+        final DashboardLayoutSettings dashboardLayout = BackendApi.getWorkspaceSettings().dashboardLayout();
+        final DashboardLayoutMode newMode = DashboardLayoutMode.forWidth(
+                getWidth(),
+                dashboardLayout.twoColumnBreakpoint()
+        );
+        applyLayout(newMode, dashboardLayout, force);
+    }
+
+    private void applyLayout(DashboardLayoutMode newMode,
+                             DashboardLayoutSettings dashboardLayout,
+                             boolean force) {
         if (!force && layoutMode == newMode) {
             return;
         }
@@ -113,38 +144,46 @@ public final class DashboardContainer extends VBox {
                 widgetGrid.getStyleClass().add("workspace-dashboard-grid-wide");
             }
             widgetGrid.getColumnConstraints().addAll(equalColumn(2), equalColumn(2));
-            widgetGrid.add(mediaControlWidget, 0, 0, 2, 1);
-            widgetGrid.add(dashboardPane, 0, 1, 2, 1);
-            addPair(googleCalendarWidget, gitHubWidget, 2);
-            addPair(jiraWidget, obsidianWidget, 3);
         } else {
             widgetGrid.getStyleClass().remove("workspace-dashboard-grid-wide");
             if (!widgetGrid.getStyleClass().contains("workspace-dashboard-grid-single")) {
                 widgetGrid.getStyleClass().add("workspace-dashboard-grid-single");
             }
             widgetGrid.getColumnConstraints().add(equalColumn(1));
-            widgetGrid.add(mediaControlWidget, 0, 0);
-            widgetGrid.add(dashboardPane, 0, 1);
-            widgetGrid.add(googleCalendarWidget, 0, 2);
-            widgetGrid.add(gitHubWidget, 0, 3);
-            widgetGrid.add(jiraWidget, 0, 4);
-            widgetGrid.add(obsidianWidget, 0, 5);
+        }
+
+        final List<DashboardGridPlanner.Card> visibleCards = cardNodes.stream()
+                .filter(cardNode -> cardNode.node().isManaged())
+                .map(cardNode -> plannerCard(cardNode, dashboardLayout))
+                .toList();
+        for (DashboardGridPlanner.Placement placement : DashboardGridPlanner.plan(visibleCards, newMode)) {
+            final Node card = nodeFor(placement.id());
+            widgetGrid.add(
+                    card,
+                    placement.column(),
+                    placement.row(),
+                    placement.columnSpan(),
+                    1
+            );
         }
     }
 
-    private void addPair(Node left, Node right, int row) {
-        if (left.isManaged() && right.isManaged()) {
-            widgetGrid.add(left, 0, row);
-            widgetGrid.add(right, 1, row);
-        } else if (left.isManaged()) {
-            widgetGrid.add(left, 0, row, 2, 1);
-        } else if (right.isManaged()) {
-            widgetGrid.add(right, 0, row, 2, 1);
-        } else {
-            // Keep nodes attached to the scene graph so later settings changes can restore them.
-            widgetGrid.add(left, 0, row);
-            widgetGrid.add(right, 1, row);
-        }
+    private DashboardGridPlanner.Card plannerCard(CardNode cardNode,
+                                                   DashboardLayoutSettings dashboardLayout) {
+        final DashboardCardLayoutSettings cardLayout = dashboardLayout.card(cardNode.id());
+        return new DashboardGridPlanner.Card(
+                cardNode.id(),
+                Boolean.TRUE.equals(cardLayout.canUseHalfWidth()),
+                cardLayout.order()
+        );
+    }
+
+    private Node nodeFor(DashboardCardId cardId) {
+        return cardNodes.stream()
+                .filter(cardNode -> cardNode.id() == cardId)
+                .map(CardNode::node)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown dashboard card: " + cardId));
     }
 
     private ColumnConstraints equalColumn(int columnCount) {
@@ -220,12 +259,26 @@ public final class DashboardContainer extends VBox {
             updateWidgetVisibility(jiraWidget, settings.showDashboardJira());
             updateWidgetVisibility(googleCalendarWidget, settings.showDashboardCalendar());
             updateWidgetVisibility(obsidianWidget, settings.showDashboardObsidian());
-            applyLayout(layoutMode, true);
+            scheduleLayoutRefresh();
+        });
+    }
+
+    private void scheduleLayoutRefresh() {
+        if (layoutRefreshScheduled) {
+            return;
+        }
+        layoutRefreshScheduled = true;
+        Platform.runLater(() -> {
+            layoutRefreshScheduled = false;
+            applyResponsiveLayout(true);
         });
     }
 
     private void updateWidgetVisibility(Node widget, boolean visible) {
         widget.setManaged(visible);
         widget.setVisible(visible);
+    }
+
+    private record CardNode(DashboardCardId id, Node node) {
     }
 }

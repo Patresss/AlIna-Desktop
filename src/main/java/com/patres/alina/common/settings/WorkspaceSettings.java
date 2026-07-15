@@ -49,7 +49,8 @@ public record WorkspaceSettings(
         String obsidianExcludePatterns,
         String agentBackend,
         String codexCommand,
-        String codexWorkingDirectory
+        String codexWorkingDirectory,
+        DashboardLayoutSettings dashboardLayout
 ) {
 
     public static final String DEFAULT_TASKS_FILE = "profile/default/focus.md";
@@ -119,7 +120,8 @@ public record WorkspaceSettings(
                 DEFAULT_OBSIDIAN_EXCLUDE_PATTERNS,
                 DEFAULT_AGENT_BACKEND,
                 DEFAULT_CODEX_COMMAND,
-                DEFAULT_OPENCODE_WORKING_DIRECTORY
+                DEFAULT_OPENCODE_WORKING_DIRECTORY,
+                new DashboardLayoutSettings()
         );
     }
 
@@ -154,6 +156,7 @@ public record WorkspaceSettings(
         agentBackend = defaultIfBlank(agentBackend, DEFAULT_AGENT_BACKEND);
         codexCommand = defaultIfBlank(codexCommand, DEFAULT_CODEX_COMMAND);
         codexWorkingDirectory = defaultIfBlank(codexWorkingDirectory, openCodeWorkingDirectory);
+        dashboardLayout = dashboardLayout == null ? new DashboardLayoutSettings() : dashboardLayout;
     }
 
     public AgentBackend resolveAgentBackend() {
@@ -175,7 +178,7 @@ public record WorkspaceSettings(
                 showDashboardObsidian, obsidianCliPath,
                 dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
                 obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns,
-                agentBackend, codexCommand, codexWorkingDirectory
+                agentBackend, codexCommand, codexWorkingDirectory, dashboardLayout
         );
     }
 
@@ -194,7 +197,7 @@ public record WorkspaceSettings(
                 showDashboardObsidian, obsidianCliPath,
                 dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
                 obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns,
-                agentBackend, codexCommand, codexWorkingDirectory
+                agentBackend, codexCommand, codexWorkingDirectory, dashboardLayout
         );
     }
 
@@ -213,7 +216,7 @@ public record WorkspaceSettings(
                 showDashboardObsidian, obsidianCliPath,
                 dashboardObsidianNoteLimit, dashboardObsidianRefreshSeconds,
                 obsidianChangeNotificationsEnabled, obsidianAiPrompt, obsidianExcludePatterns,
-                agentBackend, codexCommand, codexWorkingDirectory
+                agentBackend, codexCommand, codexWorkingDirectory, dashboardLayout
         );
     }
 

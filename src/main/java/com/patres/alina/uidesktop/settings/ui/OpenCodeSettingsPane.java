@@ -115,7 +115,8 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
                 settings.obsidianExcludePatterns(),
                 Optional.ofNullable(backendSelector.getValue()).orElse(AgentBackend.OPENCODE).id(),
                 codexCommandField.getText(),
-                codexWorkingDirectoryField.getText()
+                codexWorkingDirectoryField.getText(),
+                settings.dashboardLayout()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;

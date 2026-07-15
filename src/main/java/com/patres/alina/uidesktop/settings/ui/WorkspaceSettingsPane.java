@@ -145,7 +145,8 @@ public class WorkspaceSettingsPane extends SettingsModalPaneContent {
                 settings.obsidianExcludePatterns(),
                 settings.agentBackend(),
                 settings.codexCommand(),
-                settings.codexWorkingDirectory()
+                settings.codexWorkingDirectory(),
+                settings.dashboardLayout()
         );
         BackendApi.updateWorkspaceSettings(updated);
         settings = updated;

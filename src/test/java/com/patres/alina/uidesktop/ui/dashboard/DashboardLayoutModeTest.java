@@ -2,8 +2,10 @@ package com.patres.alina.uidesktop.ui.dashboard;
 
 import org.junit.jupiter.api.Test;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.geometry.VPos;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 
 import java.util.List;
 
@@ -20,6 +22,16 @@ class DashboardLayoutModeTest {
     @Test
     void usesBentoGridAtBreakpoint() {
         assertThat(DashboardLayoutMode.forWidth(DashboardLayoutMode.TWO_COLUMN_BREAKPOINT))
+                .isEqualTo(DashboardLayoutMode.TWO_COLUMNS);
+    }
+
+    @Test
+    void usesConfiguredBreakpoint() {
+        assertThat(DashboardLayoutMode.forWidth(899, 900))
+                .isEqualTo(DashboardLayoutMode.SINGLE_COLUMN);
+        assertThat(DashboardLayoutMode.forWidth(900, 900))
+                .isEqualTo(DashboardLayoutMode.TWO_COLUMNS);
+        assertThat(DashboardLayoutMode.forWidth(901, 900))
                 .isEqualTo(DashboardLayoutMode.TWO_COLUMNS);
     }
 
@@ -82,5 +94,40 @@ class DashboardLayoutModeTest {
         assertThat(Math.abs(calendar.getWidth() - github.getWidth())).isLessThanOrEqualTo(1);
         assertThat(calendar.getWidth() + github.getWidth()).isEqualTo(1305);
         assertThat(github.getLayoutX()).isEqualTo(calendar.getWidth() + 10);
+    }
+
+    @Test
+    void keepsShortCardAtNaturalHeightBesideTallCard() {
+        final var grid = new GridPane();
+        grid.setHgap(10);
+        grid.getColumnConstraints().addAll(
+                DashboardContainer.equalColumn(grid.widthProperty(), 10, 2),
+                DashboardContainer.equalColumn(grid.widthProperty(), 10, 2)
+        );
+
+        final var tall = new Pane();
+        tall.setPrefHeight(300);
+        final var shortCard = new Pane();
+        shortCard.setPrefHeight(100);
+        configureNaturalHeight(tall);
+        configureNaturalHeight(shortCard);
+
+        grid.add(tall, 0, 0);
+        grid.add(shortCard, 1, 0);
+        grid.resize(1_010, 300);
+        grid.layout();
+
+        assertThat(tall.getHeight()).isEqualTo(300);
+        assertThat(shortCard.getHeight()).isEqualTo(100);
+        assertThat(shortCard.getLayoutY()).isZero();
+    }
+
+    private static void configureNaturalHeight(Pane card) {
+        card.setMinWidth(0);
+        card.setMaxWidth(Double.MAX_VALUE);
+        GridPane.setHgrow(card, Priority.ALWAYS);
+        GridPane.setVgrow(card, Priority.NEVER);
+        GridPane.setFillHeight(card, false);
+        GridPane.setValignment(card, VPos.TOP);
     }
 }
