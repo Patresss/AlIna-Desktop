@@ -46,17 +46,29 @@ The card follows the existing dashboard surface, header, collapse, loading, empt
 
 1. a single compact header row with the card title, status pill, and refresh/collapse controls;
 2. an event title limited to two visual lines;
-3. one wrapping metadata row containing exact start–end time and location;
-4. a compact participant preview and one-line description preview, when present;
+3. one wrapping metadata row containing exact start–end time and physical location;
+4. distinct compact previews for participants and rooms, followed by a one-line description preview, when present;
 5. one footer row containing “Prepare me”, a subdued “Join” action, and the attachment count, when available.
 
 The card header title is “Następne spotkanie” in Polish and “Next meeting” in English. The status pill makes the current state explicit even when a timed event has no attendees or conferencing link. At narrow half width, controls and metadata wrap without horizontal scrolling; the status may move to the content row if keeping it in the header would crowd the title.
 
-### Participants
+### Participants and rooms
 
-Participants are read from the event `attendees` array. Every returned attendee is included; `displayName` is preferred and email is the fallback label. Blank entries are discarded. The visible participant count is the size of this normalized list. Invitation response status is intentionally not shown in this first version.
+Participants and rooms are read from the event `attendees` array and separated using the Google Calendar `attendees[].resource` boolean. Entries with `resource=false` are people or groups; entries with `resource=true` are rooms or other bookable resources. `displayName` is preferred and email is the fallback label. Blank entries are discarded. Invitation response status is intentionally not shown.
 
-The collapsed preview shows the first configured number of compact participant chips or avatars, defaulting to four, followed by a `+N więcej` / `+N more` control when necessary. Activating it expands all chips inline and replaces the control with `Zwiń` / `Collapse`. The section has no separate heading in the collapsed state and is omitted when the normalized list is empty.
+The two types never share an unlabeled chip row. The participant row begins with a compact people icon and `Uczestnicy` / `Participants` label, then shows the first configured number of participant chips, defaulting to four, followed by a `+N więcej` / `+N more` control when necessary. Activating it expands all participant chips inline and replaces the control with `Zwiń` / `Collapse`.
+
+The room row begins with a map-pin icon and `Sale` / `Rooms` label. Its collapsed preview shows at most two room chips followed by `+N więcej` / `+N more`; expansion is independent from participant expansion. Participant and room rows are omitted independently when empty.
+
+Room chips use a focused `CalendarRoomDisplayName` formatter. It preserves the full resource label for a tooltip and accessible text while producing a compact visible label by applying these rules in order:
+
+1. remove a trailing equipment block enclosed in square brackets;
+2. when the remaining value contains a colon, keep the suffix after the final colon;
+3. otherwise remove the prefix through the final comma;
+4. when that remaining suffix contains at least two hyphens, keep the segment after the final hyphen;
+5. trim whitespace and fall back to the full label if the result is blank.
+
+For the reported examples this yields `Galwan-4-91-Dekiel (2)` and `Świnnica (6)`. The formatter is deterministic and UI-independent so it can be tested without JavaFX.
 
 ### Description
 
@@ -64,7 +76,9 @@ The full Calendar description is retained in the model and rendered as plain tex
 
 ### Location, conference link, and attachments
 
-Location is rendered in the compact metadata row and can wrap at narrow widths. A subdued flat/ghost `Dołącz` / `Join` action appears when the existing conference-link resolver finds a Hangout/Meet link, a video `conferenceData` entry point, a supported conferencing URL in the description, or an HTTP(S) location. It intentionally does not use the main accent-button styling, so it remains discoverable without visually dominating the meeting card.
+Only a physical location is rendered in the compact metadata row. A location value that consists solely of a valid HTTP(S) URL is treated as an online meeting target and omitted from the map-pin row. If a leading URL is followed by comma-separated physical text, the URL is removed and the remaining text is shown. Other non-URL location text continues to wrap at narrow widths.
+
+A subdued flat/ghost `Dołącz` / `Join` action appears when the existing conference-link resolver finds a Hangout/Meet link, a video `conferenceData` entry point, a supported conferencing URL in the description, or an HTTP(S) location. It intentionally does not use the main accent-button styling, so it remains discoverable without visually dominating the meeting card. An HTTP(S) location therefore remains actionable without being duplicated as a misleading room label.
 
 Calendar attachments are optional. Each normalized attachment contains title, file URL, and MIME type. The UI uses a local paperclip icon and title; it does not fetch remote attachment icons. The collapsed footer contains only a paperclip and count. Activating it expands attachment links inline; the expanded list shows up to three attachments and then `+N więcej` / `+N more`, with controls to expand and collapse the full list. The control is omitted when attachments are disabled in settings or absent from the event.
 
@@ -76,21 +90,21 @@ The footer contains a compact outlined `Przygotuj mnie` / `Prepare me` action. I
 
 Activating the button resolves the existing `$ARGUMENTS` placeholder with the selected event context and publishes the existing `CalendarAiPromptEvent`. The active chat receives that event, sends the resulting message immediately, and starts generating the answer without opening a dialog or requiring a second confirmation.
 
-Prompt arguments are built by one shared calendar-event formatter used by both the existing Calendar event action and the new card. The context includes the event title, start/end time, location, conferencing link, participants, full description, and attachment titles/URLs when available. Missing fields are omitted cleanly. Centralizing this formatter prevents the two Calendar entry points from drifting into different preparation behavior.
+Prompt arguments are built by one shared calendar-event formatter used by both the existing Calendar event action and the new card. The context includes the event title, start/end time, physical location, conferencing link, non-resource participants, rooms, full description, and attachment titles/URLs when available. A URL-only location appears only as the meeting link, not as a duplicated `Location` line. Missing fields are omitted cleanly. Centralizing this formatter prevents the two Calendar entry points from drifting into different preparation behavior.
 
 ### Expansion state
 
-Participant, description, and attachment expansion states are independent. A 30-second time tick does not collapse them. When the selected event changes, all three reset to collapsed so expanded content from the previous event cannot appear associated with the new one.
+Participant, room, description, and attachment expansion states are independent. A 30-second time tick does not collapse them. When the selected event changes, all four reset to collapsed so expanded content from the previous event cannot appear associated with the new one.
 
 ## Google Calendar data
 
 `GoogleCalendarCli.EVENT_FIELDS` is extended to request only the added fields needed by the UI:
 
-- `attendees(displayName,email)`;
+- `attendees(displayName,email,resource)`;
 - `attachments(fileUrl,title,mimeType)`;
 - the already requested summary, description, start, end, location, Hangout link, and conference data.
 
-`GoogleCalendarEvent` gains the full description plus immutable lists of focused `GoogleCalendarAttendee` and `GoogleCalendarAttachment` records. The existing extracted description video URL is preserved because it already participates in conference-link resolution. Missing arrays produce empty immutable lists; missing scalar values produce empty strings. Parsing one incomplete attendee or attachment does not fail the entire Calendar response.
+`GoogleCalendarEvent` gains the full description plus immutable lists of focused `GoogleCalendarAttendee` and `GoogleCalendarAttachment` records. `GoogleCalendarAttendee` retains display name and email and adds the `resource` flag, which defaults to `false` when absent. The existing extracted description video URL is preserved because it already participates in conference-link resolution. Missing arrays produce empty immutable lists; missing scalar values produce empty strings. Parsing one incomplete attendee or attachment does not fail the entire Calendar response.
 
 ## Shared calendar feed
 
@@ -137,18 +151,18 @@ The existing Calendar overview may continue to replace its content with its curr
 
 New style classes live with the dashboard styles in `workspace.css` and use existing theme variables rather than fixed light/dark colors. Compared with the original hierarchical proposal, the dense design reduces content spacing, section margins, title/status sizing, and button padding, targeting a 35–45% lower collapsed height for representative event data. The card remains readable at full and half width, supports wrapping rather than horizontal scrolling, and does not force the paired grid row to stretch unexpectedly.
 
-Buttons receive accessible text or tooltips, participant chips are labels rather than focusable controls, and expand/collapse controls remain keyboard reachable. The preparation button has a clear disabled explanation when no prompt is configured. Status is expressed with text, not color alone. Polish and English resource bundles receive matching keys.
+Buttons receive accessible text or tooltips, participant and room chips are labels rather than focusable controls, and expand/collapse controls remain keyboard reachable. The preparation button has a clear disabled explanation when no prompt is configured. Status is expressed with text, not color alone. Polish and English resource bundles receive matching keys.
 
 ## Testing
 
 Automated coverage includes:
 
-- parser tests for description, attendees, attachments, missing arrays and partial nested objects;
+- parser tests for description, participant and resource attendees, attachments, missing arrays and partial nested objects;
 - selector tests with a fixed `Clock` for running, upcoming, overlapping, ended, malformed, empty, mixed timed/all-day, and all-day-only inputs;
 - feed tests for initial loading, interval refresh, manual refresh, in-flight coalescing, last-success retention, settings rescheduling, and shutdown;
-- preview tests for word-boundary truncation, limits, Unicode text, and empty values;
+- preview tests for word-boundary truncation, limits, Unicode text, empty values, and both reported room-name formats;
 - card behavior tests for independent expansion, reset on event change, empty/error/auth/stale states, and URL-scheme rejection;
-- preparation tests for shared prompt-argument formatting, missing optional fields, the disabled blank-prompt state, and immediate publication through the existing active-chat event;
+- preparation tests for separated participants and rooms, URL-only versus physical locations, missing optional fields, the disabled blank-prompt state, and immediate publication through the existing active-chat event;
 - settings tests for defaults, normalization, old JSON without the nested settings object, and the new dashboard layout identifier;
 - dashboard planner tests including the default `UPCOMING_EVENT` placement;
 - PL/EN resource and CSS style-contract tests.
@@ -169,7 +183,7 @@ The Polish and English About pages are updated to mention the separate next/curr
 
 ## API references
 
-The design was checked against the current official Google Calendar API documentation. `events.list` supports the existing read-only Calendar scope and returns Event resources; Event resources expose attendee display names/emails and attachment titles, URLs, and MIME types:
+The design was checked against the current official Google Calendar API documentation. `events.list` supports the existing read-only Calendar scope and returns Event resources; Event resources expose attendee display names/emails, the attendee resource flag, and attachment titles, URLs, and MIME types:
 
 - [Google Calendar API — Events: list](https://developers.google.com/workspace/calendar/api/v3/reference/events/list)
 - [Google Calendar API — Events resource](https://developers.google.com/workspace/calendar/api/v3/reference/events)
