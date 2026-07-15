@@ -6,16 +6,15 @@ Prevent dashboard icons and text from being clipped on the left after the applic
 
 ## Cause
 
-During responsive resizing, dashboard content can temporarily be wider than the `ScrollPane` viewport. JavaFX can then retain a non-minimum horizontal scroll value even though the horizontal scrollbar is hidden. When the window becomes wide again, the dashboard remains offset to the left.
+`SideExpandButton` changes the Stage's X position and width sequentially, which can temporarily make dashboard content wider than the `ScrollPane` viewport. `HbarPolicy.NEVER` hides the horizontal scrollbar but leaves the default horizontal value range active. The JavaFX skin can therefore apply a new horizontal offset after a one-shot reset has already run.
 
 ## Design
 
 - Keep the responsive single-column and two-column layouts unchanged.
 - Keep the horizontal scrollbar disabled and preserve all intentional minimum widths inside widget rows.
-- Normalize the dashboard `ScrollPane` horizontal value to its minimum whenever the viewport width changes.
-- Repeat the normalization after the queued CSS/layout and content-height refresh, ensuring temporary responsive overflow cannot leave a stale offset.
-- Reuse the existing coalesced dashboard layout refresh so continuous window dragging does not create an unbounded queue of JavaFX callbacks.
-- Apply the same normalization after dashboard collapse-state changes and layout-mode rebuilds.
+- Disable the horizontal axis at the control level by setting `hmin`, `hmax`, and `hvalue` to `0`.
+- Remove the previous immediate and deferred horizontal-reset listeners because the control can no longer represent a non-zero horizontal position.
+- After `SideExpandButton` finishes changing Stage bounds, request the existing dashboard CSS/layout and height refresh on the next JavaFX cycle.
 - Preserve vertical scroll position behavior and the existing user-interaction guard for vertical scrolling.
 
 ## Verification
