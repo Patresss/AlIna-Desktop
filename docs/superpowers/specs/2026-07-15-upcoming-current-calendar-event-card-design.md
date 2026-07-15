@@ -2,7 +2,7 @@
 
 ## Goal
 
-Add a separately configurable dashboard card that presents the most relevant Google Calendar event for today: first a currently running timed event, otherwise the next timed event, with an all-day event as a fallback. The card must make the time status, title, participants, description, location, conference link, optional attachments, and meeting-preparation action useful without making the dashboard permanently tall.
+Add a separately configurable dashboard card that presents the most relevant timed Google Calendar event for today: first a currently running event, otherwise the next event. All-day events are intentionally excluded from this card. The card must make the time status, title, participants, description, location, conference link, optional attachments, and meeting-preparation action useful without making the dashboard permanently tall.
 
 The user selected the dense preview layout (visual option B). Information remains expandable inline, but the collapsed card prioritizes a short scan and is targeted to be approximately 35–45% shorter than the original hierarchical proposal. The existing “Today” calendar card remains available as a separate overview.
 
@@ -17,7 +17,7 @@ The change includes:
 - independent visibility, layout, and preview settings for the new card;
 - Polish and English copy, theme styling, tests, and documentation updates.
 
-The card searches only events returned for the current local day. It does not search tomorrow or later dates. It does not download, preview, upload, or modify attachments, and it does not edit Calendar events.
+The card searches only timed events returned for the current local day. It does not search tomorrow or later dates. It does not download, preview, upload, or modify attachments, and it does not edit Calendar events. All-day events remain available in the separate “Today” Calendar overview.
 
 ## Event selection
 
@@ -27,16 +27,14 @@ For each update or 30-second clock tick, the selector uses this priority:
 
 1. Timed events that have started and whose end is still in the future. If several overlap, select the one ending soonest.
 2. Timed events whose start is still in the future. Select the earliest start.
-3. An all-day event from today, using the order returned by the Calendar API.
-4. No event.
+3. No event.
 
-Ended timed events are never selected. Malformed timed events are ignored rather than treated as all-day events. All-day events remain eligible, satisfying the requirement that every Google Calendar event type can be represented, but they cannot hide a more actionable timed event.
+Ended timed events are never selected. Malformed timed events are ignored. All-day events are never candidates, including when they are the only events returned for today. In that case the selector returns no event and the card uses its standard empty state.
 
 The presentation status is:
 
 - `Trwa · jeszcze {duration}` / `In progress · {duration} remaining` for a running timed event;
-- `Za {duration}` / `In {duration}` for a future timed event;
-- `Cały dzień` / `All day` for an all-day fallback.
+- `Za {duration}` / `In {duration}` for a future timed event.
 
 Durations below one minute use “za chwilę” or “kończy się” equivalents instead of displaying zero minutes. The card recalculates selection and labels every 30 seconds without fetching Calendar again.
 
@@ -52,7 +50,7 @@ The card follows the existing dashboard surface, header, collapse, loading, empt
 4. a compact participant preview and one-line description preview, when present;
 5. one footer row containing “Prepare me”, a subdued “Join” action, and the attachment count, when available.
 
-The card header title is “Następne spotkanie” in Polish and “Next meeting” in English. The status pill makes the current state explicit even though every Google Calendar event, including one without attendees or a conferencing link, can be selected. At narrow half width, controls and metadata wrap without horizontal scrolling; the status may move to the content row if keeping it in the header would crowd the title.
+The card header title is “Następne spotkanie” in Polish and “Next meeting” in English. The status pill makes the current state explicit even when a timed event has no attendees or conferencing link. At narrow half width, controls and metadata wrap without horizontal scrolling; the status may move to the content row if keeping it in the header would crowd the title.
 
 ### Participants
 
@@ -146,7 +144,7 @@ Buttons receive accessible text or tooltips, participant chips are labels rather
 Automated coverage includes:
 
 - parser tests for description, attendees, attachments, missing arrays and partial nested objects;
-- selector tests with a fixed `Clock` for running, upcoming, overlapping, ended, all-day, malformed, and empty inputs;
+- selector tests with a fixed `Clock` for running, upcoming, overlapping, ended, malformed, empty, mixed timed/all-day, and all-day-only inputs;
 - feed tests for initial loading, interval refresh, manual refresh, in-flight coalescing, last-success retention, settings rescheduling, and shutdown;
 - preview tests for word-boundary truncation, limits, Unicode text, and empty values;
 - card behavior tests for independent expansion, reset on event change, empty/error/auth/stale states, and URL-scheme rejection;
