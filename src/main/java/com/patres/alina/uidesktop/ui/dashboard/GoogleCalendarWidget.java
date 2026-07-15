@@ -18,12 +18,14 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.kordamp.ikonli.feather.Feather;
@@ -55,6 +57,9 @@ public class GoogleCalendarWidget extends VBox {
     private static final String STYLE_COLLAPSE_BUTTON = "workspace-collapse-button";
     private static final String STYLE_CALENDAR_ITEM = "workspace-calendar-item";
     private static final String STYLE_CALENDAR_ITEM_CURRENT = "workspace-calendar-item-current";
+    private static final String STYLE_CALENDAR_ROW_CONTENT = "workspace-calendar-row-content";
+    private static final String STYLE_CALENDAR_TIMELINE = "workspace-calendar-timeline";
+    private static final String STYLE_CALENDAR_TIMELINE_CURRENT = "workspace-calendar-timeline-current";
     private static final String STYLE_CALENDAR_TIME = "workspace-calendar-time";
     private static final String STYLE_CALENDAR_REMAINING = "workspace-calendar-remaining";
     private static final String STYLE_CALENDAR_UPCOMING = "workspace-calendar-upcoming";
@@ -65,6 +70,10 @@ public class GoogleCalendarWidget extends VBox {
     private static final String STYLE_CALENDAR_AUTH_BUTTON = "workspace-calendar-auth-button";
     private static final String STYLE_CALENDAR_VIDEO_ICON = "workspace-calendar-video-icon";
     private static final String STYLE_CALENDAR_VIDEO_BUTTON = "workspace-calendar-video-button";
+    private static final int TIMELINE_LEFT_INSET = 3;
+    private static final int TIMELINE_WIDTH = 1;
+    private static final int CURRENT_TIMELINE_WIDTH = 3;
+    private static final int TIME_COLUMN_WIDTH = 84;
     private static final int VIDEO_SLOT_WIDTH = 16;
 
     private final Label titleLabel = new Label();
@@ -218,65 +227,92 @@ public class GoogleCalendarWidget extends VBox {
 
     // ── Event row ────────────────────────────────────────────────
 
-    private HBox createEventRow(final GoogleCalendarEvent event) {
+    private StackPane createEventRow(final GoogleCalendarEvent event) {
         final long remainingMinutes = getRemainingMinutes(event);
         final long minutesUntilStart = getMinutesUntilStart(event);
         final boolean isCurrent = remainingMinutes >= 0;
         final boolean isUpcomingSoon = !isCurrent && minutesUntilStart >= 0 && minutesUntilStart <= UPCOMING_THRESHOLD_MINUTES;
 
         final String meetUrl = resolveClickUrl(event);
-        final VBox timeColumn = createTimeColumn(event, isCurrent, isUpcomingSoon, remainingMinutes, minutesUntilStart, meetUrl);
+        final Region timelineMarker = createTimelineMarker(isCurrent);
+        final Label timeLabel = createTimeLabel(event, meetUrl);
         final Region videoSlot = createVideoSlot(event);
         final Region aiSlot = createAiSlot(event);
         final Label summaryLabel = createSummaryLabel(event);
+        final Label timingStatus = createTimingStatus(isCurrent, isUpcomingSoon, remainingMinutes, minutesUntilStart);
 
-        final HBox row = new HBox(8, timeColumn, videoSlot, summaryLabel, aiSlot);
-        row.setAlignment(Pos.CENTER_LEFT);
+        final HBox rowContent = new HBox(8, timeLabel, videoSlot, summaryLabel);
+        if (timingStatus != null) {
+            rowContent.getChildren().add(timingStatus);
+        }
+        rowContent.getChildren().add(aiSlot);
+        rowContent.setAlignment(Pos.CENTER_LEFT);
+        rowContent.setMinWidth(0);
+        rowContent.setMaxWidth(Double.MAX_VALUE);
+        rowContent.getStyleClass().add(STYLE_CALENDAR_ROW_CONTENT);
+
+        final StackPane row = new StackPane(rowContent, timelineMarker);
+        StackPane.setAlignment(rowContent, Pos.CENTER_LEFT);
+        StackPane.setAlignment(timelineMarker, Pos.CENTER_LEFT);
+        StackPane.setMargin(timelineMarker, new Insets(6, 0, 6, TIMELINE_LEFT_INSET));
         row.setMinWidth(0);
         row.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(row, Priority.ALWAYS);
+        row.getStyleClass().add(STYLE_CALENDAR_ITEM);
 
         if (isCurrent) {
-            row.getStyleClass().addAll(STYLE_CALENDAR_ITEM_CURRENT);
-            // Bold summary for active event
-            summaryLabel.setStyle("-fx-font-weight: 700;");
-        } else {
-            row.getStyleClass().add(STYLE_CALENDAR_ITEM);
+            row.getStyleClass().add(STYLE_CALENDAR_ITEM_CURRENT);
         }
 
         return row;
     }
 
-    private VBox createTimeColumn(final GoogleCalendarEvent event, final boolean isCurrent, final boolean isUpcomingSoon,
-                                  final long remainingMinutes, final long minutesUntilStart, final String meetUrl) {
+    private Region createTimelineMarker(final boolean current) {
+        final Region marker = new Region();
+        marker.getStyleClass().add(STYLE_CALENDAR_TIMELINE);
+        if (current) {
+            marker.getStyleClass().add(STYLE_CALENDAR_TIMELINE_CURRENT);
+        }
+        final int markerWidth = current ? CURRENT_TIMELINE_WIDTH : TIMELINE_WIDTH;
+        marker.setMinWidth(markerWidth);
+        marker.setPrefWidth(markerWidth);
+        marker.setMaxWidth(markerWidth);
+        marker.setMaxHeight(Double.MAX_VALUE);
+        marker.setMouseTransparent(true);
+        return marker;
+    }
+
+    private Label createTimeLabel(final GoogleCalendarEvent event, final String meetUrl) {
         final Label timeLabel = new Label(formatTimeText(event));
         timeLabel.getStyleClass().add(STYLE_CALENDAR_TIME);
-        timeLabel.setMinWidth(Region.USE_PREF_SIZE);
+        timeLabel.setAlignment(Pos.CENTER_LEFT);
+        timeLabel.setMinWidth(TIME_COLUMN_WIDTH);
+        timeLabel.setPrefWidth(TIME_COLUMN_WIDTH);
+        timeLabel.setMaxWidth(TIME_COLUMN_WIDTH);
 
         if (!meetUrl.isEmpty() && !event.allDay()) {
             timeLabel.getStyleClass().add(STYLE_CALENDAR_CLICKABLE);
             timeLabel.setOnMouseClicked(e -> Browser.openWebpage(meetUrl));
         }
+        return timeLabel;
+    }
 
-        final VBox timeColumn = new VBox(0);
-        timeColumn.setAlignment(Pos.CENTER_RIGHT);
-        timeColumn.getChildren().add(timeLabel);
-
+    private Label createTimingStatus(final boolean isCurrent, final boolean isUpcomingSoon,
+                                     final long remainingMinutes, final long minutesUntilStart) {
         if (isCurrent) {
-            timeColumn.getChildren().add(createTimeInfoLabel(
+            return createTimeInfoLabel(
                     formatRemainingText(remainingMinutes),
                     STYLE_CALENDAR_REMAINING,
                     remainingMinutes < URGENT_THRESHOLD_MINUTES
-            ));
-        } else if (isUpcomingSoon) {
-            timeColumn.getChildren().add(createTimeInfoLabel(
+            );
+        }
+        if (isUpcomingSoon) {
+            return createTimeInfoLabel(
                     formatUpcomingText(minutesUntilStart),
                     STYLE_CALENDAR_UPCOMING,
                     minutesUntilStart < URGENT_THRESHOLD_MINUTES
-            ));
+            );
         }
-
-        return timeColumn;
+        return null;
     }
 
     private Label createTimeInfoLabel(final String text, final String styleClass, final boolean urgent) {
@@ -290,21 +326,27 @@ public class GoogleCalendarWidget extends VBox {
     }
 
     private Region createVideoSlot(final GoogleCalendarEvent event) {
+        final StackPane slot = new StackPane();
+        slot.setAlignment(Pos.CENTER);
+        slot.setMinWidth(VIDEO_SLOT_WIDTH);
+        slot.setPrefWidth(VIDEO_SLOT_WIDTH);
+        slot.setMaxWidth(VIDEO_SLOT_WIDTH);
+
         final String meetUrl = resolveClickUrl(event);
         if (!meetUrl.isEmpty() && !event.allDay()) {
             final FontIcon videoIcon = new FontIcon(Feather.VIDEO);
             videoIcon.getStyleClass().add(STYLE_CALENDAR_VIDEO_ICON);
             final Label videoButton = new Label();
             videoButton.setGraphic(videoIcon);
+            videoButton.setAlignment(Pos.CENTER);
+            videoButton.setMinWidth(VIDEO_SLOT_WIDTH);
+            videoButton.setPrefWidth(VIDEO_SLOT_WIDTH);
+            videoButton.setMaxWidth(VIDEO_SLOT_WIDTH);
             videoButton.getStyleClass().add(STYLE_CALENDAR_VIDEO_BUTTON);
             videoButton.setOnMouseClicked(e -> Browser.openWebpage(meetUrl));
-            return videoButton;
+            slot.getChildren().add(videoButton);
         }
-        final Region placeholder = new Region();
-        placeholder.setMinWidth(VIDEO_SLOT_WIDTH);
-        placeholder.setPrefWidth(VIDEO_SLOT_WIDTH);
-        placeholder.setMaxWidth(VIDEO_SLOT_WIDTH);
-        return placeholder;
+        return slot;
     }
 
     private Region createAiSlot(final GoogleCalendarEvent event) {

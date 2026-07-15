@@ -299,29 +299,54 @@
     -fx-background-color: -color-success-subtle;
 }
 
+.workspace-calendar-item {
+    -fx-padding: 0;
+}
+
+.workspace-calendar-row-content {
+    -fx-alignment: center-left;
+    -fx-padding: 6px 8px;
+}
+
 .workspace-calendar-item-current {
     -fx-alignment: center-left;
-    -fx-padding: 6px 8px 6px 10px;
     -fx-background-color: transparent;
     -fx-background-radius: 10px;
-    -fx-border-color: transparent transparent transparent -color-accent-fg;
-    -fx-border-width: 0 0 0 3px;
-    -fx-border-radius: 10px 0 0 10px;
+    -fx-border-width: 0;
+    -fx-border-radius: 0;
 }
 
 .workspace-calendar-item-current:hover {
     -fx-background-color: -color-bg-subtle;
 }
 
+.workspace-calendar-timeline {
+    -fx-background-color: -color-border-subtle;
+    -fx-background-radius: 0;
+    -fx-opacity: 0.72;
+}
+
+.workspace-calendar-timeline-current {
+    -fx-background-color: -color-accent-fg;
+    -fx-background-radius: 0;
+    -fx-opacity: 1;
+}
+
+.workspace-calendar-item-current .workspace-calendar-summary {
+    -fx-font-weight: 700;
+}
+
 .workspace-calendar-remaining {
     -fx-text-fill: -color-fg-muted;
-    -fx-font-size: 10px;
+    -fx-font-size: 9px;
+    -fx-padding: 0 2px;
 }
 
 .workspace-calendar-upcoming {
     -fx-text-fill: -color-accent-fg;
-    -fx-font-size: 10px;
+    -fx-font-size: 9px;
     -fx-font-weight: 700;
+    -fx-padding: 0 2px;
 }
 
 .workspace-calendar-time-urgent {
