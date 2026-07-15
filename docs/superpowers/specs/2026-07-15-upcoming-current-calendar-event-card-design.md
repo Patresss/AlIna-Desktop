@@ -2,15 +2,16 @@
 
 ## Goal
 
-Add a separately configurable dashboard card that presents the most relevant Google Calendar event for today: first a currently running timed event, otherwise the next timed event, with an all-day event as a fallback. The card must make the time status, title, participants, description, location, conference link, and optional attachments useful without making the dashboard permanently tall.
+Add a separately configurable dashboard card that presents the most relevant Google Calendar event for today: first a currently running timed event, otherwise the next timed event, with an all-day event as a fallback. The card must make the time status, title, participants, description, location, conference link, optional attachments, and meeting-preparation action useful without making the dashboard permanently tall.
 
-The user selected the hierarchical card layout (visual option A). The existing “Today” calendar card remains available as a separate overview.
+The user selected the dense preview layout (visual option B). Information remains expandable inline, but the collapsed card prioritizes a short scan and is targeted to be approximately 35–45% shorter than the original hierarchical proposal. The existing “Today” calendar card remains available as a separate overview.
 
 ## Scope
 
 The change includes:
 
 - one new dashboard card with current/upcoming selection and a live countdown;
+- a compact “Prepare me” action that immediately sends the configured Calendar AI prompt to the active chat;
 - participants, full event description, and Calendar attachment metadata in the Google Calendar model;
 - one shared calendar feed for the existing calendar card, the new card, and the header countdown;
 - independent visibility, layout, and preview settings for the new card;
@@ -43,35 +44,41 @@ Durations below one minute use “za chwilę” or “kończy się” equivalent
 
 The stable layout identifier is `DashboardCardId.UPCOMING_EVENT`, with key `upcomingEvent`, default order `25`, and half-width support enabled. This places it between Tasks (`20`) and Calendar (`30`) for users who have not customized its order.
 
-The card follows the existing dashboard surface, header, collapse, loading, empty, error, and responsive-width patterns. Its visible hierarchy is:
+The card follows the existing dashboard surface, header, collapse, loading, empty, error, and responsive-width patterns. Its collapsed visible hierarchy is deliberately dense:
 
-1. card title and refresh/collapse controls;
-2. current/upcoming status pill;
-3. event title;
-4. exact start–end time and location;
-5. participants, when present;
-6. description, when present;
-7. actions and attachments, when present.
+1. a single compact header row with the card title, status pill, and refresh/collapse controls;
+2. an event title limited to two visual lines;
+3. one wrapping metadata row containing exact start–end time and location;
+4. a compact participant preview and one-line description preview, when present;
+5. one footer row containing “Prepare me”, a subdued “Join” action, and the attachment count, when available.
 
-The card header title is “Następne spotkanie” in Polish and “Next meeting” in English. The status pill makes the current state explicit even though every Google Calendar event, including one without attendees or a conferencing link, can be selected.
+The card header title is “Następne spotkanie” in Polish and “Next meeting” in English. The status pill makes the current state explicit even though every Google Calendar event, including one without attendees or a conferencing link, can be selected. At narrow half width, controls and metadata wrap without horizontal scrolling; the status may move to the content row if keeping it in the header would crowd the title.
 
 ### Participants
 
 Participants are read from the event `attendees` array. Every returned attendee is included; `displayName` is preferred and email is the fallback label. Blank entries are discarded. The visible participant count is the size of this normalized list. Invitation response status is intentionally not shown in this first version.
 
-The collapsed preview shows the first configured number of participant chips, defaulting to four, followed by a `+N więcej` / `+N more` control when necessary. Activating it expands all chips inline and replaces the control with `Zwiń` / `Collapse`. The section is omitted when the normalized list is empty.
+The collapsed preview shows the first configured number of compact participant chips or avatars, defaulting to four, followed by a `+N więcej` / `+N more` control when necessary. Activating it expands all chips inline and replaces the control with `Zwiń` / `Collapse`. The section has no separate heading in the collapsed state and is omitted when the normalized list is empty.
 
 ### Description
 
-The full Calendar description is retained in the model and rendered as plain text in JavaFX; it is never interpreted as HTML or executed in a WebView. Whitespace is normalized for the preview while the expanded form preserves meaningful line breaks. The preview is truncated at the nearest word boundary at or before the configured character limit, defaulting to 240 characters. If the description is longer, `Pokaż więcej` / `Show more` expands it inline and `Zwiń` / `Collapse` restores the preview. The section is omitted for blank descriptions.
+The full Calendar description is retained in the model and rendered as plain text in JavaFX; it is never interpreted as HTML or executed in a WebView. Whitespace is normalized for the collapsed preview, which is visually limited to one ellipsized line and also respects the configured character limit, defaulting to 240 characters. If the description is longer, `Więcej` / `More` expands it inline, preserves meaningful line breaks, and exposes `Zwiń` / `Collapse`. The section has no separate heading in the collapsed state and is omitted for blank descriptions.
 
 ### Location, conference link, and attachments
 
-Location is rendered as text and can wrap at narrow widths. A prominent `Dołącz` / `Join` action appears when the existing conference-link resolver finds a Hangout/Meet link, a video `conferenceData` entry point, a supported conferencing URL in the description, or an HTTP(S) location.
+Location is rendered in the compact metadata row and can wrap at narrow widths. A subdued flat/ghost `Dołącz` / `Join` action appears when the existing conference-link resolver finds a Hangout/Meet link, a video `conferenceData` entry point, a supported conferencing URL in the description, or an HTTP(S) location. It intentionally does not use the main accent-button styling, so it remains discoverable without visually dominating the meeting card.
 
-Calendar attachments are optional. Each normalized attachment contains title, file URL, and MIME type. The UI uses a local paperclip icon and title; it does not fetch remote attachment icons. The collapsed section shows up to three attachments and then `+N więcej` / `+N more`; it can expand and collapse inline. The section is omitted when attachments are disabled in settings or absent from the event.
+Calendar attachments are optional. Each normalized attachment contains title, file URL, and MIME type. The UI uses a local paperclip icon and title; it does not fetch remote attachment icons. The collapsed footer contains only a paperclip and count. Activating it expands attachment links inline; the expanded list shows up to three attachments and then `+N więcej` / `+N more`, with controls to expand and collapse the full list. The control is omitted when attachments are disabled in settings or absent from the event.
 
 Conference and attachment actions only open syntactically valid `http` or `https` URLs. Other schemes and malformed values are displayed as unavailable and are never passed to the operating system.
+
+### Prepare me action
+
+The footer contains a compact outlined `Przygotuj mnie` / `Prepare me` action. It reuses the existing Calendar AI prompt stored in `WorkspaceSettings.calendarAiPrompt`; no second prompt setting is introduced. The button remains visible but disabled when that prompt is blank, with a tooltip directing the user to Dashboard Settings.
+
+Activating the button resolves the existing `$ARGUMENTS` placeholder with the selected event context and publishes the existing `CalendarAiPromptEvent`. The active chat receives that event, sends the resulting message immediately, and starts generating the answer without opening a dialog or requiring a second confirmation.
+
+Prompt arguments are built by one shared calendar-event formatter used by both the existing Calendar event action and the new card. The context includes the event title, start/end time, location, conferencing link, participants, full description, and attachment titles/URLs when available. Missing fields are omitted cleanly. Centralizing this formatter prevents the two Calendar entry points from drifting into different preparation behavior.
 
 ### Expansion state
 
@@ -122,7 +129,7 @@ Saving settings publishes the existing workspace-settings update event. Visibili
 
 ## Loading, empty, and failure states
 
-Before the first result, the card shows the standard loading state. A successful result with no eligible event shows the compact message `Brak kolejnych wydarzeń dzisiaj` / `No more events today`.
+Before the first result, the card shows a compact loading state that does not reserve the height of expanded content. A successful result with no eligible event shows the compact message `Brak kolejnych wydarzeń dzisiaj` / `No more events today`.
 
 If the first fetch fails, the card shows the standard wrapped Calendar error. An authentication failure also offers the existing re-authentication action. If a refresh fails after at least one successful result, the new card keeps using the last successful list, shows a subtle stale-data warning, and continues local time selection. This avoids an empty card during a transient failure while making the stale state visible. A later successful snapshot clears the warning.
 
@@ -130,9 +137,9 @@ The existing Calendar overview may continue to replace its content with its curr
 
 ## Styling and accessibility
 
-New style classes live with the dashboard styles in `workspace.css` and use existing theme variables rather than fixed light/dark colors. The card remains readable at full and half width, supports wrapping rather than horizontal scrolling, and does not force the paired grid row to stretch unexpectedly.
+New style classes live with the dashboard styles in `workspace.css` and use existing theme variables rather than fixed light/dark colors. Compared with the original hierarchical proposal, the dense design reduces content spacing, section margins, title/status sizing, and button padding, targeting a 35–45% lower collapsed height for representative event data. The card remains readable at full and half width, supports wrapping rather than horizontal scrolling, and does not force the paired grid row to stretch unexpectedly.
 
-Buttons receive accessible text or tooltips, participant chips are labels rather than focusable controls, and expand/collapse controls remain keyboard reachable. Status is expressed with text, not color alone. Polish and English resource bundles receive matching keys.
+Buttons receive accessible text or tooltips, participant chips are labels rather than focusable controls, and expand/collapse controls remain keyboard reachable. The preparation button has a clear disabled explanation when no prompt is configured. Status is expressed with text, not color alone. Polish and English resource bundles receive matching keys.
 
 ## Testing
 
@@ -143,6 +150,7 @@ Automated coverage includes:
 - feed tests for initial loading, interval refresh, manual refresh, in-flight coalescing, last-success retention, settings rescheduling, and shutdown;
 - preview tests for word-boundary truncation, limits, Unicode text, and empty values;
 - card behavior tests for independent expansion, reset on event change, empty/error/auth/stale states, and URL-scheme rejection;
+- preparation tests for shared prompt-argument formatting, missing optional fields, the disabled blank-prompt state, and immediate publication through the existing active-chat event;
 - settings tests for defaults, normalization, old JSON without the nested settings object, and the new dashboard layout identifier;
 - dashboard planner tests including the default `UPCOMING_EVENT` placement;
 - PL/EN resource and CSS style-contract tests.
@@ -151,7 +159,7 @@ Verification runs `./gradlew test`, followed by `./gradlew build`. Manual JavaFX
 
 ## Documentation
 
-The Polish and English About pages are updated to mention the separate next/current meeting card, inline details, attachments, and its Dashboard Settings controls.
+The Polish and English About pages are updated to mention the separate next/current meeting card, dense inline details, attachments, meeting preparation, and its Dashboard Settings controls.
 
 ## Non-goals
 
