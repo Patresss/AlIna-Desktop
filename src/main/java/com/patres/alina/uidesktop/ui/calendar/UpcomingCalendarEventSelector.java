@@ -37,7 +37,7 @@ public final class UpcomingCalendarEventSelector {
             return current;
         }
 
-        final Optional<Selection> upcoming = events.stream()
+        return events.stream()
                 .filter(event -> !event.allDay())
                 .map(event -> upcomingSelection(event, now))
                 .flatMap(Optional::stream)
@@ -45,14 +45,6 @@ public final class UpcomingCalendarEventSelector {
                         .thenComparing(selection -> parseInstant(
                                 selection.event().rawStartDateTime()
                         ).orElse(Instant.MAX)));
-        if (upcoming.isPresent()) {
-            return upcoming;
-        }
-
-        return events.stream()
-                .filter(GoogleCalendarEvent::allDay)
-                .findFirst()
-                .map(event -> new Selection(event, State.ALL_DAY, 0));
     }
 
     private Optional<Selection> runningSelection(final GoogleCalendarEvent event, final Instant now) {
@@ -97,8 +89,7 @@ public final class UpcomingCalendarEventSelector {
 
     public enum State {
         RUNNING,
-        UPCOMING,
-        ALL_DAY
+        UPCOMING
     }
 
     public record Selection(GoogleCalendarEvent event, State state, long minutes) {

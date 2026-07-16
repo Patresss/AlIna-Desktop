@@ -8,6 +8,10 @@
     -color-glass-border-hover: -color-border-default;
 }
 
+.root:dark {
+    -color-shadow-default: -color-bg-inset;
+}
+
 /* ══════════════════════════════════════════════════
    Base / Layout
    ══════════════════════════════════════════════════ */
@@ -377,6 +381,11 @@ ChatThreadHistoryCard {
     -fx-max-height: 40px;
     -fx-effect: dropshadow(gaussian, -color-shadow-default, 10, 0, 0, 3);
     -fx-alignment: center;
+}
+
+/* Dark surfaces use shorter, inward-colored elevation instead of a border glow. */
+.root:dark .modal-pane {
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 15, 0, 0, 4);
 }
 
 .toast-success .toast-icon {

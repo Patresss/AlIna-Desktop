@@ -46,6 +46,28 @@ public final class CalendarEventLinkResolver {
         }
     }
 
+    public static String displayLocation(final String location) {
+        if (location == null || location.isBlank()) {
+            return "";
+        }
+        final String normalized = location.strip();
+        if (safeHttpUrl(normalized).isPresent()) {
+            return "";
+        }
+        final int separator = normalized.indexOf(',');
+        if (separator >= 0 && safeHttpUrl(normalized.substring(0, separator)).isPresent()) {
+            return normalized.substring(separator + 1).strip();
+        }
+        return normalized;
+    }
+
+    public static String displayLocation(final GoogleCalendarEvent event) {
+        if (event == null || event.attendees().stream().anyMatch(attendee -> attendee.resource())) {
+            return "";
+        }
+        return displayLocation(event.location());
+    }
+
     private static String firstLocationPart(final String location) {
         if (location == null || location.isBlank()) {
             return "";

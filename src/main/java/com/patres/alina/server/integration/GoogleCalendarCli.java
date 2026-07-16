@@ -31,7 +31,7 @@ final class GoogleCalendarCli {
     private static final String ADC_QUOTA_PROJECT_NODE = "quota_project_id";
     private static final String CALENDAR_EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
     private static final String EVENT_FIELDS = "items(summary,description,start,end,location,hangoutLink,conferenceData,"
-            + "attendees(displayName,email),attachments(fileUrl,title,mimeType))";
+            + "attendees(displayName,email,resource),attachments(fileUrl,title,mimeType))";
     private static final String GCLOUD_MISSING_MESSAGE =
             "Google Calendar requires gcloud CLI for authentication. Install Google Cloud SDK and make sure the app can access it in PATH.";
     private static final String CURL_MISSING_MESSAGE =

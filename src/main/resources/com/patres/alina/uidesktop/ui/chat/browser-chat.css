@@ -3,6 +3,14 @@
    ══════════════════════════════════════════════════ */
 
 /* ── Base ────────────────────────────────────────── */
+:root {
+    --color-shadow-default: var(--color-border-default);
+}
+
+:root.theme-dark {
+    --color-shadow-default: var(--color-bg-inset, var(--color-border-default));
+}
+
 body {
     background-color: var(--color-bg-default);
     color: var(--color-fg-default);
@@ -88,7 +96,7 @@ tr:last-child td {
     background-color: var(--color-bg-overlay, var(--color-bg-default));
     border: none;
     color: var(--color-fg-default);
-    box-shadow: 0 4px 14px var(--color-border-default);
+    box-shadow: 0 4px 14px var(--color-shadow-default, var(--color-border-default));
     border-radius: 16px;
     padding: 12px 48px 12px 16px;
     margin: 10px 0;
@@ -105,7 +113,7 @@ tr:last-child td {
 }
 
 .chat-message:hover {
-    box-shadow: 0 7px 20px var(--color-border-default);
+    box-shadow: 0 7px 20px var(--color-shadow-default, var(--color-border-default));
 }
 
 @keyframes messageSlideIn {
@@ -125,7 +133,7 @@ tr:last-child td {
     width: fit-content;
     max-width: 78%;
     background-color: var(--color-accent-subtle);
-    box-shadow: 0 3px 11px var(--color-border-default);
+    box-shadow: 0 3px 11px var(--color-shadow-default, var(--color-border-default));
 }
 
 .chat-message.assistant {
@@ -190,7 +198,7 @@ tr:last-child td {
     align-items: center;
     justify-content: center;
     font-size: 13px;
-    box-shadow: 0 2px 6px var(--color-border-default);
+    box-shadow: 0 2px 6px var(--color-shadow-default, var(--color-border-default));
     transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
@@ -322,7 +330,7 @@ code:not(pre code) {
     background-color: var(--color-bg-overlay, var(--color-bg-default));
     border: 1px solid var(--color-border-subtle, var(--color-border-default));
     border-radius: 14px;
-    box-shadow: 0 4px 12px var(--color-border-subtle, var(--color-border-default));
+    box-shadow: 0 4px 12px var(--color-shadow-default, var(--color-border-default));
     overflow: visible;
     animation: none;
     transition: none;
@@ -553,7 +561,7 @@ code:not(pre code) {
     background-color: var(--color-bg-overlay, var(--color-bg-default));
     padding: 14px 16px;
     box-sizing: border-box;
-    box-shadow: 0 5px 15px var(--color-border-default);
+    box-shadow: 0 5px 15px var(--color-shadow-default, var(--color-border-default));
 }
 
 .permission-header {
@@ -613,7 +621,7 @@ code:not(pre code) {
 
 .permission-actions button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px var(--color-border-default);
+    box-shadow: 0 4px 12px var(--color-shadow-default, var(--color-border-default));
 }
 
 .permission-actions button:active {
@@ -989,7 +997,7 @@ code:not(pre code) {
 .todo-sticky {
     background-color: var(--color-bg-overlay, var(--color-bg-default));
     color: var(--color-fg-default);
-    box-shadow: 0 6px 18px var(--color-border-default);
+    box-shadow: 0 6px 18px var(--color-shadow-default, var(--color-border-default));
     padding: 12px 14px;
     margin: 8px 0 0 0;
     border-radius: 14px;
@@ -1470,7 +1478,7 @@ blockquote {
 .welcome-chip-recent {
     border-color: var(--color-border-subtle, var(--color-border-default));
     background-color: var(--color-bg-overlay, var(--color-bg-default));
-    box-shadow: 0 4px 12px var(--color-border-subtle, var(--color-border-default));
+    box-shadow: 0 4px 12px var(--color-shadow-default, var(--color-border-default));
     max-width: 220px;
     overflow: hidden;
 }
@@ -1478,7 +1486,7 @@ blockquote {
 .welcome-chip-recent:hover {
     background-color: var(--color-bg-overlay, var(--color-bg-default));
     border-color: var(--color-accent-muted);
-    box-shadow: 0 7px 18px var(--color-border-subtle, var(--color-border-default));
+    box-shadow: 0 7px 18px var(--color-shadow-default, var(--color-border-default));
 }
 
 .welcome-chip-recent:focus-visible {
@@ -1580,7 +1588,7 @@ blockquote {
     border-radius: 999px;
     background-color: var(--color-bg-default);
     border: 1px solid var(--color-border-default);
-    box-shadow: 0 4px 12px var(--color-border-default);
+    box-shadow: 0 4px 12px var(--color-shadow-default, var(--color-border-default));
     cursor: pointer;
     display: none;
     align-items: center;
@@ -1747,7 +1755,56 @@ img {
 
 .message-image-thumbnail:hover {
     transform: scale(1.02);
-    box-shadow: 0 2px 8px var(--color-border-default);
+    box-shadow: 0 2px 8px var(--color-shadow-default, var(--color-border-default));
+}
+
+/* Dark mode keeps depth while avoiding the pale halo produced by border-colored blur. */
+:root.theme-dark .chat-message {
+    box-shadow: 0 4px 11px var(--color-shadow-default, var(--color-border-default));
+}
+
+:root.theme-dark .chat-message:hover {
+    box-shadow: 0 7px 15px var(--color-shadow-default, var(--color-border-default));
+}
+
+:root.theme-dark .chat-message.user {
+    box-shadow: 0 3px 8px var(--color-shadow-default, var(--color-border-default));
+}
+
+:root.theme-dark .message-action-btn {
+    box-shadow: 0 2px 5px var(--color-shadow-default, var(--color-border-default));
+}
+
+:root.theme-dark .chat-message.loader {
+    box-shadow: 0 4px 9px var(--color-shadow-default, var(--color-border-default));
+}
+
+:root.theme-dark .permission-shell {
+    box-shadow: 0 5px 11px var(--color-shadow-default, var(--color-border-default));
+}
+
+:root.theme-dark .permission-actions button:hover {
+    box-shadow: 0 4px 9px var(--color-shadow-default, var(--color-border-default));
+}
+
+:root.theme-dark .todo-sticky {
+    box-shadow: 0 6px 14px var(--color-shadow-default, var(--color-border-default));
+}
+
+:root.theme-dark .welcome-chip-recent {
+    box-shadow: 0 4px 9px var(--color-shadow-default, var(--color-border-default));
+}
+
+:root.theme-dark .welcome-chip-recent:hover {
+    box-shadow: 0 7px 14px var(--color-shadow-default, var(--color-border-default));
+}
+
+:root.theme-dark .scroll-to-bottom {
+    box-shadow: 0 4px 9px var(--color-shadow-default, var(--color-border-default));
+}
+
+:root.theme-dark .message-image-thumbnail:hover {
+    box-shadow: 0 2px 6px var(--color-shadow-default, var(--color-border-default));
 }
 
 .message-image-expanded {

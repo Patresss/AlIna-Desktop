@@ -18,8 +18,9 @@ class CalendarEventPromptArgumentsTest {
                 "Sala Atlas",
                 "<p>Omów cele &amp; ryzyka</p>",
                 List.of(
-                        new GoogleCalendarAttendee("Anna", "anna@example.com"),
-                        new GoogleCalendarAttendee("", "jan@example.com")
+                        new GoogleCalendarAttendee("Anna", "anna@example.com", false),
+                        new GoogleCalendarAttendee("", "jan@example.com", false),
+                        new GoogleCalendarAttendee("Sala Atlas", "room@example.com", true)
                 ),
                 List.of(
                         new GoogleCalendarAttachment("Agenda", "https://example.com/agenda", "text/plain"),
@@ -30,9 +31,9 @@ class CalendarEventPromptArgumentsTest {
         assertThat(CalendarEventPromptArguments.format(event)).isEqualTo("""
                 Event: Planowanie Q3
                 Time: 09:30 - 10:00
-                Location: Sala Atlas
                 Meeting link: https://meet.google.com/abc-defg-hij
                 Participants: Anna, jan@example.com
+                Rooms: Sala Atlas
                 Description: Omów cele & ryzyka
                 Attachments:
                 - Agenda: https://example.com/agenda
@@ -49,6 +50,30 @@ class CalendarEventPromptArgumentsTest {
         assertThat(CalendarEventPromptArguments.format(event)).isEqualTo("""
                 Event: Dzień skupienia
                 Time: All day""");
+    }
+
+    @Test
+    void treatsUrlOnlyLocationAsMeetingLinkInsteadOfPhysicalLocation() {
+        final GoogleCalendarEvent event = new GoogleCalendarEvent(
+                "Demo", "09:30", "10:00", "https://zoom.us/j/123", "",
+                List.of(), List.of(), false, "", "", "",
+                "2026-07-15T09:30:00+02:00", "2026-07-15T10:00:00+02:00"
+        );
+
+        assertThat(CalendarEventPromptArguments.format(event))
+                .contains("Meeting link: https://zoom.us/j/123")
+                .doesNotContain("Location:");
+    }
+
+    @Test
+    void keepsPhysicalLocationWhenNoRoomResourceExists() {
+        final GoogleCalendarEvent event = new GoogleCalendarEvent(
+                "Demo", "09:30", "10:00", "Sala Atlas", "",
+                List.of(), List.of(), false, "", "", "",
+                "2026-07-15T09:30:00+02:00", "2026-07-15T10:00:00+02:00"
+        );
+
+        assertThat(CalendarEventPromptArguments.format(event)).contains("Location: Sala Atlas");
     }
 
     private GoogleCalendarEvent event(final String summary,

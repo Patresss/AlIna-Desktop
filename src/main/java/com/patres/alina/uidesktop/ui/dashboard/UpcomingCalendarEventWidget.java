@@ -13,6 +13,7 @@ import com.patres.alina.uidesktop.backend.BackendApi;
 import com.patres.alina.uidesktop.ui.calendar.CalendarDescriptionText;
 import com.patres.alina.uidesktop.ui.calendar.CalendarEventLinkResolver;
 import com.patres.alina.uidesktop.ui.calendar.CalendarEventPromptArguments;
+import com.patres.alina.uidesktop.ui.calendar.CalendarRoomDisplayName;
 import com.patres.alina.uidesktop.ui.calendar.GoogleCalendarFeed;
 import com.patres.alina.uidesktop.ui.calendar.GoogleCalendarSnapshot;
 import com.patres.alina.uidesktop.ui.calendar.UpcomingCalendarEventSelector;
@@ -41,12 +42,14 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 /** Dense dashboard card for the running or next Google Calendar event today. */
 public final class UpcomingCalendarEventWidget extends VBox {
 
     private static final int RE_AUTH_DELAY_SECONDS = 10;
     private static final int MAX_COLLAPSED_ATTACHMENTS = 3;
+    private static final int MAX_COLLAPSED_ROOMS = 2;
     private static final int MIN_EXPANDABLE_DESCRIPTION_LENGTH = 48;
     private static final int URGENT_MINUTES = 5;
 
@@ -63,6 +66,7 @@ public final class UpcomingCalendarEventWidget extends VBox {
     private Timeline tickTimeline;
     private boolean collapsed;
     private boolean attendeesExpanded;
+    private boolean roomsExpanded;
     private boolean descriptionExpanded;
     private boolean attachmentsVisible;
     private boolean attachmentsExpanded;
@@ -203,14 +207,24 @@ public final class UpcomingCalendarEventWidget extends VBox {
         summary.getStyleClass().add("workspace-upcoming-event-summary");
         contentBox.getChildren().add(summary);
 
-        contentBox.getChildren().add(createMetadata(event));
-
         final List<String> attendeeLabels = event.attendees().stream()
+                .filter(attendee -> !attendee.resource())
                 .map(GoogleCalendarAttendee::label)
                 .filter(label -> !label.isBlank())
                 .toList();
+        final List<String> roomLabels = event.attendees().stream()
+                .filter(GoogleCalendarAttendee::resource)
+                .map(GoogleCalendarAttendee::label)
+                .filter(label -> !label.isBlank())
+                .toList();
+        contentBox.getChildren().add(createMetadata(event));
+
         if (!attendeeLabels.isEmpty()) {
             contentBox.getChildren().add(createAttendeesPreview(attendeeLabels, settings.attendeePreviewLimit()));
+        }
+
+        if (!roomLabels.isEmpty()) {
+            contentBox.getChildren().add(createRoomsPreview(roomLabels));
         }
 
         final String plainDescription = CalendarDescriptionText.toPlainText(event.description());
@@ -245,18 +259,15 @@ public final class UpcomingCalendarEventWidget extends VBox {
             case UPCOMING -> selection.minutes() <= 0
                     ? "dashboard.upcomingEvent.status.startingSoon"
                     : "dashboard.upcomingEvent.status.upcoming";
-            case ALL_DAY -> "dashboard.upcomingEvent.status.allDay";
         };
-        final String text = selection.state() == UpcomingCalendarEventSelector.State.ALL_DAY
-                || selection.minutes() <= 0
+        final String text = selection.minutes() <= 0
                 ? LanguageManager.getLanguageString(key)
                 : LanguageManager.getLanguageString(key, formatDuration(selection.minutes()));
         final Label label = new Label(text);
         label.setMinWidth(Region.USE_PREF_SIZE);
         label.setMaxWidth(Region.USE_PREF_SIZE);
         label.getStyleClass().add("workspace-upcoming-event-status");
-        if (selection.state() != UpcomingCalendarEventSelector.State.ALL_DAY
-                && selection.minutes() < URGENT_MINUTES) {
+        if (selection.minutes() < URGENT_MINUTES) {
             label.getStyleClass().add("workspace-upcoming-event-status-urgent");
         }
         return label;
@@ -271,8 +282,9 @@ public final class UpcomingCalendarEventWidget extends VBox {
                 ? LanguageManager.getLanguageString("dashboard.calendar.allDay")
                 : event.startTime() + "–" + event.endTime();
         metadata.getChildren().add(createIconLabel(Feather.CLOCK, time));
-        if (!event.location().isBlank()) {
-            final Label location = createIconLabel(Feather.MAP_PIN, event.location());
+        final String displayLocation = CalendarEventLinkResolver.displayLocation(event);
+        if (!displayLocation.isBlank()) {
+            final Label location = createIconLabel(Feather.MAP_PIN, displayLocation);
             location.setWrapText(true);
             metadata.getChildren().add(location);
         }
@@ -288,39 +300,94 @@ public final class UpcomingCalendarEventWidget extends VBox {
     }
 
     private FlowPane createAttendeesPreview(final List<String> attendeeLabels, final int previewLimit) {
+        return createChipPreview(
+                "dashboard.upcomingEvent.participants",
+                Feather.USERS,
+                attendeeLabels,
+                previewLimit,
+                attendeesExpanded,
+                () -> {
+                    attendeesExpanded = true;
+                    render();
+                },
+                () -> {
+                    attendeesExpanded = false;
+                    render();
+                },
+                this::createAttendeeChip
+        );
+    }
+
+    private FlowPane createRoomsPreview(final List<String> roomLabels) {
+        return createChipPreview(
+                "dashboard.upcomingEvent.rooms",
+                Feather.MAP_PIN,
+                roomLabels,
+                MAX_COLLAPSED_ROOMS,
+                roomsExpanded,
+                () -> {
+                    roomsExpanded = true;
+                    render();
+                },
+                () -> {
+                    roomsExpanded = false;
+                    render();
+                },
+                this::createRoomChip
+        );
+    }
+
+    private FlowPane createChipPreview(final String labelKey,
+                                       final Feather icon,
+                                       final List<String> labels,
+                                       final int previewLimit,
+                                       final boolean expanded,
+                                       final Runnable expandAction,
+                                       final Runnable collapseAction,
+                                       final Function<String, Label> chipFactory) {
         final FlowPane chips = new FlowPane(Orientation.HORIZONTAL, 4, 3);
         chips.setMinWidth(0);
         chips.getStyleClass().add("workspace-upcoming-event-chips");
+        final Label groupLabel = new Label(
+                LanguageManager.getLanguageString(labelKey),
+                new FontIcon(icon)
+        );
+        groupLabel.getStyleClass().add("workspace-upcoming-event-group-label");
+        chips.getChildren().add(groupLabel);
 
-        final int visibleCount = attendeesExpanded
-                ? attendeeLabels.size()
-                : Math.min(previewLimit, attendeeLabels.size());
+        final int visibleCount = expanded ? labels.size() : Math.min(previewLimit, labels.size());
         for (int index = 0; index < visibleCount; index++) {
-            final Label chip = new Label(attendeeLabels.get(index));
-            chip.getStyleClass().add("workspace-upcoming-event-chip");
-            chips.getChildren().add(chip);
+            chips.getChildren().add(chipFactory.apply(labels.get(index)));
         }
-        if (visibleCount < attendeeLabels.size()) {
+        if (visibleCount < labels.size()) {
             chips.getChildren().add(createTextButton(
                     LanguageManager.getLanguageString(
                             "dashboard.upcomingEvent.more",
-                            attendeeLabels.size() - visibleCount
+                            labels.size() - visibleCount
                     ),
-                    () -> {
-                        attendeesExpanded = true;
-                        render();
-                    }
+                    expandAction
             ));
-        } else if (attendeesExpanded && attendeeLabels.size() > previewLimit) {
+        } else if (expanded && labels.size() > previewLimit) {
             chips.getChildren().add(createTextButton(
                     LanguageManager.getLanguageString("dashboard.upcomingEvent.collapseDetails"),
-                    () -> {
-                        attendeesExpanded = false;
-                        render();
-                    }
+                    collapseAction
             ));
         }
         return chips;
+    }
+
+    private Label createAttendeeChip(final String labelText) {
+        final Label chip = new Label(labelText);
+        chip.getStyleClass().add("workspace-upcoming-event-chip");
+        return chip;
+    }
+
+    private Label createRoomChip(final String fullLabel) {
+        final Label chip = new Label(CalendarRoomDisplayName.shorten(fullLabel));
+        chip.getStyleClass().addAll("workspace-upcoming-event-chip", "workspace-upcoming-event-room-chip");
+        chip.setAccessibleText(fullLabel);
+        chip.setTooltip(new Tooltip(fullLabel));
+        return chip;
     }
 
     private VBox createDescriptionSection(final String plainDescription, final int previewLimit) {
@@ -554,6 +621,7 @@ public final class UpcomingCalendarEventWidget extends VBox {
         }
         selectedEventKey = eventKey;
         attendeesExpanded = false;
+        roomsExpanded = false;
         descriptionExpanded = false;
         attachmentsVisible = false;
         attachmentsExpanded = false;

@@ -21,7 +21,9 @@ class UpcomingEventStyleContractTest {
         assertThat(css).contains(
                 ".workspace-upcoming-event-status",
                 ".workspace-upcoming-event-summary",
+                ".workspace-upcoming-event-group-label",
                 ".workspace-upcoming-event-chip",
+                ".workspace-upcoming-event-room-chip",
                 ".workspace-upcoming-event-description",
                 ".workspace-upcoming-event-attachment",
                 ".workspace-upcoming-event-actions",

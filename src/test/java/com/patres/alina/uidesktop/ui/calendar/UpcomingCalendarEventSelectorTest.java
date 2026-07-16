@@ -43,13 +43,12 @@ class UpcomingCalendarEventSelectorTest {
     }
 
     @Test
-    void allDayEventIsOnlyAFallback() {
+    void allDayEventsAreNeverSelected() {
         final var allDay = allDay("Holiday");
         final var future = timed("Call", "2026-07-15T11:00:00Z", "2026-07-15T11:30:00Z");
 
         assertThat(selector.select(List.of(allDay, future)).orElseThrow().event()).isEqualTo(future);
-        assertThat(selector.select(List.of(allDay)).orElseThrow().state())
-                .isEqualTo(UpcomingCalendarEventSelector.State.ALL_DAY);
+        assertThat(selector.select(List.of(allDay))).isEmpty();
     }
 
     @Test

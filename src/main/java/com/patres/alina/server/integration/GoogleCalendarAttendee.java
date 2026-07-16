@@ -1,7 +1,7 @@
 package com.patres.alina.server.integration;
 
-/** Display information for one Google Calendar event attendee. */
-public record GoogleCalendarAttendee(String displayName, String email) {
+/** Display information for one Google Calendar event attendee or bookable resource. */
+public record GoogleCalendarAttendee(String displayName, String email, boolean resource) {
 
     public GoogleCalendarAttendee {
         displayName = normalize(displayName);

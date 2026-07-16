@@ -97,7 +97,7 @@ Wyświetla checklistę z **pliku markdown** (np. vault Obsidian). Obsługuje gru
 
 Pokazuje **dzisiejsze wydarzenia** z Google Calendar. Wspiera powiadomienia z linkiem do spotkania i prompty AI per wydarzenie.
 
-Osobna, kompaktowa karta **Następne spotkanie** wyróżnia trwające lub najbliższe dzisiejsze wydarzenie. Pozwala rozwinąć uczestników, opis i odnośniki do załączników oraz od razu wysłać do aktywnego czatu konfigurowalny prompt **Przygotuj mnie**. Widoczność, układ i limity podglądu można skonfigurować w ustawieniach dashboardu.
+Osobna, kompaktowa karta **Następne spotkanie** wyróżnia trwające lub najbliższe dzisiejsze wydarzenie. Rozdziela uczestników od zarezerwowanych sal, nie myli linku spotkania online z fizyczną lokalizacją, pozwala rozwinąć opis i załączniki oraz od razu wysłać do aktywnego czatu konfigurowalny prompt **Przygotuj mnie**. Widoczność, układ i limity podglądu można skonfigurować w ustawieniach dashboardu.
 
 ### GitHub
 

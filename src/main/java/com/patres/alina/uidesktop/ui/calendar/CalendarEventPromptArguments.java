@@ -24,16 +24,26 @@ public final class CalendarEventPromptArguments {
             arguments.append(event.startTime()).append(" - ").append(event.endTime());
         }
 
-        appendValue(arguments, "Location", event.location());
-        CalendarEventLinkResolver.resolveJoinUrl(event)
-                .ifPresent(url -> appendValue(arguments, "Meeting link", url));
-
         final List<String> attendees = event.attendees().stream()
+                .filter(attendee -> !attendee.resource())
                 .map(GoogleCalendarAttendee::label)
                 .filter(label -> !label.isBlank())
                 .toList();
+        final List<String> rooms = event.attendees().stream()
+                .filter(GoogleCalendarAttendee::resource)
+                .map(GoogleCalendarAttendee::label)
+                .filter(label -> !label.isBlank())
+                .toList();
+
+        appendValue(arguments, "Location", CalendarEventLinkResolver.displayLocation(event));
+        CalendarEventLinkResolver.resolveJoinUrl(event)
+                .ifPresent(url -> appendValue(arguments, "Meeting link", url));
+
         if (!attendees.isEmpty()) {
             appendValue(arguments, "Participants", String.join(", ", attendees));
+        }
+        if (!rooms.isEmpty()) {
+            appendValue(arguments, "Rooms", String.join(", ", rooms));
         }
 
         appendValue(arguments, "Description", CalendarDescriptionText.toPlainText(event.description()));

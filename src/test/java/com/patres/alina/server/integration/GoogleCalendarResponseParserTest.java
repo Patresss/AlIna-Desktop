@@ -18,7 +18,8 @@ class GoogleCalendarResponseParserTest {
                     "location": "Sala Wisła",
                     "attendees": [
                       {"displayName": "Anna", "email": "anna@example.com"},
-                      {"email": "marek@example.com"}
+                      {"email": "marek@example.com"},
+                      {"displayName": "Sala Wisła", "email": "room@example.com", "resource": true}
                     ],
                     "attachments": [{
                       "title": "Roadmap.pdf",
@@ -34,8 +35,11 @@ class GoogleCalendarResponseParserTest {
         assertThat(event.description()).contains("Agenda", "Q3");
         assertThat(event.descriptionVideoUrl()).isEqualTo("https://meet.google.com/abc-defg-hij");
         assertThat(event.attendees())
-                .extracting(GoogleCalendarAttendee::label)
-                .containsExactly("Anna", "marek@example.com");
+                .containsExactly(
+                        new GoogleCalendarAttendee("Anna", "anna@example.com", false),
+                        new GoogleCalendarAttendee("", "marek@example.com", false),
+                        new GoogleCalendarAttendee("Sala Wisła", "room@example.com", true)
+                );
         assertThat(event.attachments()).containsExactly(new GoogleCalendarAttachment(
                 "Roadmap.pdf",
                 "https://drive.google.com/file/d/123/view",
@@ -69,7 +73,7 @@ class GoogleCalendarResponseParserTest {
         assertThat(events.get(0).attendees()).isEmpty();
         assertThat(events.get(0).attachments()).isEmpty();
         assertThat(events.get(0).description()).isEmpty();
-        assertThat(events.get(1).attendees()).containsExactly(new GoogleCalendarAttendee("", ""));
+        assertThat(events.get(1).attendees()).containsExactly(new GoogleCalendarAttendee("", "", false));
         assertThat(events.get(1).attachments()).containsExactly(new GoogleCalendarAttachment("", "", ""));
     }
 }

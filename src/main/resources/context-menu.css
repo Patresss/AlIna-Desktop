@@ -1,5 +1,11 @@
 .context-menu-root {
     -fx-background-color: transparent;
+    -color-shadow-default: -color-border-default;
+}
+
+.context-menu-root:dark,
+.context-menu-loader:dark {
+    -color-shadow-default: -color-bg-inset;
 }
 
 .context-menu-container {
@@ -8,7 +14,7 @@
     -fx-border-color: -color-border-default;
     -fx-border-width: 1px;
     -fx-border-radius: 12px;
-    -fx-effect: dropshadow(gaussian, -color-border-default, 20, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 20, 0, 0, 4);
     -fx-min-width: 260px;
     -fx-max-width: 340px;
 }
@@ -19,7 +25,8 @@
     -fx-border-color: -color-border-default;
     -fx-border-width: 1px;
     -fx-border-radius: 12px;
-    -fx-effect: dropshadow(gaussian, -color-border-default, 20, 0, 0, 4);
+    -color-shadow-default: -color-border-default;
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 20, 0, 0, 4);
 }
 
 .context-menu-title {
@@ -73,9 +80,15 @@
     -fx-border-color: -color-border-default;
     -fx-border-width: 1px;
     -fx-border-radius: 12px;
-    -fx-effect: dropshadow(gaussian, -color-border-default, 20, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 20, 0, 0, 4);
     -fx-min-width: 320px;
     -fx-pref-width: 420px;
+}
+
+.context-menu-root:dark .context-menu-container,
+.context-menu-root:dark .result-popup-container,
+.context-menu-loader:dark {
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 15, 0, 0, 4);
 }
 
 .result-popup-title {

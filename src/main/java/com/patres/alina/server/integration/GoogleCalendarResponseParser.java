@@ -49,6 +49,7 @@ final class GoogleCalendarResponseParser {
     private static final String ATTACHMENTS_NODE = "attachments";
     private static final String DISPLAY_NAME_NODE = "displayName";
     private static final String EMAIL_NODE = "email";
+    private static final String RESOURCE_NODE = "resource";
     private static final String FILE_URL_NODE = "fileUrl";
     private static final String TITLE_NODE = "title";
     private static final String MIME_TYPE_NODE = "mimeType";
@@ -193,7 +194,8 @@ final class GoogleCalendarResponseParser {
         for (final JsonNode attendee : attendeesNode) {
             attendees.add(new GoogleCalendarAttendee(
                     attendee.path(DISPLAY_NAME_NODE).asText(EMPTY_VALUE),
-                    attendee.path(EMAIL_NODE).asText(EMPTY_VALUE)
+                    attendee.path(EMAIL_NODE).asText(EMPTY_VALUE),
+                    attendee.path(RESOURCE_NODE).asBoolean(false)
             ));
         }
         return List.copyOf(attendees);

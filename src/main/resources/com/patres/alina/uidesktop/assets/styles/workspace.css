@@ -60,13 +60,21 @@
     -fx-border-radius: 16px;
     -fx-padding: 12px 14px;
     -fx-spacing: 5px;
-    -fx-effect: dropshadow(gaussian, -color-border-default, 8, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 8, 0, 0, 2);
 }
 
 .workspace-dashboard:hover {
     -fx-background-color: -color-bg-overlay;
     -fx-border-color: -color-accent-muted;
-    -fx-effect: dropshadow(gaussian, -color-border-default, 12, 0, 0, 3);
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 12, 0, 0, 3);
+}
+
+.root:dark .workspace-dashboard {
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 6, 0, 0, 2);
+}
+
+.root:dark .workspace-dashboard:hover {
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 9, 0, 0, 3);
 }
 
 .workspace-dashboard-collapsed {
@@ -413,12 +421,30 @@
     -fx-alignment: center-left;
 }
 
+.workspace-upcoming-event-group-label {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+    -fx-padding: 2px 2px 2px 0;
+}
+
+.workspace-upcoming-event-group-label .ikonli-font-icon {
+    -fx-icon-size: 11px;
+    -fx-icon-color: -color-fg-muted;
+}
+
 .workspace-upcoming-event-chip {
     -fx-background-color: -color-bg-subtle;
     -fx-background-radius: 999px;
     -fx-text-fill: -color-fg-default;
     -fx-font-size: 9px;
     -fx-padding: 2px 6px;
+}
+
+.workspace-upcoming-event-room-chip {
+    -fx-background-color: transparent;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 999px;
 }
 
 .workspace-upcoming-event-description-section {

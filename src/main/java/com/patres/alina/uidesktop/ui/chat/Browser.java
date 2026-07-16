@@ -618,15 +618,27 @@ public class Browser extends StackPane {
         Platform.runLater(() -> {
             final var themeManager = ThemeManager.getInstance();
             final var theme = themeManager.getTheme();
-            
+
+            Map<String, String> colors = Map.of();
             if (theme != null) {
                 try {
-                    theme.parseColors().forEach(this::setCssProperty);
+                    colors = theme.parseColors();
                 } catch (final IOException e) {
                     logger.error("Failed to parse theme colors", e);
                 }
             }
+
+            final Map<String, String> resolvedColors = colors;
+            final boolean darkMode = theme != null && theme.isDarkMode();
+            whenReady(() -> {
+                resolvedColors.forEach(this::setCssProperty);
+                executeJavaScript(buildThemeModeScript(darkMode));
+            });
         });
+    }
+
+    static String buildThemeModeScript(final boolean darkMode) {
+        return "document.documentElement.classList.toggle('theme-dark', " + darkMode + ");";
     }
     
     private void setCssProperty(final String keyColor, final String valueColor) {

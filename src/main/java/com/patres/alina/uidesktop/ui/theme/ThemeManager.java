@@ -12,11 +12,13 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.collections.ListChangeListener;
 import javafx.css.PseudoClass;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
+import javafx.stage.Window;
 import javafx.util.Duration;
 
 import java.util.Objects;
@@ -59,6 +61,15 @@ public final class ThemeManager {
 
     private SamplerTheme currentTheme = null;
 
+    private final ListChangeListener<Window> windowListener = change -> {
+        while (change.next()) {
+            change.getAddedSubList().stream()
+                    .map(Window::getScene)
+                    .filter(Objects::nonNull)
+                    .forEach(this::applyCurrentThemeMode);
+        }
+    };
+
     public ThemeRepository getRepository() {
         return repository;
     }
@@ -99,13 +110,27 @@ public final class ThemeManager {
 
             Application.setUserAgentStylesheet(Objects.requireNonNull(theme.getUserAgentStylesheet()));
             getScene().getStylesheets().setAll(theme.getAllStylesheets());
-            getScene().getRoot().pseudoClassStateChanged(DARK, theme.isDarkMode());
+            applyThemeMode(getScene(), theme.isDarkMode());
+            Window.getWindows().stream()
+                    .map(Window::getScene)
+                    .filter(Objects::nonNull)
+                    .forEach(windowScene -> applyThemeMode(windowScene, theme.isDarkMode()));
 
             // remove user CSS customizations and reset accent on theme change
             resetCustomCSS();
 
             currentTheme = theme;
             DefaultEventBus.getInstance().publish(new ThemeEvent(ThemeEvent.EventType.THEME_CHANGE));
+        }
+    }
+
+    private void applyCurrentThemeMode(final Scene targetScene) {
+        applyThemeMode(targetScene, currentTheme != null && currentTheme.isDarkMode());
+    }
+
+    private void applyThemeMode(final Scene targetScene, final boolean darkMode) {
+        if (targetScene != null && targetScene.getRoot() != null) {
+            targetScene.getRoot().pseudoClassStateChanged(DARK, darkMode);
         }
     }
 
@@ -141,6 +166,7 @@ public final class ThemeManager {
     ///////////////////////////////////////////////////////////////////////////
 
     private ThemeManager() {
+        Window.getWindows().addListener(windowListener);
     }
 
     private static class InstanceHolder {
