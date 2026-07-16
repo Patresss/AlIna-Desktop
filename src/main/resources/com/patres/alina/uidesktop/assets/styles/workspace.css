@@ -483,7 +483,7 @@
     -fx-padding: 2px 0 0 0;
 }
 
-.workspace-upcoming-event-prepare {
+.workspace-upcoming-event-join {
     -fx-background-color: transparent;
     -fx-border-color: -color-border-default;
     -fx-border-radius: 7px;
@@ -494,17 +494,17 @@
     -fx-padding: 4px 8px;
 }
 
-.workspace-upcoming-event-prepare:hover {
+.workspace-upcoming-event-join:hover {
     -fx-background-color: -color-accent-subtle;
     -fx-border-color: -color-accent-muted;
 }
 
-.workspace-upcoming-event-prepare .ikonli-font-icon {
+.workspace-upcoming-event-join .ikonli-font-icon {
     -fx-icon-size: 12px;
     -fx-icon-color: -color-accent-fg;
 }
 
-.workspace-upcoming-event-join,
+.workspace-upcoming-event-prepare,
 .workspace-upcoming-event-attachments-toggle {
     -fx-text-fill: -color-fg-muted;
     -fx-font-size: 10px;
@@ -512,13 +512,13 @@
     -fx-padding: 4px 7px;
 }
 
-.workspace-upcoming-event-join:hover,
+.workspace-upcoming-event-prepare:hover,
 .workspace-upcoming-event-attachments-toggle:hover {
     -fx-background-color: -color-bg-subtle;
     -fx-text-fill: -color-fg-default;
 }
 
-.workspace-upcoming-event-join .ikonli-font-icon,
+.workspace-upcoming-event-prepare .ikonli-font-icon,
 .workspace-upcoming-event-attachments-toggle .ikonli-font-icon {
     -fx-icon-size: 12px;
     -fx-icon-color: -color-fg-muted;
