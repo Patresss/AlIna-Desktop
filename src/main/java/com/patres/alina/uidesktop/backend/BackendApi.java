@@ -151,8 +151,8 @@ public class BackendApi {
         AppLauncher.getBean(WorkspaceController.class).prepareAgentForFreshChat();
     }
 
-    public static String getAgentSessionWebUrl(final String chatThreadId) {
-        return AppLauncher.getBean(WorkspaceController.class).getAgentSessionWebUrl(chatThreadId);
+    public static String getAgentSessionExternalUri(final String chatThreadId) {
+        return AppLauncher.getBean(WorkspaceController.class).getAgentSessionExternalUri(chatThreadId);
     }
 
     public static JiraIssueResult fetchJiraAssignedIssues(final String jiraEmail, final String jiraApiToken, final int maxResults) {

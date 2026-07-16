@@ -221,17 +221,18 @@ public class Browser extends StackPane {
         return json.append("]").toString();
     }
 
-    /**
-     * Opens a URL in the system's default web browser.
-     * 
-     * @param url The URL to open in the browser
-     */
-    public static void openWebpage(final String url) {
+    /** Opens a URI with the operating system's registered handler. */
+    public static void openExternalUri(final String uri) {
         try {
-            Desktop.getDesktop().browse(new URI(url));
+            Desktop.getDesktop().browse(new URI(uri));
         } catch (final Exception e) {
-            logger.error("Cannot open a link: {}", url, e);
+            logger.error("Cannot open a link: {}", uri, e);
         }
+    }
+
+    /** Opens a URL in the system's default web browser. */
+    public static void openWebpage(final String url) {
+        openExternalUri(url);
     }
 
 

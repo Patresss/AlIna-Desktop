@@ -34,7 +34,7 @@ public class WorkspaceController {
         agentRuntimeSelector.active().prepareForFreshChat();
     }
 
-    public String getAgentSessionWebUrl(final String chatThreadId) {
-        return agentRuntimeSelector.active().getSessionWebUrl(chatThreadId);
+    public String getAgentSessionExternalUri(final String chatThreadId) {
+        return agentRuntimeSelector.active().getSessionExternalUri(chatThreadId);
     }
 }

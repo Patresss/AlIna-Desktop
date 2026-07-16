@@ -33,6 +33,8 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -306,8 +308,17 @@ public class CodexAgentRuntime implements AgentRuntime {
     }
 
     @Override
-    public String getSessionWebUrl(final String chatThreadId) {
-        return null;
+    public String getSessionExternalUri(final String chatThreadId) {
+        if (chatThreadId == null || chatThreadId.isBlank()) {
+            return null;
+        }
+        final String codexThreadId = resolveCodexThreadId(chatThreadId);
+        if (!codexThreadToChatThread.containsKey(codexThreadId)) {
+            return null;
+        }
+        final String encodedThreadId = URLEncoder.encode(codexThreadId, StandardCharsets.UTF_8)
+                .replace("+", "%20");
+        return "codex://threads/" + encodedThreadId;
     }
 
     @Override

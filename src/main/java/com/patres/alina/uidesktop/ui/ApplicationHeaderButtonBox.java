@@ -9,6 +9,7 @@ import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Button;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.HBox;
@@ -22,6 +23,8 @@ public class ApplicationHeaderButtonBox extends HBox {
     private ToggleButton pinToggleButton;
     @FXML
     private ToggleButton splitModeToggleButton;
+    @FXML
+    private Button agentSessionButton;
     @FXML
     private MenuItem uiSettingsMenuItem;
     @FXML
@@ -145,8 +148,8 @@ public class ApplicationHeaderButtonBox extends HBox {
     }
 
     @FXML
-    public void openOpenCodeSession() {
-        applicationWindow.openCurrentOpenCodeSession();
+    public void openAgentSession() {
+        applicationWindow.openCurrentAgentSession();
     }
 
     public Stage getStage() {
@@ -156,6 +159,10 @@ public class ApplicationHeaderButtonBox extends HBox {
     /** Programmatically set the split mode toggle (triggers the listener → persists + applies layout). */
     public void setSplitModeSelected(boolean selected) {
         splitModeToggleButton.setSelected(selected);
+    }
+
+    public void setAgentSessionAvailable(final boolean available) {
+        agentSessionButton.setDisable(!available);
     }
 
 }

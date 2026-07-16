@@ -13,8 +13,10 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.function.Consumer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -95,6 +97,26 @@ class CodexAgentRuntimeInteractionTest {
                 any(String.class)
         );
         assertFalse(runtime.ownsAgentInteraction("text:request-text-id"));
+    }
+
+    @Test
+    void shouldExposeDeepLinkOnlyForObservedCodexThread() {
+        final CodexAppServerClient client = mock(CodexAppServerClient.class);
+        final ArgumentCaptor<Consumer<JsonNode>> listenerCaptor = ArgumentCaptor.forClass(Consumer.class);
+        final CodexAgentRuntime runtime = runtime(client);
+        verify(client).addMessageListener(listenerCaptor.capture());
+
+        assertNull(runtime.getSessionExternalUri("new-alina-thread"));
+
+        final ObjectNode message = objectMapper.createObjectNode();
+        message.put("method", "thread/started");
+        message.putObject("params").putObject("thread").put("id", "thread id/1");
+        listenerCaptor.getValue().accept(message);
+
+        assertEquals(
+                "codex://threads/thread%20id%2F1",
+                runtime.getSessionExternalUri("thread id/1")
+        );
     }
 
     private CodexAgentRuntime runtime(final CodexAppServerClient client) {

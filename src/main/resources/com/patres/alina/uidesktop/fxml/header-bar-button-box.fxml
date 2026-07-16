@@ -45,10 +45,10 @@
                         <String fx:value="flat" />
                     </styleClass>
                 </Button>
-                <Button accessibleText="%header.tooltip.openCodeSession" mnemonicParsing="false"
-                        onAction="#openOpenCodeSession">
+                <Button fx:id="agentSessionButton" accessibleText="%header.tooltip.agentSession" disable="true"
+                        mnemonicParsing="false" onAction="#openAgentSession">
                     <graphic><FontIcon iconLiteral="mdoal-launch" /></graphic>
-                    <tooltip><Tooltip text="%header.tooltip.openCodeSession" /></tooltip>
+                    <tooltip><Tooltip text="%header.tooltip.agentSession" /></tooltip>
                     <styleClass>
                         <String fx:value="button-circle" />
                         <String fx:value="flat" />

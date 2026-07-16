@@ -163,7 +163,7 @@ public class OpenCodeRuntimeService {
      * Returns {@code null} when the thread has no mapped session or when the directory
      * cannot be resolved from the OpenCode API.
      */
-    public String getSessionWebUrl(final String chatThreadId) {
+    public String getSessionExternalUri(final String chatThreadId) {
         if (chatThreadId == null || chatThreadId.isBlank()) {
             return null;
         }

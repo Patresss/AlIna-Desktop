@@ -1,6 +1,7 @@
 package com.patres.alina.uidesktop.ui;
 
 import com.patres.alina.common.event.bus.DefaultEventBus;
+import com.patres.alina.common.event.ChatMessageStreamEvent;
 import com.patres.alina.common.event.ChatThreadTitleUpdatedEvent;
 import com.patres.alina.common.message.ChatMessageResponseModel;
 import com.patres.alina.common.thread.ChatThread;
@@ -53,6 +54,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ApplicationWindow extends BorderPane {
 
@@ -65,6 +68,9 @@ public class ApplicationWindow extends BorderPane {
     private ChatTabBar chatTabBar;
 
     private ApplicationHeaderButtonBox headerButtonBox;
+    private String activeAgentSessionUri;
+    private long agentSessionUriRefreshGeneration;
+    private final Set<String> agentSessionRefreshSignalledThreads = ConcurrentHashMap.newKeySet();
 
     @FXML
     private VBox centerPane;
@@ -204,7 +210,16 @@ public class ApplicationWindow extends BorderPane {
         // Refresh integration widgets when workspace settings change
         DefaultEventBus.getInstance().subscribe(
                 com.patres.alina.common.event.WorkspaceSettingsUpdatedEvent.class,
-                event -> Platform.runLater(this::refreshIntegrationWidgets)
+                event -> Platform.runLater(() -> {
+                    refreshIntegrationWidgets();
+                    agentSessionRefreshSignalledThreads.clear();
+                    refreshAgentSessionUri();
+                })
+        );
+
+        DefaultEventBus.getInstance().subscribe(
+                ChatMessageStreamEvent.class,
+                this::handleAgentSessionStreamEvent
         );
 
         // Update tab name and thread history when OpenCode generates a session title
@@ -284,6 +299,7 @@ public class ApplicationWindow extends BorderPane {
             targetWindow.setVisible(true);
             targetWindow.setManaged(true);
         }
+        refreshAgentSessionUri();
     }
 
     private void closeTab(String threadId) {
@@ -350,6 +366,7 @@ public class ApplicationWindow extends BorderPane {
         // Add tab and activate it
         chatTabBar.addTab(chatThread, true);
 
+        refreshAgentSessionUri();
         newWindow.focusTextArea();
         dashboardPane.refreshAsync();
     }
@@ -528,6 +545,7 @@ public class ApplicationWindow extends BorderPane {
     /** Called by AssistantAppLauncher so we can programmatically drive the split-mode toggle. */
     public void setHeaderButtonBox(ApplicationHeaderButtonBox box) {
         this.headerButtonBox = box;
+        refreshAgentSessionUri();
     }
 
     /**
@@ -661,11 +679,64 @@ public class ApplicationWindow extends BorderPane {
         appModalPane.show(schedulerSettingsPane);
     }
 
-    public void openCurrentOpenCodeSession() {
-        getChatThread()
-                .map(ChatThread::id)
-                .map(BackendApi::getAgentSessionWebUrl)
-                .ifPresent(Browser::openWebpage);
+    public void openCurrentAgentSession() {
+        if (activeAgentSessionUri != null && !activeAgentSessionUri.isBlank()) {
+            Browser.openExternalUri(activeAgentSessionUri);
+        }
+    }
+
+    private void handleAgentSessionStreamEvent(final ChatMessageStreamEvent event) {
+        if (event.getThreadId() == null || event.getThreadId().isBlank()) {
+            return;
+        }
+        final boolean terminalEvent = switch (event.getEventType()) {
+            case COMPLETE, CANCELLED, ERROR -> true;
+            default -> false;
+        };
+        if (!terminalEvent && !agentSessionRefreshSignalledThreads.add(event.getThreadId())) {
+            return;
+        }
+        Platform.runLater(() -> {
+            if (isActiveTab(event.getThreadId()) && (terminalEvent || activeAgentSessionUri == null)) {
+                refreshAgentSessionUri();
+            }
+        });
+    }
+
+    private void refreshAgentSessionUri() {
+        final long refreshGeneration = ++agentSessionUriRefreshGeneration;
+        final String expectedThreadId = activeTabId;
+        activeAgentSessionUri = null;
+        if (headerButtonBox != null) {
+            headerButtonBox.setAgentSessionAvailable(false);
+        }
+        if (expectedThreadId == null || expectedThreadId.isBlank()) {
+            return;
+        }
+        Thread.startVirtualThread(() -> {
+            final String resolvedUri;
+            try {
+                resolvedUri = BackendApi.getAgentSessionExternalUri(expectedThreadId);
+            } catch (Exception e) {
+                logger.warn("Cannot resolve external agent session URI for thread {}", expectedThreadId, e);
+                Platform.runLater(() -> applyAgentSessionUri(refreshGeneration, expectedThreadId, null));
+                return;
+            }
+            Platform.runLater(() -> applyAgentSessionUri(refreshGeneration, expectedThreadId, resolvedUri));
+        });
+    }
+
+    private void applyAgentSessionUri(final long refreshGeneration,
+                                      final String expectedThreadId,
+                                      final String resolvedUri) {
+        if (refreshGeneration != agentSessionUriRefreshGeneration
+                || !expectedThreadId.equals(activeTabId)) {
+            return;
+        }
+        activeAgentSessionUri = resolvedUri;
+        if (headerButtonBox != null) {
+            headerButtonBox.setAgentSessionAvailable(resolvedUri != null && !resolvedUri.isBlank());
+        }
     }
 
     public void collapseDashboard() {

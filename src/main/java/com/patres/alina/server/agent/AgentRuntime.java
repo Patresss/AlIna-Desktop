@@ -41,7 +41,7 @@ public interface AgentRuntime {
 
     void prepareForFreshChat();
 
-    String getSessionWebUrl(String chatThreadId);
+    String getSessionExternalUri(String chatThreadId);
 
     Optional<ChatThread> getChatThread(String chatThreadId);
 

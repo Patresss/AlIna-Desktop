@@ -127,8 +127,8 @@ public class OpenCodeAgentRuntime implements AgentRuntime {
     }
 
     @Override
-    public String getSessionWebUrl(final String chatThreadId) {
-        return runtimeService.getSessionWebUrl(chatThreadId);
+    public String getSessionExternalUri(final String chatThreadId) {
+        return runtimeService.getSessionExternalUri(chatThreadId);
     }
 
     @Override
