@@ -284,7 +284,7 @@
     -fx-icon-size: 10px;
 }
 
-/* Conversation tabs */
+/* Conversation tabs — floating active card */
 .chat-tab-bar {
     -fx-padding: 0 6px 7px 6px;
     -fx-spacing: 4px;
@@ -292,14 +292,21 @@
 
 .chat-tab-item {
     -fx-padding: 6px 11px;
-    -fx-background-radius: 10px;
+    -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
     -fx-border-color: transparent;
     -fx-border-width: 1px;
 }
 
 .chat-tab-active {
-    -fx-background-color: -color-bg-overlay;
-    -fx-border-color: -color-border-default;
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-muted;
+    -fx-effect: dropshadow(gaussian, -color-shadow-default, 8, 0.08, 0, 2);
+}
+
+.chat-tab-inactive {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
     -fx-effect: none;
 }
 
@@ -309,7 +316,7 @@
 
 .chat-tab-active .chat-tab-name {
     -fx-font-weight: 700;
-    -fx-text-fill: -color-fg-default;
+    -fx-text-fill: -color-accent-fg;
 }
 
 .chat-tab-inactive .chat-tab-name {
