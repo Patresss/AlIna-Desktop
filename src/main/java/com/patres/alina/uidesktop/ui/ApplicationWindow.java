@@ -222,13 +222,12 @@ public class ApplicationWindow extends BorderPane {
                 this::handleAgentSessionStreamEvent
         );
 
-        // Update tab name and thread history when OpenCode generates a session title
+        // Update the tab when the active agent reports a persisted thread title.
         DefaultEventBus.getInstance().subscribe(
                 ChatThreadTitleUpdatedEvent.class,
-                event -> {
-                    chatTabBar.updateTabName(event.getThreadId(), event.getNewTitle());
-                    BackendApi.renameChatThread(new com.patres.alina.common.thread.ChatThreadRenameRequest(event.getThreadId(), event.getNewTitle()));
-                }
+                event -> Platform.runLater(() ->
+                        chatTabBar.updateTabName(event.getThreadId(), event.getNewTitle())
+                )
         );
 
         // Initialize scheduler task executor

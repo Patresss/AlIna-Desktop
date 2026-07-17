@@ -56,6 +56,7 @@ public class CodexAgentRuntime implements AgentRuntime {
 
     private static final Logger logger = LoggerFactory.getLogger(CodexAgentRuntime.class);
     private static final long STREAM_AWAIT_TIMEOUT_HOURS = 12;
+    private static final int PREVIEW_TITLE_MAX_CODE_POINTS = 80;
 
     private final CodexAppServerClient client;
     private final FileManager<WorkspaceSettings> workspaceSettingsManager;
@@ -634,8 +635,12 @@ public class CodexAgentRuntime implements AgentRuntime {
 
     private void handleThreadNameUpdated(final JsonNode params) {
         final String codexThreadId = eventThreadId(params);
-        final String chatThreadId = chatThreadIdForCodexThread(codexThreadId);
-        final String name = params.path("name").asText(params.path("thread").path("name").asText(null));
+        final String chatThreadId = codexThreadId == null ? null : codexThreadToChatThread.get(codexThreadId);
+        final String name = firstNonBlankText(
+                params.path("threadName"),
+                params.path("name"),
+                params.path("thread").path("name")
+        );
         if (chatThreadId != null && name != null && !name.isBlank()) {
             Event.publish(new ChatThreadTitleUpdatedEvent(chatThreadId, name));
         }
@@ -1099,11 +1104,48 @@ public class CodexAgentRuntime implements AgentRuntime {
         if (id == null || id.isBlank()) {
             return Optional.empty();
         }
-        final String name = node.path("name").asText(node.path("title").asText(id));
+        final String name = threadDisplayName(node, id);
         final LocalDateTime createdAt = parseTime(node.path("createdAt"), node.path("created_at"), node.path("created"));
         final LocalDateTime updatedAt = parseTime(node.path("updatedAt"), node.path("updated_at"), node.path("updated"));
         codexThreadToChatThread.putIfAbsent(id, id);
         return Optional.of(new ChatThread(id, name, createdAt, updatedAt));
+    }
+
+    private static String threadDisplayName(final JsonNode node, final String id) {
+        final String name = firstNonBlankText(node.path("name"));
+        if (name != null) {
+            return name;
+        }
+        final String preview = textualValue(node.path("preview"));
+        final String compactPreview = compactPreview(preview);
+        return compactPreview.isBlank() ? id : compactPreview;
+    }
+
+    private static String compactPreview(final String preview) {
+        if (preview == null) {
+            return "";
+        }
+        final String compact = preview.replaceAll("(?U)\\s+", " ").strip();
+        final int codePointCount = compact.codePointCount(0, compact.length());
+        if (codePointCount <= PREVIEW_TITLE_MAX_CODE_POINTS) {
+            return compact;
+        }
+        final int prefixEnd = compact.offsetByCodePoints(0, PREVIEW_TITLE_MAX_CODE_POINTS - 1);
+        return compact.substring(0, prefixEnd) + "…";
+    }
+
+    private static String firstNonBlankText(final JsonNode... nodes) {
+        for (final JsonNode node : nodes) {
+            final String value = textualValue(node);
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private static String textualValue(final JsonNode node) {
+        return node != null && node.isTextual() ? node.asText() : null;
     }
 
     private LocalDateTime parseTime(final JsonNode node) {
