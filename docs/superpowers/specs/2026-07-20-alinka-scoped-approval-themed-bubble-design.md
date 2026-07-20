@@ -91,6 +91,12 @@ Po kliknięciu dowolnej decyzji koordynator zachowuje obecny flow: blokuje akcje
 
 `MascotPopup` zachowuje przezroczyste, niefokusowalne `JWindow`, `always-on-top`, pozycjonowanie względem ekranu kursora i obecne animacje. Warstwa Swing otrzymuje paletę przed każdym renderem oraz stosuje ją do dymku, tekstów, badge'a i przycisków.
 
+### Bezpieczny start przy zmianie monitorów
+
+Utworzenie Swingowego `JWindow` nie może blokować wątku JavaFX. macOS potrafi zatrzymać AWT w natywnym odczycie insets ekranu podczas przepinania albo odłączania monitora. Dlatego konstruktor `MascotPopup` zleca inicjalizację przez nieblokujące `SwingUtilities.invokeLater`, zamiast czekać przez `invokeAndWait`.
+
+Operacje pokazania, ukrycia i zamknięcia popupu trafiają na tę samą kolejkę AWT. Zachowuje to ich kolejność względem inicjalizacji, a jednocześnie gwarantuje, że główny `Stage` dochodzi do `show()` nawet wtedy, gdy AWT chwilowo utknie w kodzie systemowym. Nieudana inicjalizacja wyłącza sam widok maskotki bez zatrzymywania aplikacji.
+
 ## Stany i błędy
 
 - Podczas rozwiązywania wszystkie aktualnie widoczne przyciski są nieaktywne, a wskaźnik postępu pozostaje widoczny.
@@ -121,6 +127,7 @@ Testy jednostkowe i kontraktowe obejmują:
 - parsowanie wymaganych formatów kolorów;
 - fallback palety dla niepełnego i niepoprawnego motywu;
 - zachowanie dotychczasowych testów kolejki, priorytetów, ustawienia i zasobów.
+- nieblokujące zlecenie inicjalizacji popupu z wątku JavaFX.
 
 Końcowy smoke test na macOS obejmuje:
 
@@ -141,3 +148,4 @@ Pełna walidacja kończy się poleceniami `./gradlew test` i `./gradlew build`.
 - Wszystkie trzy decyzje pozostają czytelne po polsku i angielsku.
 - Błąd rozwiązania nie usuwa zgody ani nie pozostawia przycisków zablokowanych.
 - Popup nadal nie przejmuje fokusu i nie tworzy pozycji w Docku ani pasku zadań.
+- Odłączenie lub przepięcie monitora nie może zatrzymać startu głównego okna AlIny na inicjalizacji Swing.
