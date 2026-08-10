@@ -6,6 +6,8 @@ import com.patres.alina.common.event.bus.DefaultEventBus;
 import com.patres.alina.uidesktop.DefaultExceptionHandler;
 import com.patres.alina.uidesktop.Resources;
 import com.patres.alina.uidesktop.backend.BackendApi;
+import com.patres.alina.uidesktop.mascot.MascotNotificationCoordinator;
+import com.patres.alina.uidesktop.mascot.MascotNotifications;
 import com.patres.alina.uidesktop.shortcuts.listener.ShortcutKeyListener;
 import com.patres.alina.uidesktop.ui.contextmenu.AppGlobalContextMenu;
 import com.patres.alina.uidesktop.ui.calendar.GoogleCalendarFeed;
@@ -71,7 +73,9 @@ public class AssistantAppLauncher {
         loadIcons(stage);
         stage.setResizable(true);
         stage.setAlwaysOnTop(BackendApi.getWorkspaceSettings().keepWindowAlwaysOnTop());
+        final MascotNotificationCoordinator mascotNotifications = MascotNotifications.install(stage, root);
         stage.setOnCloseRequest(t -> {
+            mascotNotifications.close();
             calendarFeed.close();
             Platform.exit();
         });

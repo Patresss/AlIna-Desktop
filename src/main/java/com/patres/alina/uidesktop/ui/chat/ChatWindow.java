@@ -995,7 +995,8 @@ public class ChatWindow extends BorderPane {
                     current.notificationSoundType(),
                     current.showExpandButton(),
                     current.expandWidth(),
-                    current.autoSplitOnExpand()
+                    current.autoSplitOnExpand(),
+                    current.mascotNotificationsEnabled()
             );
             UI_SETTINGS.saveDocument(updated);
         });
@@ -1012,7 +1013,8 @@ public class ChatWindow extends BorderPane {
                     current.notificationSoundType(),
                     current.showExpandButton(),
                     current.expandWidth(),
-                    current.autoSplitOnExpand()
+                    current.autoSplitOnExpand(),
+                    current.mascotNotificationsEnabled()
                     );
             UI_SETTINGS.saveDocument(updated);
         });

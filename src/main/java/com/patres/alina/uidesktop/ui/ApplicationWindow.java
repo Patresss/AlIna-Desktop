@@ -774,6 +774,23 @@ public class ApplicationWindow extends BorderPane {
         return threadId != null && threadId.equals(activeTabId);
     }
 
+    public String getThreadTitle(final String threadId) {
+        final ChatThread thread = chatThreads.get(threadId);
+        return thread == null || thread.name() == null ? "" : thread.name();
+    }
+
+    public void activateThread(final String threadId) {
+        if (threadId == null || threadId.isBlank() || !chatWindows.containsKey(threadId)) {
+            return;
+        }
+        chatTabBar.selectTab(threadId);
+        switchToTab(threadId);
+        final ChatWindow window = chatWindows.get(threadId);
+        if (window != null) {
+            window.focusTextArea();
+        }
+    }
+
     private ChatWindow getActiveChatWindow() {
         if (activeTabId == null) {
             return null;

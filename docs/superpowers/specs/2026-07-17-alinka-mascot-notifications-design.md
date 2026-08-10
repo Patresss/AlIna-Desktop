@@ -7,24 +7,24 @@ Alinka ma informować o zdarzeniach agenta wtedy, gdy użytkownik pracuje poza g
 Rozwiązanie obejmuje:
 
 - oczekujące zgody typu `APPROVAL`;
-- bezpośrednie akcje „Zezwól raz” i „Odrzuć”;
+- bezpośrednie akcje „Zezwól raz”, opcjonalna zgoda zakresowa i „Odrzuć”;
 - informację o zakończeniu albo błędzie pracy agenta;
 - przejście do właściwej rozmowy;
 - kolejkę wielu równoczesnych zgód;
 - możliwość całkowitego wyłączenia maskotki w ustawieniach UI.
 
-Rozwiązanie nie zastępuje kart interakcji w czacie, nie przechowuje historii aktywności i nie pozwala udzielać trwałych zgód poza głównym oknem. Nie upraszcza formularzy MCP, pytań agenta ani interakcji URL do dwóch przycisków.
+Rozwiązanie nie zastępuje kart interakcji w czacie ani nie przechowuje historii aktywności. Nie upraszcza formularzy MCP, pytań agenta ani interakcji URL do zestawu przycisków zgody.
 
 ## Zatwierdzone doświadczenie
 
-Maskotką jest Alinka: własny, miękki, fioletowy stworek z dwiema antenkami. Finalna grafika będzie stylizowanym, trójwymiarowym pluszakiem o zwartej sylwetce i czytelnych krawędziach.
+Maskotką jest Alinka: własny, miękki, fioletowy stworek z dwiema antenkami. Finalna grafika jest stylizowanym, trójwymiarowym pluszakiem o zwartej sylwetce i czytelnych krawędziach.
 
 Popup ma dwa główne układy:
 
-1. **Zgoda** — pozostaje widoczna do rozwiązania prośby, pokazuje tytuł i opis, akcje „Zezwól raz” oraz „Odrzuć”, a także licznik następnych próśb. Kliknięcie treści otwiera pełny kontekst w rozmowie.
+1. **Zgoda** — pozostaje widoczna do rozwiązania prośby, pokazuje tytuł i opis, akcje „Zezwól raz” oraz „Odrzuć”, opcjonalną zgodę zakresową, a także licznik następnych próśb. Kliknięcie treści otwiera pełny kontekst w rozmowie.
 2. **Wynik** — pokazuje „Gotowe” albo „Nie udało się”, jest w całości klikalny i znika automatycznie po ośmiu sekundach. Kliknięcie otwiera powiązaną rozmowę.
 
-Popup pojawia się w prawym dolnym rogu ekranu, na którym znajduje się kursor. Pozycja korzysta z `Screen.getVisualBounds()`, aby nie zasłaniać Docka ani paska zadań. Wejście używa krótkiego przesunięcia z wygaszeniem, a widoczna maskotka delikatnie kołysze się bez stałego timera wysokiej częstotliwości.
+Popup pojawia się w prawym dolnym rogu ekranu, na którym znajduje się kursor. Pozycja korzysta z granic ekranu pomniejszonych o systemowe insets, aby nie zasłaniać Docka ani paska zadań. Wejście używa krótkiego przesunięcia z wygaszeniem, a widoczna maskotka delikatnie kołysze się bez stałego timera wysokiej częstotliwości.
 
 ## Reguły fokusu
 
@@ -36,7 +36,7 @@ Maskotka działa tylko wtedy, gdy główne okno AlIny nie jest aktywne albo jest
 - Zakończenie lub błąd odebrane przy aktywnej AlInie nie są odkładane do późniejszego pokazania.
 - Samo pokazanie popupu nie wywołuje `requestFocus()` ani `toFront()`. Fokus może zmienić się dopiero po świadomym kliknięciu popupu.
 
-Popup jest niezależnym, przezroczystym oknem `always-on-top`, bez ownera głównego Stage, dzięki czemu może pozostać widoczny również przy zminimalizowanej AlInie. Implementacja nie może pokazywać dodatkowej pozycji w Docku lub pasku zadań. Zachowanie nieprzejmowania fokusu jest obowiązkowym elementem smoke testu na macOS. Jeżeli wybrany Stage aktywuje aplikację podczas samego `show()`, kryterium akceptacji nie jest spełnione i warstwa okna musi zostać poprawiona przed zakończeniem implementacji; nie stosujemy cichego fallbacku do zwykłego powiadomienia systemowego.
+Popup jest niezależnym, przezroczystym oknem `always-on-top`, bez ownera głównego Stage, dzięki czemu może pozostać widoczny również przy zminimalizowanej AlInie. Implementacja nie może pokazywać dodatkowej pozycji w Docku lub pasku zadań. Zachowanie nieprzejmowania fokusu jest obowiązkowym elementem smoke testu na macOS. Test wykazał, że przezroczysty JavaFX `Stage` aktywuje inną aplikację przy samym `show()`, dlatego finalny widok używa nieaktywującego, niefokusowalnego `JWindow`; nie stosujemy cichego fallbacku do zwykłego powiadomienia systemowego.
 
 ## Architektura
 
@@ -48,15 +48,15 @@ Jeden koordynator jest tworzony przez `AssistantAppLauncher` i otrzymuje główn
 - `AgentInteractionResolvedEvent` dla zgód rozwiązanych z poziomu czatu lub backendu;
 - zmianę fokusu i stanu zminimalizowania głównego Stage.
 
-Koordynator odpowiada za deduplikację, priorytety, kolejkę, czas życia komunikatów i wywołanie backendu. Nie buduje kontrolek JavaFX.
+Koordynator odpowiada za deduplikację, priorytety, kolejkę, czas życia komunikatów i wywołanie backendu. Nie buduje kontrolek widoku.
 
 ### `MascotPopup`
 
-Widok posiada przezroczyste okno, grafikę Alinki, etykiety, licznik kolejki i dwa przyciski. Udostępnia koordynatorowi operacje pokazania zgody, pokazania wyniku, pokazania błędu rozwiązywania oraz ukrycia. Nie zna event busa ani `BackendApi`.
+Widok posiada przezroczyste, nieaktywujące `JWindow`, grafikę Alinki, etykiety, licznik kolejki i maksymalnie trzy przyciski Swing. Udostępnia koordynatorowi operacje pokazania zgody, pokazania wyniku, pokazania błędu rozwiązywania oraz ukrycia. Nie zna event busa ani `BackendApi`.
 
 ### `MascotScreenPositioner`
 
-Mała, czysta klasa wylicza pozycję popupu z geometrii ekranów, kursora, rozmiaru popupu i marginesu. Logika nie zależy od aktywnego Stage i może być testowana bez uruchamiania JavaFX.
+Mała, czysta klasa wylicza pozycję popupu z geometrii ekranów, kursora, rozmiaru popupu i marginesu. Logika nie zależy od aktywnego Stage i może być testowana bez uruchamiania warstwy okienkowej.
 
 ### Nawigacja
 
@@ -78,12 +78,13 @@ Powiadomienia terminalne są krótkotrwałe. Jeśli zgoda jest widoczna, termina
 
 ## Rozwiązywanie zgody
 
-Przyciski mapują się wyłącznie na:
+Podstawowe przyciski mapują się na:
 
 - `AgentInteractionAction.APPROVE_ONCE`;
+- opcjonalne `AgentInteractionAction.APPROVE_SCOPED`, gdy request deklaruje `SESSION` albo `PERSISTENT`;
 - `AgentInteractionAction.DENY`.
 
-Po kliknięciu koordynator blokuje obie akcje i pokazuje stan przetwarzania. Na wirtualnym wątku wywołuje `BackendApi.resolveAgentInteraction(requestId, response)`.
+Po kliknięciu koordynator blokuje widoczne akcje i pokazuje stan przetwarzania. Na wirtualnym wątku wywołuje `BackendApi.resolveAgentInteraction(requestId, response)`.
 
 - `RESOLVED`: usuwa prośbę, publikuje `AgentInteractionResolvedEvent`, aby karta w czacie została oznaczona jako rozwiązana, i pokazuje kolejną zgodę. Jeżeli `autoContinues` jest fałszywe, koordynator wywołuje `BackendApi.retryLastUserMessage(threadId)`, odtwarzając zachowanie kontrolera czatu.
 - `MISSING`: usuwa nieaktualną prośbę i przechodzi do kolejnej.
@@ -92,7 +93,7 @@ Po kliknięciu koordynator blokuje obie akcje i pokazuje stan przetwarzania. Na 
 
 Publikacja `AgentInteractionResolvedEvent` po decyzji z maskotki jest lokalną synchronizacją UI. Koordynator usuwa wpis idempotentnie, więc późniejszy event backendu nie powoduje błędu ani przejścia o dwa miejsca w kolejce.
 
-Trwałe zatwierdzenie `APPROVE_SCOPED` nigdy nie jest oferowane w popupie. Kliknięcie treści lub nazwy prośby otwiera rozmowę, gdzie użytkownik może przeczytać pełny kontekst i użyć wszystkich obsługiwanych akcji.
+Szczegóły zakresowej akcji, etykiet oraz dymku zgodnego z motywem opisuje rozszerzenie `2026-07-20-alinka-scoped-approval-themed-bubble-design.md`. Kliknięcie treści lub nazwy prośby nadal otwiera rozmowę, gdzie użytkownik może przeczytać pełny kontekst.
 
 ## Eventy terminalne
 
@@ -113,7 +114,7 @@ Wszystkie teksty popupu, tooltipy, ustawienie i komunikaty błędów mają wersj
 
 ## Asset Alinki
 
-Finalne assety są generowane po zatwierdzeniu specyfikacji jako stylizowany trójwymiarowy pluszowy stworek na jednolitym tle chroma-key. Najpierw powstaje czujna Alinka dla zgody, a wariant „Gotowe” jest edycją tego samego obrazu ze zmienioną wyłącznie miną. Tło obu obrazów zostanie usunięte lokalnym narzędziem `imagegen`, a wyniki zweryfikowane pod kątem kanału alfa, czystych krawędzi, spójnej sylwetki i braku zielonej obwódki.
+Finalne assety powstały po zatwierdzeniu specyfikacji jako stylizowany, trójwymiarowy pluszowy stworek na jednolitym tle chroma-key. Najpierw powstała czujna Alinka dla zgody, a wariant „Gotowe” został przygotowany jako edycja tego samego obrazu ze zmienioną miną i pozą. Tło obu obrazów usunięto lokalnym narzędziem `imagegen`, a wyniki zweryfikowano pod kątem kanału alfa, czystych krawędzi, spójnej sylwetki i braku zielonej obwódki.
 
 Pliki `alinka-permission.png` i `alinka-complete.png` trafiają do `src/main/resources/com/patres/alina/uidesktop/assets/mascot/`. Stan błędu używa czujnej pozy wraz z czerwonym kolorem komunikatu. Kod nie odwołuje się do plików pozostawionych poza repozytorium.
 
@@ -144,7 +145,7 @@ Testy jednostkowe koordynatora obejmują:
 - timeout ośmiu sekund i nawigację do właściwego wątku;
 - wyłączenie funkcji ustawieniem.
 
-Testy `MascotScreenPositioner` obejmują ekran główny, drugi monitor, ujemne współrzędne i ograniczenie do `visualBounds`. Testy kontraktowe sprawdzają obecność assetu, lokalizacji i wymaganych klas stylu.
+Testy `MascotScreenPositioner` obejmują ekran główny, drugi monitor, ujemne współrzędne i ograniczenie do dostępnych granic ekranu. Testy kontraktowe sprawdzają obecność i przezroczystość assetów oraz kompletność lokalizacji.
 
 Weryfikacja końcowa:
 

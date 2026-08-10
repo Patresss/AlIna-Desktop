@@ -10,7 +10,8 @@ public record UiSettings(
         String notificationSoundType,
         Boolean showExpandButton,
         Integer expandWidth,
-        Boolean autoSplitOnExpand
+        Boolean autoSplitOnExpand,
+        Boolean mascotNotificationsEnabled
 ) {
 
     private static final String DEFAULT_THEME = "Calm Command Center";
@@ -20,11 +21,13 @@ public record UiSettings(
     private static final boolean DEFAULT_SHOW_EXPAND_BUTTON = true;
     private static final int DEFAULT_EXPAND_WIDTH = 1000;
     private static final boolean DEFAULT_AUTO_SPLIT_ON_EXPAND = false;
+    private static final boolean DEFAULT_MASCOT_NOTIFICATIONS_ENABLED = true;
 
     public UiSettings() {
         this(DEFAULT_THEME, DEFAULT_LANGUAGE, new ShortcutKeysSettings(),
                 DEFAULT_SOUND_NOTIFICATION_ENABLED, DEFAULT_NOTIFICATION_SOUND.name(),
-                DEFAULT_SHOW_EXPAND_BUTTON, DEFAULT_EXPAND_WIDTH, DEFAULT_AUTO_SPLIT_ON_EXPAND);
+                DEFAULT_SHOW_EXPAND_BUTTON, DEFAULT_EXPAND_WIDTH, DEFAULT_AUTO_SPLIT_ON_EXPAND,
+                DEFAULT_MASCOT_NOTIFICATIONS_ENABLED);
     }
 
     public UiSettings(String theme,
@@ -34,7 +37,8 @@ public record UiSettings(
                       String notificationSoundType,
                       Boolean showExpandButton,
                       Integer expandWidth,
-                      Boolean autoSplitOnExpand) {
+                      Boolean autoSplitOnExpand,
+                      Boolean mascotNotificationsEnabled) {
         this.theme = theme == null ? DEFAULT_THEME : theme;
         this.language = language == null ? DEFAULT_LANGUAGE : language;
         this.shortcutKeysSettings = shortcutKeysSettings == null ? new ShortcutKeysSettings() : shortcutKeysSettings;
@@ -43,6 +47,9 @@ public record UiSettings(
         this.showExpandButton = showExpandButton == null ? DEFAULT_SHOW_EXPAND_BUTTON : showExpandButton;
         this.expandWidth = expandWidth == null ? DEFAULT_EXPAND_WIDTH : expandWidth;
         this.autoSplitOnExpand = autoSplitOnExpand == null ? DEFAULT_AUTO_SPLIT_ON_EXPAND : autoSplitOnExpand;
+        this.mascotNotificationsEnabled = mascotNotificationsEnabled == null
+                ? DEFAULT_MASCOT_NOTIFICATIONS_ENABLED
+                : mascotNotificationsEnabled;
     }
 
     public boolean isSoundNotificationEnabled() {
@@ -55,6 +62,12 @@ public record UiSettings(
 
     public boolean isAutoSplitOnExpand() {
         return autoSplitOnExpand != null ? autoSplitOnExpand : DEFAULT_AUTO_SPLIT_ON_EXPAND;
+    }
+
+    public boolean isMascotNotificationsEnabled() {
+        return mascotNotificationsEnabled != null
+                ? mascotNotificationsEnabled
+                : DEFAULT_MASCOT_NOTIFICATIONS_ENABLED;
     }
 
     public int resolveExpandWidth() {

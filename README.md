@@ -20,6 +20,7 @@ Key features:
 - Local storage of conversations, settings and assistant state in `~/.config/AlIna/`.
 - Theming and styling (Atlantafx, custom CSS in `~/.config/AlIna/themes/`).
 - OpenCode-backed chat runtime with approvals, skills, local tools and MCP.
+- Alinka mascot notifications for one-click approvals and completed background work without stealing focus.
 - Embedded Spring Boot backend (no separate server required).
 - Workspace dashboard above the chat with always-visible checklist tasks.
 - File-based local skills, profile memory and prompt inbox under `~/.config/AlIna/`.

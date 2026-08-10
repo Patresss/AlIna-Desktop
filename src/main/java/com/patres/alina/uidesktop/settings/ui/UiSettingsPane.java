@@ -42,6 +42,7 @@ public class UiSettingsPane extends SettingsModalPaneContent {
     private ShortcutKeyPane contextMenuShortcutKeyPane;
     private ToggleSwitch soundNotificationToggle;
     private ChoiceBox<NotificationSound> soundTypeSelector;
+    private ToggleSwitch mascotNotificationsToggle;
 
     private ToggleSwitch expandButtonToggle;
     private Spinner<Integer> expandWidthSpinner;
@@ -63,6 +64,7 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         contextMenuShortcutKeyPane.setValues(uiSettings.shortcutKeysSettings().contextMenuShortcutKeys());
         soundNotificationToggle.setSelected(uiSettings.isSoundNotificationEnabled());
         soundTypeSelector.setValue(uiSettings.resolveNotificationSound());
+        mascotNotificationsToggle.setSelected(uiSettings.isMascotNotificationsEnabled());
         LanguageManager.setLanguage(uiSettings.language());
         expandButtonToggle.setSelected(uiSettings.isShowExpandButton());
         expandWidthSpinner.getValueFactory().setValue(uiSettings.resolveExpandWidth());
@@ -90,9 +92,10 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         final boolean showExpandButton = expandButtonToggle.isSelected();
         final int expandWidth = expandWidthSpinner.getValue();
         final boolean autoSplitOnExpand = autoSplitToggle.isSelected();
+        final boolean mascotNotificationsEnabled = mascotNotificationsToggle.isSelected();
 
         UI_SETTINGS.saveDocument(new UiSettings(theme, language, shortcutKeysSettings, soundEnabled, soundType,
-                showExpandButton, expandWidth, autoSplitOnExpand));
+                showExpandButton, expandWidth, autoSplitOnExpand, mascotNotificationsEnabled));
     }
 
     private void loadDataFromSettings() {
@@ -159,6 +162,14 @@ public class UiSettingsPane extends SettingsModalPaneContent {
         soundActionBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         soundTypeTile.setAction(soundActionBox);
 
+        mascotNotificationsToggle = new ToggleSwitch();
+        mascotNotificationsToggle.setSelected(uiSettings.isMascotNotificationsEnabled());
+        var mascotNotificationsTile = createTile(
+                "settings.mascot.notification.title",
+                "settings.mascot.notification.description"
+        );
+        mascotNotificationsTile.setAction(mascotNotificationsToggle);
+
         // --- Expand button settings ---
         expandButtonToggle = new ToggleSwitch();
         expandButtonToggle.setSelected(uiSettings.isShowExpandButton());
@@ -191,7 +202,7 @@ public class UiSettingsPane extends SettingsModalPaneContent {
                 new Separator(),
                 focusShortcut, contextMenuShortcut,
                 new Separator(),
-                soundNotification, soundTypeTile,
+                soundNotification, soundTypeTile, mascotNotificationsTile,
                 new Separator(),
                 expandButtonTile, expandWidthTile, autoSplitTile
         );

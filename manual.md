@@ -105,6 +105,8 @@ Gdy OpenCode wymaga wykonania narzędzia, komendy bash lub akcji MCP, w polu wia
 - **Always Allow** — zezwól na stałe
 - **Deny** — odmów
 
+Gdy AlIna jest nieaktywna lub zminimalizowana, oczekującą zgodę może też pokazać **Alinka** — mała maskotka ponad innymi aplikacjami. Z dymku można wybrać **Zezwól raz** albo **Odrzuć**. Jeżeli konkretna prośba pozwala na szerszą zgodę, Alinka pokazuje też **Zezwól w sesji** dla Codexa albo **Zezwól zawsze** dla OpenCode. Alinka informuje również o zakończeniu lub błędzie pracy agenta. Komunikat wyniku znika po ośmiu sekundach, a kliknięcie dymku otwiera powiązaną rozmowę. Samo pojawienie się maskotki nie przejmuje fokusu.
+
 ## Pasek nagłówka
 
 Przyciski od lewej: **New Session** | **History** | **About** | **Open OpenCode Session** | **Settings** (menu rozwijane) | **Split Mode** | **Pin** (zawsze na wierzchu).
@@ -118,6 +120,7 @@ Przyciski od lewej: **New Session** | **History** | **About** | **Open OpenCode 
 - Skrót klawiaturowy Focus Board
 - Skrót systemowego menu kontekstowego
 - Dźwięk powiadomienia po odpowiedzi AI (chime, bubble, ding, soft bell, droplet, sparkle, warm pop, gentle rise)
+- Maskotka powiadomień Alinka (domyślnie włączona)
 - Przycisk Expand (rozszerzanie okna + auto-split)
 
 ### OpenCode Settings
