@@ -21,6 +21,7 @@ public class CommandCreatePane extends CommandSavePane {
         commandDescriptionTextArea.clear();
         commandSystemPromptTextArea.clear();
         setSelectedModel(null);
+        setSelectedEffort(null);
         iconComboBox.getSelectionModel().select(CONVERTER.fromString(BootstrapIcons.PLUG.getDescription()));
         resetVisibilityAndShortcuts();
     }
@@ -37,6 +38,7 @@ public class CommandCreatePane extends CommandSavePane {
                 commandSystemPromptTextArea.getText(),
                 iconComboBox.getValue().getObject().name(),
                 getSelectedModel(),
+                getSelectedEffort(),
                 pasteShortcutKeyPane.getShortcutKeys(),
                 displayShortcutKeyPane.getShortcutKeys(),
                 executeShortcutKeyPane.getShortcutKeys(),

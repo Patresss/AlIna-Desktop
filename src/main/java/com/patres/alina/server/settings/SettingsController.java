@@ -26,4 +26,8 @@ public class SettingsController {
         return settingsService.getChatModels();
     }
 
+    public List<String> getChatEfforts(final String modelIdentifier) {
+        return settingsService.getChatEfforts(modelIdentifier);
+    }
+
 }

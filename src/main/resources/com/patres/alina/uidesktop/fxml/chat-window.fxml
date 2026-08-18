@@ -78,6 +78,7 @@
                                 <Label fx:id="commandLabel" maxWidth="1.7976931348623157E308"
                                        styleClass="chat-command-status" HBox.hgrow="ALWAYS" />
                                 <Label fx:id="modelLabel" alignment="CENTER_RIGHT" styleClass="model-selector-label" />
+                                <Label fx:id="effortLabel" alignment="CENTER_RIGHT" styleClass="model-selector-label" />
                             </children>
                         </HBox>
                     </children>

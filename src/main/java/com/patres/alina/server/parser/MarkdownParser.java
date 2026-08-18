@@ -68,6 +68,9 @@ public class MarkdownParser {
         if (command.model() != null && !command.model().isBlank()) {
             sb.append("model: ").append(command.model()).append("\n");
         }
+        if (command.effort() != null && !command.effort().isBlank()) {
+            sb.append("variant: ").append(command.effort()).append("\n");
+        }
         sb.append("state: ").append(command.state().name()).append("\n");
         sb.append("showInChat: ").append(command.visibility().showInChat()).append("\n");
         sb.append("showInContextMenuPaste: ").append(command.visibility().showInContextMenuPaste()).append("\n");
@@ -97,22 +100,25 @@ public class MarkdownParser {
 
             String resolvedId = getStringValue(yamlMap, "id", id);
             String name = getStringValue(yamlMap, "name", resolvedId);
-        String description = getStringValue(yamlMap, "description", "");
-        String icon = getStringValue(yamlMap, "icon", "bi-slash");
-        String model = normalizeOptionalString(getStringValue(yamlMap, "model", null));
-        State state = parseState(getStringValue(yamlMap, "state", "ENABLED"));
-        ShortcutKeys pasteShortcut = parsePasteShortcut(yamlMap);
-        ShortcutKeys displayShortcut = parseShortcut(yamlMap, "displayShortcut");
-        ShortcutKeys executeShortcut = parseShortcut(yamlMap, "executeShortcut");
-        CommandVisibility visibility = parseVisibility(yamlMap);
+            String description = getStringValue(yamlMap, "description", "");
+            String icon = getStringValue(yamlMap, "icon", "bi-slash");
+            String model = normalizeOptionalString(getStringValue(yamlMap, "model", null));
+            String effort = normalizeOptionalString(getStringValue(yamlMap, "variant",
+                    getStringValue(yamlMap, "effort", null)));
+            State state = parseState(getStringValue(yamlMap, "state", "ENABLED"));
+            ShortcutKeys pasteShortcut = parsePasteShortcut(yamlMap);
+            ShortcutKeys displayShortcut = parseShortcut(yamlMap, "displayShortcut");
+            ShortcutKeys executeShortcut = parseShortcut(yamlMap, "executeShortcut");
+            CommandVisibility visibility = parseVisibility(yamlMap);
 
-        return new ParsedFrontmatter(resolvedId, new CommandMetadata(name, description, icon, model, state, pasteShortcut, displayShortcut, executeShortcut, visibility));
+            return new ParsedFrontmatter(resolvedId, new CommandMetadata(name, description, icon, model, effort, state,
+                    pasteShortcut, displayShortcut, executeShortcut, visibility));
 
-    } catch (Exception e) {
-        logger.warn("Failed to parse YAML frontmatter for command id: {}, using defaults. Error: {}", id, e.getMessage());
-        return new ParsedFrontmatter(id, getDefaultMetadata(id));
+        } catch (Exception e) {
+            logger.warn("Failed to parse YAML frontmatter for command id: {}, using defaults. Error: {}", id, e.getMessage());
+            return new ParsedFrontmatter(id, getDefaultMetadata(id));
+        }
     }
-}
 
     @SuppressWarnings("unchecked")
     private ShortcutKeys parseShortcut(Map<String, Object> yamlMap, String rootKey) {
@@ -224,6 +230,7 @@ public class MarkdownParser {
                 "",
                 "bi-slash",
                 null,
+                null,
                 State.ENABLED,
                 new ShortcutKeys(),
                 new ShortcutKeys(),
@@ -275,6 +282,7 @@ public class MarkdownParser {
             String description,
             String icon,
             String model,
+            String effort,
             State state,
             ShortcutKeys pasteShortcut,
             ShortcutKeys displayShortcut,

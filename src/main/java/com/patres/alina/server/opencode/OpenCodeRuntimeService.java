@@ -85,6 +85,7 @@ public class OpenCodeRuntimeService {
                                           final String systemPrompt,
                                           final String historySummary,
                                           final String modelOverride,
+                                          final String effortOverride,
                                           final boolean forceNewSession,
                                           final List<ImageAttachment> imageAttachments) {
         return Flux.create(sink -> {
@@ -102,7 +103,7 @@ public class OpenCodeRuntimeService {
                     stream.eventStream = eventStream;
 
                     final String composedSystemPrompt = composeSystemPrompt(systemPrompt, historySummary, session.newlyCreated());
-                    sendPromptAsync(session.sessionId(), userMessage, composedSystemPrompt, modelOverride, imageAttachments);
+                    sendPromptAsync(session.sessionId(), userMessage, composedSystemPrompt, modelOverride, effortOverride, imageAttachments);
                     consumeEvents(stream, eventStream, sink);
                     // The title agent may finish after the response stream ends;
                     // poll the REST API to pick up the generated title.
@@ -150,6 +151,15 @@ public class OpenCodeRuntimeService {
 
     public List<String> getAvailableModels() {
         return modelService.getAvailableModels();
+    }
+
+    public List<String> getAvailableEfforts(final String modelIdentifier) {
+        try {
+            ensureServerRunning();
+        } catch (Exception e) {
+            logger.debug("OpenCode server is not available while loading model variants", e);
+        }
+        return modelService.getAvailableEfforts(modelIdentifier);
     }
 
     public String resolveEffectiveModelIdentifier() {
@@ -293,6 +303,7 @@ public class OpenCodeRuntimeService {
                                  final String userMessage,
                                  final String systemPrompt,
                                  final String modelOverride,
+                                 final String effortOverride,
                                  final List<ImageAttachment> imageAttachments) throws Exception {
         final ObjectNode body = objectMapper.createObjectNode();
         if (systemPrompt != null && !systemPrompt.isBlank()) {
@@ -306,6 +317,15 @@ public class OpenCodeRuntimeService {
                 : modelOverride.trim();
         model.put("providerID", modelService.providerPart(effectiveModel));
         model.put("modelID", modelService.modelPart(effectiveModel));
+        final String requestedEffort = effortOverride == null || effortOverride.isBlank()
+                ? assistant.effort()
+                : effortOverride.trim();
+        if (requestedEffort != null && !requestedEffort.isBlank()) {
+            modelService.getAvailableEfforts(effectiveModel).stream()
+                    .filter(available -> available.equalsIgnoreCase(requestedEffort))
+                    .findFirst()
+                    .ifPresent(variant -> body.put("variant", variant));
+        }
 
         final ArrayNode parts = body.putArray("parts");
         final ObjectNode text = parts.addObject();

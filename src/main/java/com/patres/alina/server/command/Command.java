@@ -12,6 +12,7 @@ public record Command(
         String systemPrompt,
         String icon,
         String model,
+        String effort,
         State state,
         ShortcutKeys pasteShortcut,
         ShortcutKeys displayShortcut,
@@ -22,6 +23,7 @@ public record Command(
     public Command {
         icon = icon != null && !icon.isBlank() ? icon : "bi-slash";
         model = model != null && !model.isBlank() ? model.trim() : null;
+        effort = effort != null && !effort.isBlank() ? effort.trim() : null;
         state = state == null ? State.ENABLED : state;
         pasteShortcut = pasteShortcut == null ? new ShortcutKeys() : pasteShortcut;
         displayShortcut = displayShortcut == null ? new ShortcutKeys() : displayShortcut;
@@ -39,6 +41,7 @@ public record Command(
                 description,
                 systemPrompt,
                 icon,
+                null,
                 null,
                 State.ENABLED,
                 new ShortcutKeys(),
@@ -85,6 +88,7 @@ public record Command(
                 systemPrompt,
                 icon,
                 model,
+                null,
                 State.ENABLED,
                 pasteShortcut,
                 displayShortcut,
@@ -110,7 +114,34 @@ public record Command(
                 systemPrompt,
                 icon,
                 null,
+                null,
                 state,
+                pasteShortcut,
+                displayShortcut,
+                executeShortcut,
+                visibility
+        );
+    }
+
+    public Command(String name,
+                   String description,
+                   String systemPrompt,
+                   String icon,
+                   String model,
+                   String effort,
+                   ShortcutKeys pasteShortcut,
+                   ShortcutKeys displayShortcut,
+                   ShortcutKeys executeShortcut,
+                   CommandVisibility visibility) {
+        this(
+                generateIdFromName(name),
+                name,
+                description,
+                systemPrompt,
+                icon,
+                model,
+                effort,
+                State.ENABLED,
                 pasteShortcut,
                 displayShortcut,
                 executeShortcut,

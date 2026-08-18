@@ -50,6 +50,7 @@ public class OpenCodeAgentRuntime implements AgentRuntime {
                 request.systemPrompt(),
                 request.historySummary(),
                 request.modelOverride(),
+                request.effortOverride(),
                 request.forceNewSession(),
                 request.imageAttachments()
         );
@@ -74,6 +75,11 @@ public class OpenCodeAgentRuntime implements AgentRuntime {
     @Override
     public List<String> getAvailableModels() {
         return runtimeService.getAvailableModels();
+    }
+
+    @Override
+    public List<String> getAvailableEfforts(final String modelIdentifier) {
+        return runtimeService.getAvailableEfforts(modelIdentifier);
     }
 
     @Override

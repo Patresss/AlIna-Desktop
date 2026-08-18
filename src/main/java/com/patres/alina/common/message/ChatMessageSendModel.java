@@ -11,6 +11,7 @@ public record ChatMessageSendModel(
         ChatMessageStyleType styleType,
         OnMessageCompleteCallback onComplete,
         String model,
+        String effort,
         List<ImageAttachment> imageAttachments
 ) {
 
@@ -22,7 +23,31 @@ public record ChatMessageSendModel(
             OnMessageCompleteCallback onComplete,
             String model
     ) {
-        this(content, chatThreadId, commandId, styleType, onComplete, model, List.of());
+        this(content, chatThreadId, commandId, styleType, onComplete, model, null, List.of());
+    }
+
+    public ChatMessageSendModel(
+            String content,
+            String chatThreadId,
+            String commandId,
+            ChatMessageStyleType styleType,
+            OnMessageCompleteCallback onComplete,
+            String model,
+            String effort
+    ) {
+        this(content, chatThreadId, commandId, styleType, onComplete, model, effort, List.of());
+    }
+
+    public ChatMessageSendModel(
+            String content,
+            String chatThreadId,
+            String commandId,
+            ChatMessageStyleType styleType,
+            OnMessageCompleteCallback onComplete,
+            String model,
+            List<ImageAttachment> imageAttachments
+    ) {
+        this(content, chatThreadId, commandId, styleType, onComplete, model, null, imageAttachments);
     }
 
     public ChatMessageSendModel(
@@ -30,7 +55,7 @@ public record ChatMessageSendModel(
             String chatThreadId,
             String commandId
     ) {
-        this(content, chatThreadId, commandId, NONE, null, null, List.of());
+        this(content, chatThreadId, commandId, NONE, null, null, null, List.of());
     }
 
     public ChatMessageSendModel(
@@ -39,7 +64,7 @@ public record ChatMessageSendModel(
             String commandId,
             OnMessageCompleteCallback onComplete
     ) {
-        this(content, chatThreadId, commandId, NONE, onComplete, null, List.of());
+        this(content, chatThreadId, commandId, NONE, onComplete, null, null, List.of());
     }
 
     public ChatMessageSendModel(
@@ -49,6 +74,6 @@ public record ChatMessageSendModel(
             ChatMessageStyleType styleType,
             OnMessageCompleteCallback onComplete
     ) {
-        this(content, chatThreadId, commandId, styleType, onComplete, null, List.of());
+        this(content, chatThreadId, commandId, styleType, onComplete, null, null, List.of());
     }
 }

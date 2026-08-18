@@ -1,16 +1,23 @@
 package com.patres.alina.common.settings;
 
 public record AssistantSettings(
-        String chatModel) {
+        String chatModel,
+        String effort) {
 
     public static final String DEFAULT_CHAT_MODEL = "gpt-4o";
+    public static final String DEFAULT_EFFORT = "high";
 
     public AssistantSettings() {
-        this(DEFAULT_CHAT_MODEL);
+        this(DEFAULT_CHAT_MODEL, DEFAULT_EFFORT);
     }
 
     public AssistantSettings(final String chatModel) {
-        this.chatModel = (chatModel != null) ? chatModel : DEFAULT_CHAT_MODEL;
+        this(chatModel, DEFAULT_EFFORT);
+    }
+
+    public AssistantSettings {
+        chatModel = chatModel == null || chatModel.isBlank() ? DEFAULT_CHAT_MODEL : chatModel.trim();
+        effort = effort == null || effort.isBlank() ? DEFAULT_EFFORT : effort.trim();
     }
 
     public String resolveModelIdentifier() {

@@ -27,7 +27,6 @@ import com.patres.alina.uidesktop.common.event.shortcut.FocusShortcutTriggeredEv
 import com.patres.alina.uidesktop.command.SearchCommandPopup;
 import com.patres.alina.uidesktop.settings.UiSettings;
 import com.patres.alina.uidesktop.ui.ApplicationWindow;
-import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.uidesktop.ui.language.ApplicationLanguage;
 import com.patres.alina.uidesktop.ui.language.LanguageManager;
 import com.patres.alina.uidesktop.ui.theme.SamplerTheme;
@@ -98,7 +97,7 @@ public class ChatWindow extends BorderPane {
     private CardListItem currentCommand;
     private volatile Command currentCommandDetails;
     private ChatInputMode inputMode = ChatInputMode.CHAT;
-    private volatile String selectedModel;
+    private ModelEffortSelector modelEffortSelector;
     private boolean settingFromHistory = false;
     private final java.util.Map<String, ChatThread> recentThreadCache = new java.util.HashMap<>();
     private final List<ImageAttachment> pendingImages = new ArrayList<>();
@@ -143,7 +142,8 @@ public class ChatWindow extends BorderPane {
     @FXML
     private Label modelLabel;
 
-    private ContextMenu modelMenu;
+    @FXML
+    private Label effortLabel;
 
     private Browser browser;
     private ChatStatusPrompt statusPrompt;
@@ -353,63 +353,9 @@ public class ChatWindow extends BorderPane {
     }
 
     private void initModelSelector() {
-        if (modelLabel == null) return;
-
-        modelMenu = new ContextMenu();
-
-        // Initialize with the global default model; each tab tracks its own from here on
-        Thread.startVirtualThread(() -> {
-            final List<String> models = BackendApi.getChatModels();
-            final AssistantSettings settings = BackendApi.getAssistantSettings();
-            final String defaultModel = resolveInitialSelectedModel(settings.resolveModelIdentifier(), models);
-            selectedModel = defaultModel;
-            FxThreadRunner.run(() -> {
-                modelLabel.setText(defaultModel);
-                populateModelMenu(models);
-            });
-        });
-
-        modelLabel.setOnMouseClicked(_ -> {
-            if (modelMenu.isShowing()) {
-                modelMenu.hide();
-            } else {
-                modelMenu.show(modelLabel, javafx.geometry.Side.TOP, 0, 0);
-            }
-        });
-    }
-
-    private String resolveInitialSelectedModel(final String configuredModel, final List<String> models) {
-        if (models == null || models.isEmpty()) {
-            return configuredModel;
-        }
-        if (configuredModel != null && models.contains(configuredModel)) {
-            return configuredModel;
-        }
-        final String providerless = stripProvider(configuredModel);
-        if (providerless != null && models.contains(providerless)) {
-            return providerless;
-        }
-        return models.getFirst();
-    }
-
-    private String stripProvider(final String model) {
-        if (model == null || model.isBlank()) {
-            return model;
-        }
-        final int slash = model.indexOf('/');
-        return slash >= 0 ? model.substring(slash + 1).trim() : model;
-    }
-
-    private void populateModelMenu(final List<String> models) {
-        modelMenu.getItems().clear();
-        for (String model : models) {
-            MenuItem item = new MenuItem(model);
-            item.setOnAction(_ -> {
-                selectedModel = model;
-                modelLabel.setText(model);
-            });
-            modelMenu.getItems().add(item);
-        }
+        if (modelLabel == null || effortLabel == null) return;
+        modelEffortSelector = new ModelEffortSelector(modelLabel, effortLabel);
+        modelEffortSelector.initialize();
     }
 
     private void bindInputHeightToButtonsBox() {
@@ -568,28 +514,34 @@ public class ChatWindow extends BorderPane {
     }
 
     public void sendMessage(final String message, final String commandId, final OnMessageCompleteCallback onComplete) {
-        PreparedMessage prepared = prepareMessageToSend(message, commandId);
-        final String displayText = resolveDisplayText(message, prepared.commandUsageInfo());
-        displayMessage(displayText, ChatMessageRole.USER, ChatMessageStyleType.NONE);
-        streamingController.markUserMessageSent();
-        sendMessageToService(prepared.messageToSend(), commandId, onComplete, List.of());
+        sendMessage(message, commandId, onComplete, null, null);
     }
 
     /**
-     * Sends a message using a specific model override.
-     * If modelOverride is non-null, it temporarily overrides this tab's selectedModel for the request.
+     * Sends a message using one-shot model and effort overrides without changing this tab's selection.
      */
     public void sendMessageWithModel(final String message, final String commandId, final OnMessageCompleteCallback onComplete, final String modelOverride) {
-        if (modelOverride != null && !modelOverride.isBlank()) {
-            final String previousModel = selectedModel;
-            selectedModel = modelOverride;
-            sendMessage(message, commandId, (aiResponse) -> {
-                selectedModel = previousModel;
-                if (onComplete != null) onComplete.onComplete(aiResponse);
-            });
-        } else {
-            sendMessage(message, commandId, onComplete);
-        }
+        sendMessageWithModel(message, commandId, onComplete, modelOverride, null);
+    }
+
+    public void sendMessageWithModel(final String message,
+                                     final String commandId,
+                                     final OnMessageCompleteCallback onComplete,
+                                     final String modelOverride,
+                                     final String effortOverride) {
+        sendMessage(message, commandId, onComplete, modelOverride, effortOverride);
+    }
+
+    private void sendMessage(final String message,
+                             final String commandId,
+                             final OnMessageCompleteCallback onComplete,
+                             final String modelOverride,
+                             final String effortOverride) {
+        final PreparedMessage prepared = prepareMessageToSend(message, commandId);
+        final String displayText = resolveDisplayText(message, prepared.commandUsageInfo());
+        displayMessage(displayText, ChatMessageRole.USER, ChatMessageStyleType.NONE);
+        streamingController.markUserMessageSent();
+        sendMessageToService(prepared.messageToSend(), commandId, onComplete, List.of(), modelOverride, effortOverride);
     }
 
     private void displayMessage(final ChatMessageResponseModel message) {
@@ -636,21 +588,30 @@ public class ChatWindow extends BorderPane {
         FxThreadRunner.run(() -> sendMessage(event.getMessage(), null, null));
     }
 
-    private void sendMessageToService(final String message, final String commandId) {
-        sendMessageToService(message, commandId, null, List.of());
-    }
-
     private void sendMessageToService(final String message, final String commandId, final List<ImageAttachment> images) {
-        sendMessageToService(message, commandId, null, images);
+        sendMessageToService(message, commandId, null, images, null, null);
     }
 
-    private void sendMessageToService(final String message, final String commandId, final OnMessageCompleteCallback onComplete, final List<ImageAttachment> images) {
+    private void sendMessageToService(final String message,
+                                      final String commandId,
+                                      final OnMessageCompleteCallback onComplete,
+                                      final List<ImageAttachment> images,
+                                      final String modelOverride,
+                                      final String effortOverride) {
         Thread.startVirtualThread(() -> {
             try {
                 final boolean backgroundMode = onComplete != null;
                 streamingController.beginStreaming(false, backgroundMode);
+                final String selectedModel = modelOverride != null && !modelOverride.isBlank()
+                        ? modelOverride
+                        : modelEffortSelector.selectedModel();
+                final String selectedEffort = effortOverride != null && !effortOverride.isBlank()
+                        ? effortOverride
+                        : modelEffortSelector.selectedEffort();
                 final ChatMessageSendModel chatMessageSendModel = new ChatMessageSendModel(
-                        message, chatThread.id(), commandId, ChatMessageStyleType.NONE, onComplete, selectedModel,
+                        message, chatThread.id(), commandId, ChatMessageStyleType.NONE, onComplete,
+                        selectedModel,
+                        selectedEffort,
                         images != null ? images : List.of()
                 );
 
@@ -745,14 +706,8 @@ public class ChatWindow extends BorderPane {
                 case CLEAR_CHAT -> applicationWindow.clearCurrentChatThread();
                 case NEW_CHAT -> applicationWindow.createNewChatThread();
                 case MODELS -> {
-                    if (modelMenu != null) {
-                        Thread.startVirtualThread(() -> {
-                            final List<String> models = BackendApi.getChatModels();
-                            FxThreadRunner.run(() -> {
-                                populateModelMenu(models);
-                                modelMenu.show(modelLabel, javafx.geometry.Side.TOP, 0, 0);
-                            });
-                        });
+                    if (modelEffortSelector != null) {
+                        modelEffortSelector.showModelMenu();
                     }
                 }
                 case THEME -> showThemeMenu();

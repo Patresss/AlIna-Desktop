@@ -123,6 +123,10 @@ public class BackendApi {
         return AppLauncher.getBean(SettingsController.class).getChatModels();
     }
 
+    public static List<String> getChatEfforts(final String modelIdentifier) {
+        return AppLauncher.getBean(SettingsController.class).getChatEfforts(modelIdentifier);
+    }
+
     public static WorkspaceSettings getWorkspaceSettings() {
         return AppLauncher.getBean(WorkspaceController.class).getWorkspaceSettings();
     }

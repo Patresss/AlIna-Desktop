@@ -34,4 +34,8 @@ public class SettingsService {
         return agentRuntimeSelector.active().getAvailableModels();
     }
 
+    public List<String> getChatEfforts(final String modelIdentifier) {
+        return agentRuntimeSelector.active().getAvailableEfforts(modelIdentifier);
+    }
+
 }

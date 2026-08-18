@@ -6,6 +6,8 @@ import com.patres.alina.common.agent.AgentRuntimeStatus;
 import com.patres.alina.common.settings.AssistantSettings;
 import com.patres.alina.common.settings.WorkspaceSettings;
 import com.patres.alina.uidesktop.backend.BackendApi;
+import com.patres.alina.uidesktop.ui.model.ModelEffortOption;
+import com.patres.alina.uidesktop.ui.util.FxThreadRunner;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
@@ -21,11 +23,13 @@ import org.kordamp.ikonli.feather.Feather;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static com.patres.alina.uidesktop.ui.util.TranslatedComponentUtils.createTextSeparator;
 import static com.patres.alina.uidesktop.ui.util.TranslatedComponentUtils.createTile;
+import static com.patres.alina.uidesktop.ui.language.LanguageManager.getLanguageString;
 import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableRegion;
 import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableTextArea;
 import static com.patres.alina.uidesktop.util.ui.ResizableNodeUtils.createResizableTextField;
@@ -37,6 +41,7 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
 
     private ChoiceBox<AgentBackend> backendSelector;
     private ChoiceBox<String> chatModelSelector;
+    private ChoiceBox<ModelEffortOption> chatEffortSelector;
     private TextField openCodeHostnameField;
     private TextField openCodePortField;
     private TextField openCodeWorkingDirectoryField;
@@ -46,6 +51,7 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
 
     private WorkspaceSettings settings;
     private AssistantSettings assistantSettings;
+    private long effortLoadSequence;
 
     public OpenCodeSettingsPane(final Runnable backFunction) {
         super(backFunction);
@@ -62,7 +68,7 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
         codexCommandField.setText(orEmpty(settings.codexCommand()));
         codexWorkingDirectoryField.setText(orEmpty(settings.codexWorkingDirectory()));
 
-        reloadChatModels(assistantSettings.resolveModelIdentifier());
+        reloadChatModels(assistantSettings.resolveModelIdentifier(), assistantSettings.effort());
 
         refreshOpenCodeStatus();
     }
@@ -125,9 +131,17 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
         final String currentChatModel = Optional.ofNullable(chatModelSelector)
                 .map(ChoiceBox::getValue)
                 .orElse(assistantSettings.resolveModelIdentifier());
-        reloadChatModels(currentChatModel);
+        final String currentEffort = Optional.ofNullable(chatEffortSelector)
+                .map(ChoiceBox::getValue)
+                .map(ModelEffortOption::value)
+                .orElse(assistantSettings.effort());
+        reloadChatModels(currentChatModel, currentEffort);
         final String chatModel = Optional.ofNullable(chatModelSelector.getValue()).orElse(currentChatModel);
-        final AssistantSettings updatedAssistant = new AssistantSettings(chatModel);
+        final String effort = Optional.ofNullable(chatEffortSelector.getValue())
+                .map(ModelEffortOption::value)
+                .filter(value -> !value.isBlank())
+                .orElse(AssistantSettings.DEFAULT_EFFORT);
+        final AssistantSettings updatedAssistant = new AssistantSettings(chatModel, effort);
         BackendApi.updateAssistantSettings(updatedAssistant);
         assistantSettings = updatedAssistant;
 
@@ -164,6 +178,35 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
         final var chatModelTile = createTile("settings.chatModel.title", "settings.chatModel.description");
         chatModelTile.setAction(chatModelSelector);
 
+        chatEffortSelector = createResizableRegion(ChoiceBox::new, settingsBox);
+        final var chatEffortTile = createTile("settings.chatEffort.title", "settings.chatEffort.description");
+        chatEffortTile.setAction(chatEffortSelector);
+        chatModelSelector.valueProperty().addListener((_, oldModel, newModel) -> {
+            if (newModel == null || newModel.equals(oldModel)) {
+                return;
+            }
+            final String preferredEffort = Optional.ofNullable(chatEffortSelector.getValue())
+                    .map(ModelEffortOption::value)
+                    .orElse(assistantSettings.effort());
+            final long requestSequence = ++effortLoadSequence;
+            Thread.startVirtualThread(() -> {
+                try {
+                    final List<String> efforts = BackendApi.getChatEfforts(newModel);
+                    FxThreadRunner.run(() -> {
+                        if (requestSequence == effortLoadSequence && newModel.equals(chatModelSelector.getValue())) {
+                            applyChatEfforts(preferredEffort, efforts);
+                        }
+                    });
+                } catch (Exception ignored) {
+                    FxThreadRunner.run(() -> {
+                        if (requestSequence == effortLoadSequence && newModel.equals(chatModelSelector.getValue())) {
+                            applyChatEfforts(preferredEffort, List.of());
+                        }
+                    });
+                }
+            });
+        });
+
         // ── Runtime ──
         final var runtimeHeader = createTextSeparator("settings.workspace.runtime.title", Styles.TITLE_4);
         final var runtimeStatusHeader = createTextSeparator("settings.workspace.openCode.status.section", Styles.TITLE_4);
@@ -190,6 +233,7 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
                 backendTile,
                 chatModelHeader,
                 chatModelTile,
+                chatEffortTile,
                 runtimeHeader,
                 tileFor(openCodeHostnameField, "settings.workspace.openCode.hostname.title", "settings.workspace.openCode.hostname.description"),
                 tileFor(openCodePortField, "settings.workspace.openCode.port.title", "settings.workspace.openCode.port.description"),
@@ -207,7 +251,8 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
         return tile;
     }
 
-    private void reloadChatModels(final String preferredModel) {
+    private void reloadChatModels(final String preferredModel, final String preferredEffort) {
+        effortLoadSequence++;
         final List<String> chatModels = BackendApi.getChatModels();
         chatModelSelector.getItems().setAll(chatModels);
         final String normalizedPreferred = normalizeModelForActiveBackend(preferredModel);
@@ -219,6 +264,31 @@ public class OpenCodeSettingsPane extends SettingsModalPaneContent {
                 ? preferredModel
                 : chatModels.getFirst();
         chatModelSelector.setValue(selectedModel);
+        effortLoadSequence++;
+        reloadChatEfforts(selectedModel, preferredEffort);
+    }
+
+    private void reloadChatEfforts(final String selectedModel, final String preferredEffort) {
+        List<String> efforts;
+        try {
+            efforts = BackendApi.getChatEfforts(selectedModel);
+        } catch (Exception ignored) {
+            efforts = List.of();
+        }
+        applyChatEfforts(preferredEffort, efforts);
+    }
+
+    private void applyChatEfforts(final String preferredEffort, final List<String> availableEfforts) {
+        final String defaultLabel = getLanguageString("settings.chatEffort.default");
+        final List<ModelEffortOption> options = new ArrayList<>(
+                ModelEffortOption.choices(defaultLabel, availableEfforts)
+        );
+        chatEffortSelector.getItems().setAll(options);
+        final ModelEffortOption selected = ModelEffortOption.select(options, preferredEffort);
+        if (!options.contains(selected)) {
+            chatEffortSelector.getItems().add(selected);
+        }
+        chatEffortSelector.setValue(selected);
     }
 
     private String normalizeModelForActiveBackend(final String model) {

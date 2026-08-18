@@ -27,6 +27,8 @@ public interface AgentRuntime {
 
     List<String> getAvailableModels();
 
+    List<String> getAvailableEfforts(String modelIdentifier);
+
     String resolveEffectiveModelIdentifier();
 
     String getModelUsedForThread(String threadId);

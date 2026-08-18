@@ -11,9 +11,24 @@ public record AgentMessageRequest(
         String systemPrompt,
         String historySummary,
         String modelOverride,
+        String effortOverride,
         boolean forceNewSession,
         List<ImageAttachment> imageAttachments
 ) {
+    public AgentMessageRequest(
+            final String chatThreadId,
+            final String chatThreadTitle,
+            final String userMessage,
+            final String systemPrompt,
+            final String historySummary,
+            final String modelOverride,
+            final boolean forceNewSession,
+            final List<ImageAttachment> imageAttachments
+    ) {
+        this(chatThreadId, chatThreadTitle, userMessage, systemPrompt, historySummary, modelOverride, null,
+                forceNewSession, imageAttachments);
+    }
+
     public AgentMessageRequest {
         imageAttachments = imageAttachments == null ? List.of() : List.copyOf(imageAttachments);
     }

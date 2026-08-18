@@ -85,7 +85,9 @@ public class ChatMessageService {
                     chatMessageSendModel.commandId(),
                     chatMessageSendModel.styleType(),
                     chatMessageSendModel.onComplete(),
-                    chatMessageSendModel.model()
+                    chatMessageSendModel.model(),
+                    chatMessageSendModel.effort(),
+                    chatMessageSendModel.imageAttachments()
             );
             sendMessageStreamWithChatThread(withNewThread);
             return;
@@ -114,26 +116,26 @@ public class ChatMessageService {
 
         cancelStreamingSilently(chatThreadId);
 
-        final String chatContent = calculateContentWithCommandPrompt(chatMessageSendModel.content(), chatMessageSendModel.commandId());
+        final Optional<Command> command = findCommand(chatMessageSendModel.commandId());
+        final String chatContent = calculateContentWithCommandPrompt(chatMessageSendModel.content(), command.orElse(null));
         final String systemPrompt = assistantPromptService.buildSystemPrompt(assistantSettingsManager.getSettings());
-        final String commandModelOverride = resolveCommandModelOverride(chatMessageSendModel.commandId());
-        final String perTabModel = chatMessageSendModel.model();
-        final String modelOverride;
-        if (commandModelOverride != null && !commandModelOverride.isBlank()) {
-            modelOverride = commandModelOverride.trim();
-        } else if (perTabModel != null && !perTabModel.isBlank()) {
-            modelOverride = perTabModel.trim();
-        } else {
-            modelOverride = null;
-        }
+        final String modelOverride = firstNonBlank(
+                command.map(Command::model).orElse(null),
+                chatMessageSendModel.model()
+        );
+        final String effortOverride = firstNonBlank(
+                command.map(Command::effort).orElse(null),
+                chatMessageSendModel.effort()
+        );
 
-        sendStreamingAssistantResponse(chatContent, systemPrompt, modelOverride, chatMessageSendModel, StreamPurpose.NORMAL,
+        sendStreamingAssistantResponse(chatContent, systemPrompt, modelOverride, effortOverride, chatMessageSendModel, StreamPurpose.NORMAL,
                 chatMessageSendModel.imageAttachments());
     }
 
     private void sendStreamingAssistantResponse(final String userMessage,
                                                 final String systemPrompt,
                                                 final String modelOverride,
+                                                final String effortOverride,
                                                 final ChatMessageSendModel chatMessageSendModel,
                                                 final StreamPurpose purpose,
                                                 final List<ImageAttachment> imageAttachments) {
@@ -154,6 +156,7 @@ public class ChatMessageService {
                     systemPrompt,
                     "",
                     modelOverride,
+                    effortOverride,
                     purpose == StreamPurpose.REGENERATE,
                     imageAttachments != null ? imageAttachments : List.of()
             ));
@@ -214,7 +217,7 @@ public class ChatMessageService {
         cancelStreamingSilently(chatThreadId);
         final String systemPrompt = assistantPromptService.buildSystemPrompt(assistantSettingsManager.getSettings());
         final ChatMessageSendModel model = new ChatMessageSendModel(lastUserMessage, chatThreadId, null, null, null, null);
-        sendStreamingAssistantResponse(lastUserMessage, systemPrompt, null, model, StreamPurpose.REGENERATE, List.of());
+        sendStreamingAssistantResponse(lastUserMessage, systemPrompt, null, null, model, StreamPurpose.REGENERATE, List.of());
     }
 
     public synchronized void retryLastUserMessage(final String chatThreadId) {
@@ -228,7 +231,7 @@ public class ChatMessageService {
         cancelStreamingSilently(chatThreadId);
         final String systemPrompt = assistantPromptService.buildSystemPrompt(assistantSettingsManager.getSettings());
         final ChatMessageSendModel model = new ChatMessageSendModel(lastUserMessage, chatThreadId, null, null, null, null);
-        sendStreamingAssistantResponse(lastUserMessage, systemPrompt, null, model, StreamPurpose.NORMAL, List.of());
+        sendStreamingAssistantResponse(lastUserMessage, systemPrompt, null, null, model, StreamPurpose.NORMAL, List.of());
     }
 
     private String findLastUserMessage(final String chatThreadId) {
@@ -246,14 +249,10 @@ public class ChatMessageService {
         return agentRuntimeSelector.active().getMessagesByThreadId(chatThreadId);
     }
 
-    private String calculateContentWithCommandPrompt(final String content, final String commandId) {
-        final Optional<Command> commandOpt = Optional.ofNullable(commandId)
-                .flatMap(commandFileService::findById);
-
-        final String commandContent = commandOpt
-                .map(Command::systemPrompt)
-                .orElse("")
-                .trim();
+    private String calculateContentWithCommandPrompt(final String content, final Command command) {
+        final String commandContent = command == null || command.systemPrompt() == null
+                ? ""
+                : command.systemPrompt().trim();
 
         if (commandContent.isEmpty()) {
             return content;
@@ -265,12 +264,18 @@ public class ChatMessageService {
         return commandContent + System.lineSeparator() + content;
     }
 
-    private String resolveCommandModelOverride(final String commandId) {
+    private Optional<Command> findCommand(final String commandId) {
         return Optional.ofNullable(commandId)
-                .flatMap(commandFileService::findById)
-                .map(Command::model)
-                .filter(model -> !model.isBlank())
-                .orElse(null);
+                .flatMap(commandFileService::findById);
+    }
+
+    private String normalizeOverride(final String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String firstNonBlank(final String preferred, final String fallback) {
+        final String normalizedPreferred = normalizeOverride(preferred);
+        return normalizedPreferred != null ? normalizedPreferred : normalizeOverride(fallback);
     }
 
     private void cancelStreamingSilently(final String chatThreadId) {

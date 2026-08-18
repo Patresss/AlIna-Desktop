@@ -57,6 +57,7 @@ public class CodexAgentRuntime implements AgentRuntime {
     private static final Logger logger = LoggerFactory.getLogger(CodexAgentRuntime.class);
     private static final long STREAM_AWAIT_TIMEOUT_HOURS = 12;
     private static final int PREVIEW_TITLE_MAX_CODE_POINTS = 80;
+    private static final long MODEL_CATALOG_CACHE_SECONDS = 60;
 
     private final CodexAppServerClient client;
     private final FileManager<WorkspaceSettings> workspaceSettingsManager;
@@ -71,6 +72,8 @@ public class CodexAgentRuntime implements AgentRuntime {
     private final Set<String> resolvingInteractionIds = ConcurrentHashMap.newKeySet();
     private final Map<String, String> itemToChatThread = new ConcurrentHashMap<>();
     private volatile List<String> cachedModels = List.of();
+    private volatile JsonNode cachedModelCatalog;
+    private volatile Instant cachedModelCatalogAt = Instant.EPOCH;
 
     public CodexAgentRuntime(final CodexAppServerClient client,
                              final FileManager<WorkspaceSettings> workspaceSettingsManager,
@@ -209,10 +212,7 @@ public class CodexAgentRuntime implements AgentRuntime {
     @Override
     public List<String> getAvailableModels() {
         try {
-            final ObjectNode params = objectMapper.createObjectNode();
-            params.put("limit", 100);
-            params.put("includeHidden", false);
-            final JsonNode response = client.request("model/list", params);
+            final JsonNode response = requestModelCatalog();
             final List<String> models = new ArrayList<>();
             final JsonNode data = response.path("data");
             if (data.isArray()) {
@@ -232,6 +232,45 @@ public class CodexAgentRuntime implements AgentRuntime {
         }
         final String configured = configuredCodexModel();
         return configured == null || configured.isBlank() ? List.of() : List.of(configured);
+    }
+
+    @Override
+    public List<String> getAvailableEfforts(final String modelIdentifier) {
+        final String requestedModel = normalizeCodexModel(
+                modelIdentifier == null || modelIdentifier.isBlank() ? configuredCodexModel() : modelIdentifier
+        );
+        if (requestedModel == null || requestedModel.isBlank()) {
+            return List.of();
+        }
+
+        try {
+            final JsonNode data = requestModelCatalog().path("data");
+            if (!data.isArray()) {
+                return List.of();
+            }
+            for (final JsonNode model : data) {
+                if (!matchesCodexModel(model, requestedModel)) {
+                    continue;
+                }
+                final JsonNode supported = model.path("supportedReasoningEfforts");
+                if (!supported.isArray()) {
+                    return List.of();
+                }
+                final List<String> efforts = new ArrayList<>();
+                for (final JsonNode effort : supported) {
+                    final String value = effort.isTextual()
+                            ? effort.asText()
+                            : effort.path("reasoningEffort").asText(null);
+                    if (value != null && !value.isBlank() && !efforts.contains(value)) {
+                        efforts.add(value);
+                    }
+                }
+                return List.copyOf(efforts);
+            }
+        } catch (Exception e) {
+            logger.warn("Cannot fetch reasoning efforts from Codex app-server", e);
+        }
+        return List.of();
     }
 
     @Override
@@ -463,12 +502,54 @@ public class CodexAgentRuntime implements AgentRuntime {
         if (model != null && !model.isBlank()) {
             params.put("model", model);
         }
+        final String effort = resolveSupportedCodexEffort(request.effortOverride(), model);
+        if (effort != null) {
+            params.put("effort", effort);
+        }
         final ArrayNode input = params.putArray("input");
         final ObjectNode text = input.addObject();
         text.put("type", "text");
         text.put("text", request.userMessage() == null ? "" : request.userMessage());
         addImageInputs(input, request.imageAttachments());
         return client.request("turn/start", params);
+    }
+
+    private JsonNode requestModelCatalog() throws Exception {
+        if (cachedModelCatalog != null
+                && Instant.now().isBefore(cachedModelCatalogAt.plusSeconds(MODEL_CATALOG_CACHE_SECONDS))) {
+            return cachedModelCatalog;
+        }
+        synchronized (this) {
+            if (cachedModelCatalog != null
+                    && Instant.now().isBefore(cachedModelCatalogAt.plusSeconds(MODEL_CATALOG_CACHE_SECONDS))) {
+                return cachedModelCatalog;
+            }
+            final ObjectNode params = objectMapper.createObjectNode();
+            params.put("limit", 100);
+            params.put("includeHidden", false);
+            cachedModelCatalog = client.request("model/list", params);
+            cachedModelCatalogAt = Instant.now();
+            return cachedModelCatalog;
+        }
+    }
+
+    private boolean matchesCodexModel(final JsonNode model, final String requestedModel) {
+        final String id = normalizeCodexModel(model.path("id").asText(model.path("model").asText(null)));
+        return requestedModel.equals(id);
+    }
+
+    private String resolveSupportedCodexEffort(final String requestedEffort, final String model) {
+        final String configuredEffort = assistantSettingsManager.getSettings().effort();
+        final String effort = requestedEffort == null || requestedEffort.isBlank()
+                ? configuredEffort
+                : requestedEffort.trim();
+        if (effort == null || effort.isBlank()) {
+            return null;
+        }
+        return getAvailableEfforts(model).stream()
+                .filter(available -> available.equalsIgnoreCase(effort))
+                .findFirst()
+                .orElse(null);
     }
 
     private void addImageInputs(final ArrayNode input, final List<ImageAttachment> imageAttachments) {

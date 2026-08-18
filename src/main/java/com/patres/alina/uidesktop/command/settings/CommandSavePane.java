@@ -6,6 +6,7 @@ import com.patres.alina.uidesktop.settings.ui.ApplicationModalPaneContent;
 import com.patres.alina.uidesktop.shortcuts.key.ShortcutKeyPane;
 import com.patres.alina.uidesktop.shortcuts.key.ShortcutKeys;
 import com.patres.alina.uidesktop.ui.atlantafx.CustomTile;
+import com.patres.alina.uidesktop.ui.model.ModelEffortOption;
 import com.patres.alina.uidesktop.ui.toast.ToastNotification;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -24,6 +25,7 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
     protected TextArea commandDescriptionTextArea;
     protected TextArea commandSystemPromptTextArea;
     protected ChoiceBox<String> commandModelChoiceBox;
+    protected ChoiceBox<ModelEffortOption> commandEffortChoiceBox;
     protected ComboBox<AutoCompleteComboBox.HideableItem<ApplicationIcon>> iconComboBox;
     protected ToggleSwitch showInChatToggleSwitch;
     protected ToggleSwitch showInContextMenuPasteToggleSwitch;
@@ -80,6 +82,15 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
         commandModelChoiceBox = createResizableRegion(ChoiceBox::new, settingsBox);
         loadAvailableModels();
         commandModelTile.setAction(commandModelChoiceBox);
+
+        var commandEffortTile = new CustomTile(
+                getLanguageString("command.effort.title"),
+                getLanguageString("command.effort.description")
+        );
+        commandEffortChoiceBox = createResizableRegion(ChoiceBox::new, settingsBox);
+        loadAvailableEfforts(null);
+        commandModelChoiceBox.valueProperty().addListener((_, _, _) -> reloadAvailableEfforts(getSelectedModel(), getSelectedEffort()));
+        commandEffortTile.setAction(commandEffortChoiceBox);
 
         iconComboBox = createResizableRegion(IconComboBox::create, settingsBox);
         var iconTile = new CustomTile(
@@ -154,6 +165,7 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
                 commandDescriptionTile,
                 commandSystemPromptTile,
                 commandModelTile,
+                commandEffortTile,
                 iconTile,
                 new Separator(),
                 showInChatTile,
@@ -191,6 +203,23 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
         commandModelChoiceBox.getItems().setAll(items);
     }
 
+    private void loadAvailableEfforts(final String preferredEffort) {
+        reloadAvailableEfforts(null, preferredEffort);
+    }
+
+    private void reloadAvailableEfforts(final String model, final String preferredEffort) {
+        final String defaultLabel = getLanguageString("command.effort.default");
+        List<String> efforts;
+        try {
+            efforts = BackendApi.getChatEfforts(model);
+        } catch (Exception ignored) {
+            efforts = List.of();
+        }
+        final List<ModelEffortOption> options = new ArrayList<>(ModelEffortOption.choices(defaultLabel, efforts));
+        commandEffortChoiceBox.getItems().setAll(options);
+        setSelectedEffort(preferredEffort);
+    }
+
     protected void setSelectedModel(final String model) {
         final String defaultLabel = getLanguageString("command.model.default");
         if (model == null || model.isBlank()) {
@@ -210,5 +239,20 @@ public abstract class CommandSavePane extends ApplicationModalPaneContent {
             return "";
         }
         return value;
+    }
+
+    protected void setSelectedEffort(final String effort) {
+        final ModelEffortOption selected = ModelEffortOption.select(commandEffortChoiceBox.getItems(), effort);
+        if (!commandEffortChoiceBox.getItems().contains(selected)) {
+            commandEffortChoiceBox.getItems().add(selected);
+        }
+        commandEffortChoiceBox.setValue(selected);
+    }
+
+    protected String getSelectedEffort() {
+        if (commandEffortChoiceBox == null || commandEffortChoiceBox.getValue() == null) {
+            return "";
+        }
+        return commandEffortChoiceBox.getValue().value();
     }
 }
